@@ -2,4 +2,27 @@ Static analysis tools
 ---------------------
 Analysis file in deep with clamscan and yara rules.
 
+Analyz
+------
+1- Clamav scan with extract embed file and make report json
+2- Analyz result clamav in json
+3- Scan yara on each files
+4- Extract pattern (pattern.db) and possibility to use in yara rules
+5- Add information extracted by yara in Json result
+  - Yara check on file with context information clamav
+  - Yara use variable externe (clamav context and yara rule matchs on parent file)
+6- Get score risk
+  - Check max score of yara rules matched
+  - Make global score with coefficient mechanism (coef.conf)
+7- Create graph PNG for fast analyz
+8- Output result json
+
+TODO
+----
+- make yara rules
+
+PDF Trick for analyz:
+---------------------
+$pdftk infector1.pdf output infector1_uncompress.pdf uncompress
+
 Contact: lionel.prat9@gmail.com
