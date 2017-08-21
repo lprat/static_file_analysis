@@ -271,7 +271,7 @@ rule suspect_embed_file_PDF{
 		description = "suspect embed file in PDF"
 		
 	condition:
-		FileParentType matches /->CL_TYPE_PDF$/ and not FileType matches /CL_TYPE_TEXT|CL_TYPE_BINARY_DATA|CL_TYPE_UNKNOWN|CL_TYPE_ASCII/
+		FileParentType matches /->CL_TYPE_PDF$/ and not FileType matches /CL_TYPE_TEXT|CL_TYPE_BINARY_DATA|CL_TYPE_UNKNOWN|CL_TYPE_ASCII|CL_TYPE_UTF/
 }
 
 

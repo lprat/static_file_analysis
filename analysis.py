@@ -18,6 +18,7 @@ import subprocess
 import sys, getopt
 import collections
 
+#TODO: delete doublon md5 same level
 #option run
 ## file[path], direcory_extract[path], graph[bool]
 #verify clamscan present, or verify ENV CLAMSCAN_PATH
@@ -232,12 +233,32 @@ def check_all_score(nested_dict):
             ret = check_all_score(v) # recursive call
             scores.update(ret)
     return scores
+
+def remove_double(nested_dict):
+    list_md5 = []
+    remove_count = []
+    for k, v in nested_dict.items():
+        if type(v) is list and k == u"ContainedObjects":
+            count = 0
+            for elem in v:
+                if type(elem) is dict and u'FileMD5' in elem:
+                    if elem[u'FileMD5'] in list_md5:
+                        #remove
+                        remove_count.append(count)
+                    else:
+                        list_md5.append(elem[u'FileMD5']) 
+                count += 1
+            for index in sorted(remove_count, key=int, reverse=True):
+                v.pop(index)
+            for elem in v:
+                if type(elem) is dict and u'ContainedObjects' in elem:
+                    remove_double(elem)
+        elif type(v) is dict: # v is a dict
+            remove_double(v) # recursive call
   
-def scan_json(filename, cl_parent, cl_type, patterndb, var_dynamic, extract_var_global, yara_RC, score_max):
+def scan_json(filename, cl_parent, cl_type, patterndb, var_dynamic, extract_var_global, yara_RC, score_max, md5_file):
     #find size file 
     size_file = os.path.getsize(filename)
-    #check md5sum
-    md5_file = unicode(md5(filename), "utf-8")
     #extract info
     ext_info = extract_info(filename,patterndb)
     extract_var_local = {}
@@ -316,6 +337,18 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                         print "Error to parse json result..."
         if not result_extract:
             #make json
+            #analyz debug information for find external variable for yara
+            regexp_bool = re.compile(r'_bool$')
+            regexp_int = re.compile(r'_int$')
+            pdf_analyz = { 'cli_pdf: %%EOF not found': u'PDFStats_NoEOF_bool', 'cli_pdf: encrypted pdf found': u'PDFStats_Encrypted_bool', 'cli_pdf: did not find valid xref': u'PDFStats_NoXREF_bool', 'cli_pdf: startxref not found': u'PDFStats_NoXREF_bool', 'cli_pdf: bad pdf version:': u'PDFStats_BadVersion_bool', 'cli_pdf: no PDF- header found': u'PDFStats_BadHeaderPosition_bool', 'cli_pdf: bad format object': u'PDFStats_InvalidObjectCount_int'}
+            for ka,va in pdf_analyz.items():
+                if ka in serr:
+                    if regexp_bool.search(va):
+                        var_dynamic[va] = True
+                    elif regexp_int.search(va):
+                        var_dynamic[va] = 1
+                    else:
+                        var_dynamic[va] = "True"
             md5_file = unicode(md5(filename_path), "utf-8")
             size_file = os.path.getsize(filename_path)
             #LibClamAV debug: Recognized RTF file
@@ -378,6 +411,9 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                    filex=matchx.group(0)
                    if os.path.isfile(filex):
                        #file exist
+                       #check md5sum
+                       md5_file = unicode(md5(filex), "utf-8")
+                       nopresent = True
                        #check if dir exist in temp_json?
                        (dirtmp, filenamex) = os.path.split(filex)
                        dirx = regexp_dirx.search(dirtmp)
@@ -395,7 +431,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                            #new dir -> new level OR first file!
                            level_cour += 1
                            tempdir_cour = dirx
-                           temp_json[dirx] = {"level": level_cour, "cl_parent": cl_parent}
+                           temp_json[dirx] = {"level": level_cour, "cl_parent": cl_parent, "files": []}
                            find_md5 = getpath(result_extract, cl_parentmd5)
                            list_PType = ""
                            if find_md5:
@@ -408,23 +444,35 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                                        list_PType += "->" + type_parent
                                temp_json[dirx]['cl_parent'] = list_PType
                            #scan yara and make json
-                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], type_file, patterndb, var_dynamic, extract_var_global, yara_RC, score_max)
+                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], type_file, patterndb, var_dynamic, extract_var_global, yara_RC, score_max, md5_file)
+                           temp_json[dirx]['files'].append(md5_file)
                        elif tempdir_cour == dirx:
                            #new file in same level
-                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], type_file, patterndb, var_dynamic, extract_var_global, yara_RC, score_max)
+                           if not md5_file in temp_json[dirx]['files']:
+                               score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], type_file, patterndb, var_dynamic, extract_var_global, yara_RC, score_max, md5_file)
+                               temp_json[dirx]['files'].append(md5_file)
+                           else:
+                               nopresent = False
                        else:
                            #new file in old level
                            level_cour = temp_json[dirx]["level"]
                            cl_parent = temp_json[dirx]["cl_parent"]
                            tempdir_cour = dirx
-                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], type_file, patterndb, var_dynamic, extract_var_global, yara_RC, score_max)
-                       if level_cour == 1:
-                           result_extract["ContainedObjects"].append(ret)
-                       else:
-                           for pmd5 in temp_json[dirx]['find_md5']:
-                               reta = adddict(result_extract,u'ContainedObjects',ret,pmd5[0:len(pmd5)-1])
-                       cl_parentmd5 = ret['FileMD5']  
+                           if not md5_file in temp_json[dirx]['files']:
+                               score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], type_file, patterndb, var_dynamic, extract_var_global, yara_RC, score_max, md5_file)
+                               temp_json[dirx]['files'].append(md5_file)
+                           else:
+                               nopresent = False
+                       if nopresent:
+                            if level_cour == 1:
+                                result_extract["ContainedObjects"].append(ret)
+                            else:
+                                for pmd5 in temp_json[dirx]['find_md5']:
+                                    reta = adddict(result_extract,u'ContainedObjects',ret,pmd5[0:len(pmd5)-1])
+                       cl_parentmd5 = md5_file  
         else:
+            #remove double md5 in json at same level
+            remove_double(result_extract)
             #extract info of original json
             ext_info = extract_info(filename_path,patterndb)
             extract_var_local = {}
@@ -467,12 +515,25 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
             #verify file extract and json information
             #regexp = re.compile(r'^clamav-[a-z0-9]{32}.tmp$')
             regexp_dir = re.compile(r'clamav-[a-z0-9]{32}.tmp')
+            list_md5 = {}
+            regexp_dirx = re.compile(directory_tmp+r'\/clamav-[a-z0-9]{32}.tmp')
             for root, directories, filenames in os.walk(directory_tmp):
                 for filename in filenames:
                     #not clamav tmp -- but for rtf extract object with name clamav-...tmp in directory clamav-...tmp, 
                     if regexp_dir.search(root):
                         #make md5sum
                         md5_file = unicode(md5(os.path.join(root, filename)), "utf-8")
+                        dirx = regexp_dirx.search(root)
+                        if dirx:
+                            dirx=dirx.group(0)
+                        else:
+                            dirx=root
+                        if md5_file in list_md5 and dirx in list_md5[md5_file]:
+                            continue
+                        if not md5_file in list_md5:
+                            list_md5[md5_file] = [dirx]
+                        else:
+                            list_md5[md5_file].append(dirx)
                         #verify if present in json
                         find_md5 = getpath(result_extract, md5_file)
                         if find_md5:
