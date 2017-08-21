@@ -22,6 +22,7 @@ import collections
 ## file[path], direcory_extract[path], graph[bool]
 #verify clamscan present, or verify ENV CLAMSCAN_PATH
 #verify option else display menu
+
 def usage():
     print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] -f path_filename -y yara_rules_path/\n\n"
     print "\t -h/--help : for help to use\n"
@@ -222,12 +223,60 @@ def check_all_score(nested_dict):
                 if type(elem) is dict:
                     for kx, vx in elem.items():
                         scores[kx] = vx['score']
+        if type(v) is list and k == u"ContainedObjects":
+            for elem in v:
+                if type(elem) is dict:
+                    ret = check_all_score(elem) # recursive call
+                    scores.update(ret)
         elif type(v) is dict: # v is a dict
             ret = check_all_score(v) # recursive call
             scores.update(ret)
     return scores
-             
-    return scores
+  
+def scan_json(filename, cl_parent, cl_type, patterndb, var_dynamic, extract_var_global, yara_RC, score_max):
+    #find size file 
+    size_file = os.path.getsize(filename)
+    #check md5sum
+    md5_file = unicode(md5(filename), "utf-8")
+    #extract info
+    ext_info = extract_info(filename,patterndb)
+    extract_var_local = {}
+    for elemx in ext_info:
+        for kx, vx in elemx.items():
+            if kx not in extract_var_local:
+                extract_var_local["extract_local_"+kx] = vx
+            elif vx not in extract_var_local[kx]:
+                extract_var_local["extract_local_"+kx] = extract_var_local[kx] + "||--||" + vx
+            if kx not in extract_var_global:
+                extract_var_global["extract_global_"+kx] = vx
+            elif vx not in extract_var_global[kx]:
+                extract_var_global["extract_global_"+kx] = extract_var_global[kx] + "||--||" + vx
+    #yara check
+    externals_var = {'FileParentType': cl_parent, 'FileType': "CL_TYPE_" + cl_type, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8'), 'PathFile': filename}
+    externals_var.update(var_dynamic)
+    #add extinfo in var_dyn
+    externals_var.update(extract_var_local)
+    externals_var.update(extract_var_global)
+    ret_yara = yara_RC.match(filename, externals=externals_var, timeout=120)
+    detect_yara_rule = []
+    detect_yara_score = 0
+    detect_yara_strings = ext_info
+    for match in ret_yara:
+        if match.meta['weight'] > 0:
+            detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
+            if match.meta['weight'] > detect_yara_score:
+                detect_yara_score = match.meta['weight']
+                if detect_yara_score > score_max:
+                    score_max = detect_yara_score
+            #detect_yara_strings += match.strings
+            #detect_yara_strings = list(set(detect_yara_strings))
+            if 'var_match' in match.meta:
+                var_dynamic[str(match.meta['var_match'])] = True
+        elif 'var_match' in match.meta:
+            var_dynamic[str(match.meta['var_match'])] = True
+    result_file = { u'FileParentType': cl_parent, u'FileType': u"CL_TYPE_" + unicode(cl_type, "utf-8"), u'FileSize': int(size_file), u'FileMD5': md5_file, u'PathFile': [unicode(filename, "utf-8")],  u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'ContainedObjects': []}
+    return score_max, var_dynamic, extract_var_global, result_file
+    
 def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef, verbose):
     result_extract = {}
     coefx = 1 
@@ -289,13 +338,13 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                     elif vx not in extract_var_global[kx]:
                         extract_var_global["extract_global_"+kx] = extract_var_global[kx] + "||--||" + vx
             #verify yara rules
-            ext_var = {'RootFileType': "CL_TYPE_" + type_file, 'FileType': "CL_TYPE_" + type_file, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8')}
+            externals_var = {'RootFileType': "CL_TYPE_" + type_file, 'FileType': "CL_TYPE_" + type_file, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8')}
             #add var_dynamic in var ext
-            ext_var.update(var_dynamic)
+            externals_var.update(var_dynamic)
             #add extinfo in var_dyn
-            ext_var.update(extract_var_local)
-            ext_var.update(extract_var_global)
-            ret_yara = yara_RC.match(filename_path, externals=ext_var, timeout=120)
+            externals_var.update(extract_var_local)
+            externals_var.update(extract_var_global)
+            ret_yara = yara_RC.match(filename_path, externals=externals_var, timeout=120)
             detect_yara_rule = []
             detect_yara_score = 0
             detect_yara_strings = ext_info
@@ -313,8 +362,70 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                 elif 'var_match' in match.meta:
                     var_dynamic[str(match.meta['var_match'])] = True
             result_extract = { u'RootFileType': u"CL_TYPE_" + unicode(type_file, "utf-8"), u'FileType': u"CL_TYPE_" + unicode(type_file, "utf-8"), u'FileSize': int(size_file), u'FileMD5': md5_file, u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'ContainedObjects': []}
+            #reanalyse log clamav for create JSON information
+            level_cour = 0
+            tempdir_cour = ""
+            cl_parent = "->CL_TYPE_"+root_type
+            cl_parentmd5 = md5_file
+            temp_json = {} # 'temp_dir': { 'CL_PARENT': clparent, 'LEVEL': level }
+            regexp_dir = re.compile(directory_tmp+r'\/clamav-[a-z0-9]{32}.tmp\/[a-zA-Z0-9\/\._-]+')
+            regexp_dirx = re.compile(directory_tmp+r'\/clamav-[a-z0-9]{32}.tmp')
+            for linex in serr.splitlines():
+               #parse result clamav for make json result
+               matchx = regexp_dir.search(linex)
+               if matchx:
+                   #new file
+                   filex=matchx.group(0)
+                   if os.path.isfile(filex):
+                       #file exist
+                       #check if dir exist in temp_json?
+                       (dirtmp, filenamex) = os.path.split(filex)
+                       dirx = regexp_dirx.search(dirtmp)
+                       if dirx:
+                           dirx=dirx.group(0)
+                       else:
+                           dirx=dirtmp
+                       type_file = "UNKNOWN"
+                       r=re.compile(filex+"(.*\n){0,5}LibClamAV debug:\s+Recognized\s+(?P<type>\S+)", re.MULTILINE)
+                       for m in r.finditer(serr):
+                           ret=m.groupdict() 
+                           if ret['type']:
+                               type_file = ret['type']
+                       if not dirx in temp_json:
+                           #new dir -> new level OR first file!
+                           level_cour += 1
+                           tempdir_cour = dirx
+                           temp_json[dirx] = {"level": level_cour, "cl_parent": cl_parent}
+                           find_md5 = getpath(result_extract, cl_parentmd5)
+                           list_PType = ""
+                           if find_md5:
+                               temp_json[dirx]['find_md5'] = find_md5
+                               for x in xrange(len(find_md5[0])): #keep courant field
+                                   fpmd5 = find_md5[0][0:x]
+                                   fpmd5 = fpmd5 + (u'FileType',)
+                                   type_parent = readdict(result_extract,fpmd5)
+                                   if type_parent:
+                                       list_PType += "->" + type_parent
+                               temp_json[dirx]['cl_parent'] = list_PType
+                           #scan yara and make json
+                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], type_file, patterndb, var_dynamic, extract_var_global, yara_RC, score_max)
+                       elif tempdir_cour == dirx:
+                           #new file in same level
+                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], type_file, patterndb, var_dynamic, extract_var_global, yara_RC, score_max)
+                       else:
+                           #new file in old level
+                           level_cour = temp_json[dirx]["level"]
+                           cl_parent = temp_json[dirx]["cl_parent"]
+                           tempdir_cour = dirx
+                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], type_file, patterndb, var_dynamic, extract_var_global, yara_RC, score_max)
+                       if level_cour == 1:
+                           result_extract["ContainedObjects"].append(ret)
+                       else:
+                           for pmd5 in temp_json[dirx]['find_md5']:
+                               reta = adddict(result_extract,u'ContainedObjects',ret,pmd5[0:len(pmd5)-1])
+                       cl_parentmd5 = ret['FileMD5']  
         else:
-            #extract info
+            #extract info of original json
             ext_info = extract_info(filename_path,patterndb)
             extract_var_local = {}
             for elemx in ext_info:
@@ -353,36 +464,91 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
             ret = adddict(result_extract,u'RiskScore',detect_yara_score,())
             ret = adddict(result_extract,u'Yara',detect_yara_rule,())
             ret = adddict(result_extract,u'ExtractInfo',detect_yara_strings,())
-        #verify file extract and json information
-        #regexp = re.compile(r'^clamav-[a-z0-9]{32}.tmp$')
-        regexp_dir = re.compile(r'clamav-[a-z0-9]{32}.tmp')
-        for root, directories, filenames in os.walk(directory_tmp):
-            for filename in filenames:
-                #not clamav tmp -- but for rtf extract object with name clamav-...tmp in directory clamav-...tmp, 
-                if regexp_dir.search(root):
-                    #make md5sum
-                    md5_file = unicode(md5(os.path.join(root, filename)), "utf-8")
-                    #verify if present in json
-                    find_md5 = getpath(result_extract, md5_file)
-                    if find_md5:
-                        #add info
-                        #u'PathFile': unicode(os.path.join(root,filename), "utf-8") << problème lié au doublon md5 ... 
-                        #u'RiskScore': 0, 
-                        #u'Yara': [], 
-                        #u'ExtractInfo': []
-                        #'FileParentType':
-                        for pmd5 in find_md5:
-                            #find parent type
-                            list_PType = ""
-                            for x in xrange(len(pmd5)-1):
-                                fpmd5 = pmd5[0:x]
-                                fpmd5 = fpmd5 + (u'FileType',)
-                                type_parent = readdict(result_extract,fpmd5)
-                                if type_parent:
-                                    list_PType += "->" + type_parent
-                            #add
-                            ret = adddict(result_extract,u'FileParentType',list_PType,pmd5[0:len(pmd5)-1])
-                            ret = adddict(result_extract,u'PathFile',[unicode(os.path.join(root,filename), "utf-8")],pmd5[0:len(pmd5)-1])
+            #verify file extract and json information
+            #regexp = re.compile(r'^clamav-[a-z0-9]{32}.tmp$')
+            regexp_dir = re.compile(r'clamav-[a-z0-9]{32}.tmp')
+            for root, directories, filenames in os.walk(directory_tmp):
+                for filename in filenames:
+                    #not clamav tmp -- but for rtf extract object with name clamav-...tmp in directory clamav-...tmp, 
+                    if regexp_dir.search(root):
+                        #make md5sum
+                        md5_file = unicode(md5(os.path.join(root, filename)), "utf-8")
+                        #verify if present in json
+                        find_md5 = getpath(result_extract, md5_file)
+                        if find_md5:
+                            #add info
+                            #u'PathFile': unicode(os.path.join(root,filename), "utf-8") << problème lié au doublon md5 ... 
+                            #u'RiskScore': 0, 
+                            #u'Yara': [], 
+                            #u'ExtractInfo': []
+                            #'FileParentType':
+                            for pmd5 in find_md5:
+                                #find parent type
+                                list_PType = ""
+                                for x in xrange(len(pmd5)-1):
+                                    fpmd5 = pmd5[0:x]
+                                    fpmd5 = fpmd5 + (u'FileType',)
+                                    type_parent = readdict(result_extract,fpmd5)
+                                    if type_parent:
+                                        list_PType += "->" + type_parent
+                                #add
+                                ret = adddict(result_extract,u'FileParentType',list_PType,pmd5[0:len(pmd5)-1])
+                                ret = adddict(result_extract,u'PathFile',[unicode(os.path.join(root,filename), "utf-8")],pmd5[0:len(pmd5)-1])
+                                #extract info
+                                ext_info = extract_info(os.path.join(root, filename),patterndb)
+                                extract_var_local = {}
+                                for elemx in ext_info:
+                                    for kx, vx in elemx.items():
+                                        if kx not in extract_var_local:
+                                            extract_var_local["extract_local_"+kx] = vx
+                                        elif vx not in extract_var_local[kx]:
+                                            extract_var_local["extract_local_"+kx] = extract_var_local[kx] + "||--||" + vx
+                                        if kx not in extract_var_global:
+                                            extract_var_global["extract_global_"+kx] = vx
+                                        elif vx not in extract_var_global[kx]:
+                                            extract_var_global["extract_global_"+kx] = extract_var_global[kx] + "||--||" + vx
+                                #Run YARA RULES MATCHES
+                                externals_var=dict_extract_path(result_extract,pmd5[0:len(pmd5)-1])
+                                externals_var.update(var_dynamic)
+                                #add extinfo in var_dyn
+                                externals_var.update(extract_var_local)
+                                externals_var.update(extract_var_global)
+                                ret_yara = yara_RC.match(os.path.join(root, filename), externals=externals_var, timeout=120)
+                                detect_yara_rule = []
+                                detect_yara_score = 0
+                                detect_yara_strings = ext_info
+                                for match in ret_yara:
+                                    if match.meta['weight'] > 0:
+                                        detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
+                                        if match.meta['weight'] > detect_yara_score:
+                                            detect_yara_score = match.meta['weight']
+                                            if detect_yara_score > score_max:
+                                                score_max = detect_yara_score
+                                        #detect_yara_strings += match.strings
+                                        #detect_yara_strings = list(set(detect_yara_strings))
+                                        if 'var_match' in match.meta:
+                                            var_dynamic[str(match.meta['var_match'])] = True
+                                    elif 'var_match' in match.meta:
+                                        var_dynamic[str(match.meta['var_match'])] = True
+                                ret = adddict(result_extract,u'RiskScore',detect_yara_score,pmd5[0:len(pmd5)-1])
+                                ret = adddict(result_extract,u'Yara',detect_yara_rule,pmd5[0:len(pmd5)-1])
+                                ret = adddict(result_extract,u'ExtractInfo',detect_yara_strings,pmd5[0:len(pmd5)-1])
+                        else:
+                            #find size file 
+                            size_file = os.path.getsize(os.path.join(root,filename))
+                            #CL_TYPE?
+                            level = 0
+                            type_file = "UNKNOWN"
+                            r=re.compile(os.path.join(root,filename)+"(.*\n){0,5}LibClamAV debug:\s+Recognized\s+(?P<type>\S+)", re.MULTILINE)
+                            for m in r.finditer(serr):
+                                ret=m.groupdict() 
+                                if ret['type']:
+                                    type_file = ret['type']
+                            r=re.compile(os.path.join(root,filename)+"(.*\n){0,5}LibClamAV debug:\s+in cli_magic_scandesc\s+\(reclevel:\s+(?P<level>\d+)", re.MULTILINE)
+                            for m in r.finditer(serr):
+                                ret=m.groupdict() 
+                                if ret['level']:
+                                    type_file = ret['level']
                             #extract info
                             ext_info = extract_info(os.path.join(root, filename),patterndb)
                             extract_var_local = {}
@@ -396,8 +562,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                                         extract_var_global["extract_global_"+kx] = vx
                                     elif vx not in extract_var_global[kx]:
                                         extract_var_global["extract_global_"+kx] = extract_var_global[kx] + "||--||" + vx
-                            #Run YARA RULES MATCHES
-                            externals_var=dict_extract_path(result_extract,pmd5[0:len(pmd5)-1])
+                            #yara check
+                            externals_var = {'FileParentType': "->CL_TYPE_" + root_type, 'FileType': "CL_TYPE_" + type_file, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8'), 'PathFile': os.path.join(root,filename)}
                             externals_var.update(var_dynamic)
                             #add extinfo in var_dyn
                             externals_var.update(extract_var_local)
@@ -419,80 +585,32 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                                         var_dynamic[str(match.meta['var_match'])] = True
                                 elif 'var_match' in match.meta:
                                     var_dynamic[str(match.meta['var_match'])] = True
-                            ret = adddict(result_extract,u'RiskScore',detect_yara_score,pmd5[0:len(pmd5)-1])
-                            ret = adddict(result_extract,u'Yara',detect_yara_rule,pmd5[0:len(pmd5)-1])
-                            ret = adddict(result_extract,u'ExtractInfo',detect_yara_strings,pmd5[0:len(pmd5)-1])
-                    else:
-                        #find size file 
-                        size_file = os.path.getsize(os.path.join(root,filename))
-                        #CL_TYPE?
-                        type_file = "UNKNOWN"
-                        r=re.compile(os.path.join(root,filename)+"(.*\n){0,5}LibClamAV debug:\s+Recognized\s+(?P<type>\S+)", re.MULTILINE)
-                        for m in r.finditer(serr):
-                            ret=m.groupdict() 
-                            if ret['type']:
-                                type_file = ret['type']
-                        #extract info
-                        ext_info = extract_info(os.path.join(root, filename),patterndb)
-                        extract_var_local = {}
-                        for elemx in ext_info:
-                            for kx, vx in elemx.items():
-                                if kx not in extract_var_local:
-                                    extract_var_local["extract_local_"+kx] = vx
-                                elif vx not in extract_var_local[kx]:
-                                    extract_var_local["extract_local_"+kx] = extract_var_local[kx] + "||--||" + vx
-                                if kx not in extract_var_global:
-                                    extract_var_global["extract_global_"+kx] = vx
-                                elif vx not in extract_var_global[kx]:
-                                    extract_var_global["extract_global_"+kx] = extract_var_global[kx] + "||--||" + vx
-                        #yara check
-                        ext_var = {'FileParentType': "->CL_TYPE_" + root_type, 'FileType': "CL_TYPE_" + type_file, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8'), 'PathFile': os.path.join(root,filename)}
-                        ext_var.update(var_dynamic)
-                        #add extinfo in var_dyn
-                        ext_var.update(extract_var_local)
-                        ext_var.update(extract_var_global)
-                        ret_yara = yara_RC.match(os.path.join(root, filename), externals=ext_var, timeout=120)
-                        detect_yara_rule = []
-                        detect_yara_score = 0
-                        detect_yara_strings = ext_info
-                        for match in ret_yara:
-                            if match.meta['weight'] > 0:
-                                detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
-                                if match.meta['weight'] > detect_yara_score:
-                                    detect_yara_score = match.meta['weight']
-                                    if detect_yara_score > score_max:
-                                        score_max = detect_yara_score
-                                #detect_yara_strings += match.strings
-                                #detect_yara_strings = list(set(detect_yara_strings))
-                                if 'var_match' in match.meta:
-                                    var_dynamic[str(match.meta['var_match'])] = True
-                            elif 'var_match' in match.meta:
-                                var_dynamic[str(match.meta['var_match'])] = True
-                        #TODO find good emplacemnt in object parent/child
-                        #use path of file if known in json
-                        ret = findLogPath(serr,directory_tmp,os.path.join(root,filename))
-                        root_find = ""
-                        if ret:
-                            (root_find, null_info) = os.path.split(ret)
-                        if not ret or root_find == root:
-                            result_file = { u'FileParentType': u"->CL_TYPE_" + unicode(root_type, "utf-8"), u'FileType': u"CL_TYPE_" + unicode(type_file, "utf-8"), u'FileSize': int(size_file), u'FileMD5': md5_file, u'PathFile': [unicode(os.path.join(root,filename), "utf-8")],  u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'ContainedObjects': []}
-                            result_extract["ContainedObjects"].append(result_file)
-                        elif ret:
-                            md5_file = unicode(md5(ret), "utf-8")
-                            #verify if present in json
-                            find_md5 = getpath(result_extract, md5_file)
-                            list_PType = ""
-                            if find_md5:
-                                for pmd5 in find_md5:
-                                    for x in xrange(len(pmd5)): #keep courant field
-                                        fpmd5 = pmd5[0:x]
-                                        fpmd5 = fpmd5 + (u'FileType',)
-                                        type_parent = readdict(result_extract,fpmd5)
-                                        if type_parent:
-                                            list_PType += "->" + type_parent
-                                result_file = { u'FileParentType': unicode(list_PType, "utf-8"), u'FileType': u"CL_TYPE_" + unicode(type_file, "utf-8"), u'FileSize': int(size_file), u'FileMD5': md5_file, u'PathFile': [unicode(os.path.join(root,filename), "utf-8")],  u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'ContainedObjects': []}
-                                for pmd5 in find_md5:
-                                    ret = adddict(result_extract,u'ContainedObjects',result_file,pmd5[0:len(pmd5)-1])
+                            #TODO find good emplacemnt in object parent/child
+                            #identify good level: LibClamAV debug: in cli_magic_scandesc (reclevel: 3/16)
+                            #use path of file if known in json
+                            ret = findLogPath(serr,directory_tmp,os.path.join(root,filename))
+                            root_find = ""
+                            if ret:
+                                (root_find, null_info) = os.path.split(ret)
+                            if not ret or root_find == root:
+                                result_file = { u'FileParentType': u"->CL_TYPE_" + unicode(root_type, "utf-8"), u'FileType': u"CL_TYPE_" + unicode(type_file, "utf-8"), u'FileSize': int(size_file), u'FileMD5': md5_file, u'PathFile': [unicode(os.path.join(root,filename), "utf-8")],  u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'ContainedObjects': []}
+                                result_extract["ContainedObjects"].append(result_file)
+                            elif ret:
+                                md5_file = unicode(md5(ret), "utf-8")
+                                #verify if present in json
+                                find_md5 = getpath(result_extract, md5_file)
+                                list_PType = ""
+                                if find_md5:
+                                    for pmd5 in find_md5:
+                                        for x in xrange(len(pmd5)): #keep courant field
+                                            fpmd5 = pmd5[0:x]
+                                            fpmd5 = fpmd5 + (u'FileType',)
+                                            type_parent = readdict(result_extract,fpmd5)
+                                            if type_parent:
+                                                list_PType += "->" + type_parent
+                                    result_file = { u'FileParentType': unicode(list_PType, "utf-8"), u'FileType': u"CL_TYPE_" + unicode(type_file, "utf-8"), u'FileSize': int(size_file), u'FileMD5': md5_file, u'PathFile': [unicode(os.path.join(root,filename), "utf-8")],  u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'ContainedObjects': []}
+                                    for pmd5 in find_md5:
+                                        ret = adddict(result_extract,u'ContainedObjects',result_file,pmd5[0:len(pmd5)-1])
         #actualiz score max
         result_extract[u'GlobalRiskScore'] = score_max
         result_extract[u'GlobalRiskScoreCoef'] = coefx
@@ -509,6 +627,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                 if str(v) in coef:
                     coefx += coef[str(v)]
             score_max_coef = int(round(score_max * coefx))
+            if score_max_coef > 10:
+                score_max_coef = 10
             result_extract[u'GlobalRiskScore'] = score_max_coef
             result_extract[u'GlobalRiskScoreCoef'] = coefx
     print "Phase one finish!\n"
@@ -548,7 +668,7 @@ def create_graph(filename, result_extract, verbose, path_write_png='/tmp/analysi
     color="green"
     if result_extract[u'GlobalRiskScore'] >= dangerous_score:
         color="red"
-    dot_content += 'R_0 [shape=record, label="{{' + os.path.basename(filename) + 'test\'' + '|' + str(result_extract[u'GlobalRiskScore']) + '|' + 'Coef:' + str(result_extract[u'GlobalRiskScoreCoef']) + '}|' + result_extract[u'RootFileType'].encode('utf8') + '}", color=' + color + '];\n'
+    dot_content += 'R_0 [shape=record, label="{{' + os.path.basename(filename) + '|' + str(result_extract[u'GlobalRiskScore']) + '|' + 'Coef:' + str(result_extract[u'GlobalRiskScoreCoef']) + '}|' + result_extract[u'RootFileType'].encode('utf8') + '}", color=' + color + '];\n'
     if result_extract[u'Yara']:
             dot_content += 'R_0_info [label="' + str(result_extract[u'Yara']).replace('"', '').replace("'", '').encode('utf8') + '", color=blue];\n' 
             dot_content += 'R_0 -- R_0_info [style=dotted];\n'
@@ -560,9 +680,9 @@ def create_graph(filename, result_extract, verbose, path_write_png='/tmp/analysi
     (graph,) = pydot.graph_from_dot_data(dot_content)
     graph.write_png(path_write_png)
     
-def yara_compile(yara_rules_path, externals_var={}):
+def yara_compile(yara_rules_path, ext_var={}):
     try:
-        rules = yara.compile(filepaths=yara_rules_path, externals=externals_var)
+        rules = yara.compile(filepaths=yara_rules_path, externals=ext_var)
     except Exception as e:
         loop = True
         count = 0
@@ -575,13 +695,13 @@ def yara_compile(yara_rules_path, externals_var={}):
                 sys.exit()
             if r:
                if "_bool" in str(r[0]):
-                   externals_var[str(r[0])]=False
+                   ext_var[str(r[0])]=False
                elif "_int" in str(r[0]):
-                   externals_var[str(r[0])]=-1
+                   ext_var[str(r[0])]=-1
                else:
-                   externals_var[str(r[0])]=""
+                   ext_var[str(r[0])]=""
                try:
-                   rules = yara.compile(filepaths=yara_rules_path, externals=externals_var)
+                   rules = yara.compile(filepaths=yara_rules_path, externals=ext_var)
                    loop = False
                except Exception as e:
                    error = str(e)
@@ -614,7 +734,7 @@ def main(argv):
         elif opt in ("-g", "--graph"):
             make_graphe = True
         elif opt in ("-v", "--verbose"):
-            make_graphe = True
+            verbose = True
         elif opt in ("-s", "--save_graph"):
             make_graphe = True
             (working_dir, filename) = os.path.split(arg)

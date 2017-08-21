@@ -257,10 +257,10 @@ rule dangerous_embed_file_PDF{
 		author = "Lionel PRAT"
 		version = "0.1"
 		weight = 8
-		description = "Dangerous embed file in PDF metadata"
+		description = "Dangerous embed file in PDF"
 		
 	condition:
-		FileParentType matches /->CL_TYPE_PDF$/ and FileType matches /CL_TYPE_MSEXE|CL_TYPE_ELF|CL_TYPE_MACHO|CL_TYPE_MSOLE2|CL_TYPE_MSCAB|CL_TYPE_RTF|CL_TYPE_OOXML|CL_TYPE_AUTOIT|CL_TYPE_JAVA|CL_TYPE_SWF/
+		FileParentType matches /->CL_TYPE_PDF$/ and FileType matches /CL_TYPE_MSEXE|CL_TYPE_MS-EXE|CL_TYPE_MS-DLL|CL_TYPE_ELF|CL_TYPE_MACHO|CL_TYPE_MSOLE2|CL_TYPE_MSCAB|CL_TYPE_RTF|CL_TYPE_ZIP|CL_TYPE_OOXML|CL_TYPE_AUTOIT|CL_TYPE_JAVA|CL_TYPE_SWF/
 }
 
 rule suspect_embed_file_PDF{
@@ -268,10 +268,10 @@ rule suspect_embed_file_PDF{
 		author = "Lionel PRAT"
 		version = "0.1"
 		weight = 4
-		description = "suspect embed file in PDF metadata"
+		description = "suspect embed file in PDF"
 		
 	condition:
-		FileParentType matches /->CL_TYPE_PDF$/ and not FileType matches /CL_TYPE_TEXT|CL_TYPE_BINARY_DATA|CL_TYPE_UNKNOWN/
+		FileParentType matches /->CL_TYPE_PDF$/ and not FileType matches /CL_TYPE_TEXT|CL_TYPE_BINARY_DATA|CL_TYPE_UNKNOWN|CL_TYPE_ASCII/
 }
 
 
