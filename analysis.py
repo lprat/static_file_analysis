@@ -19,7 +19,6 @@ import sys, getopt
 import collections
 import zlib
 
-#TODO: debug global score when activemime
 ## file[path], direcory_extract[path], graph[bool]
 #verify clamscan present, or verify ENV CLAMSCAN_PATH
 #verify option else display menu
@@ -239,7 +238,7 @@ def adddict(nested_dict,k,v,path,overwrite=False):
                    cour[k] += "||||" + v
     else:
         if k == u'ContainedObjects':
-			cour[k]=[v]
+            cour[k]=[v]
         else:
             cour[k]=v
     return nested_dict
@@ -562,7 +561,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                        if os.path.isfile(filex+'_activemime'):
                            #run analyz clamav
                            print "\tAnalyz interne activemime on " + str(md5_file) + "..."
-                           ret_analyz=clamscan(clamav_path, directory_tmp, filex+'_activemime', yara_RC, patterndb, coef, verbose)
+                           ret_analyz=clamscan(clamav_path, directory_tmp, filex+'_activemime', yara_RC, patterndb, {}, verbose)
                            print "\tEnd of analyz interne activemime!"
                    if not dirx in temp_json:
                        #new dir -> new level OR first file!
@@ -616,6 +615,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                         if ret_analyz:
                             #remove key global
                             ret_analyz.pop(u'RootFileType', None)
+                            if ret_analyz[u'GlobalRiskScore'] > score_max:
+                                score_max = ret_analyz[u'GlobalRiskScore']
                             ret_analyz.pop(u'GlobalRiskScore', None)
                             ret_analyz.pop(u'GlobalRiskScoreCoef', None)
                             ret[u'ContainedObjects'].append(ret_analyz)
