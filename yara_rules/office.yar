@@ -247,4 +247,42 @@ rule Filesystem_Vba_OFFICE {
 	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML/) and 1 of ($o*) and (any of ($a*) or vba_autorun_bool)
 }
 
+rule script_Office {
+	meta:
+		description = "Download macro script on URL"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 6
+		reference = "https://github.com/temesgeny/ppsx-file-generator"
+	strings:
+		$o1 = "oleObject" nocase
+		$o2 = /Target=(\"|\')script\:(http|ftp)/ nocase
+	condition:
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML/) and $o1 and $o2
+}
 
+rule ppaction_Office {
+	meta:
+		description = "Office use ppaction"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 5
+		reference = "3bff3e4fec2b6030c89e792c05f049fc"
+	strings:
+		$o1 = /action=(\"|\')ppaction\:/ nocase
+	condition:
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML/) and $o1
+}
+
+rule powershell_Office {
+	meta:
+		description = "powershell command in OFFice"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 5
+		reference = "3bff3e4fec2b6030c89e792c05f049fc"
+	strings:
+		$o1 = /target\=(\"|\')powershell/ nocase
+	condition:
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML/) and $o1
+}

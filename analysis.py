@@ -495,7 +495,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
         all_md5 = {}
         regexp_dir = re.compile(directory_tmp+r'\/clamav-[a-z0-9]{32}.tmp\/[a-zA-Z0-9\/\._-]+')
         regexp_dirx = re.compile(directory_tmp+r'\/clamav-[a-z0-9]{32}.tmp')
-        regexp_file = re.compile(directory_tmp+r'\/clamav-[a-z0-9]{32}.tmp(?:$|\s+|\n)')
+        regexp_file = re.compile(directory_tmp+r'\/clamav-[a-z0-9]{32}.tmp[^\/]')        
         #TODO: ADD SPECIAL PROCESS FOR CL_TYPE_MHTML->CL_TYPE_BINARY_DATA(ActiveMime)
         for linex in serr.splitlines():
            #parse result clamav for make json result
@@ -507,7 +507,11 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                if matchx:
                    filex=matchx.group(0)
                elif matchf:
-                   filex=matchf.group(0)
+                   tmpf = regexp_dirx.search(matchf.group(0))
+                   if tmpf:
+                       filex=tmpf.group(0)
+                   else:
+                       continue
                if os.path.isfile(filex) and json_file != filex:
                    #file exist
                    #check md5sum
@@ -549,6 +553,21 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                            ret=m.groupdict() 
                            if ret['type']:
                                type_file = ret['type']
+                   swf_add_info = {}
+                   if 'SWF' in type_file and 'SWF: File attributes:' in serr:
+                       #extract SWF file attributes
+                       r=re.compile("SWF: File attributes:(?:.*\n){1}(LibClamAV debug:\s+\*\s+[^\n]+\n){1,10}", re.MULTILINE)
+                       aswf=r.search(serr)
+                       swf_add_info = {u'SWF_attributes': {}}
+                       if aswf:
+                           r=re.compile("LibClamAV debug:\s+\*\s+(?P<type>[^\n]+)")
+                           print "SWG G0:" + str(aswf.group(0))
+                           for m in r.finditer(aswf.group(0)):
+                               retx=m.groupdict() 
+                               print "SWG RET:" + str(retx)
+                               if retx['type']:
+                                   swf_add_info[u'SWF_attributes'][retx['type'].replace(" ", "_")]=True
+                                   externals_var_extra[u'swf_attributes_'+retx['type'].replace(" ", "_").replace(".", "").lower()+'_bool']=True
                    if 'CL_TYPE_MHTML' in serr and not md5_file in all_md5 and (type_file == "UNKNOWN" or type_file == "CL_TYPE_BINARY_DATA"):
                        with open(filex, 'rb') as fx:
                            content = fx.read()
@@ -612,39 +631,43 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                        else:
                            nopresent = False
                    if nopresent:
-                        if ret_analyz:
-                            #remove key global
-                            ret_analyz.pop(u'RootFileType', None)
-                            if ret_analyz[u'GlobalRiskScore'] > score_max:
-                                score_max = ret_analyz[u'GlobalRiskScore']
-                            ret_analyz.pop(u'GlobalRiskScore', None)
-                            ret_analyz.pop(u'GlobalRiskScoreCoef', None)
-                            ret[u'ContainedObjects'].append(ret_analyz)
-                            score_max
-                        if json_find:
-                            find_md5 = getpath(result_extract, md5_file)
-                            if find_md5:
-                                for pmd5 in find_md5:
-                                        reta = adddict(result_extract,u'FileParentType',ret[u'FileParentType'],pmd5[0:len(pmd5)-1],fpresent)
-                                        reta = adddict(result_extract,u'PathFile',ret[u'PathFile'],pmd5[0:len(pmd5)-1],fpresent)
-                                        reta = adddict(result_extract,u'RiskScore',ret[u'RiskScore'],pmd5[0:len(pmd5)-1],fpresent)
-                                        reta = adddict(result_extract,u'Yara',ret[u'Yara'],pmd5[0:len(pmd5)-1],fpresent)
-                                        reta = adddict(result_extract,u'ExtractInfo',ret[u'ExtractInfo'],pmd5[0:len(pmd5)-1],fpresent)
-                                        if ret_analyz:
-                                            print "RET ANALYZ -- ADD1"
-                                            pp = pprint.PrettyPrinter(indent=4)
-                                            pp.pprint(ret)
-                                            reta = adddict(result_extract,u'ContainedObjects',ret_analyz,pmd5[0:len(pmd5)-1],fpresent)
-                            else:
-                                #md5 not present in json
-                                for pmd5 in temp_json[dirx]['find_md5']:
-                                    reta = adddict(result_extract,u'ContainedObjects',ret,pmd5[0:len(pmd5)-1])
-                        else:
-                            if level_cour == 1:
-                                result_extract["ContainedObjects"].append(ret)
-                            else:
-                                for pmd5 in temp_json[dirx]['find_md5']:
-                                    reta = adddict(result_extract,u'ContainedObjects',ret,pmd5[0:len(pmd5)-1])
+                       if swf_add_info:
+                           ret.update(swf_add_info)
+                       if ret_analyz:
+                           #remove key global
+                           ret_analyz.pop(u'RootFileType', None)
+                           if ret_analyz[u'GlobalRiskScore'] > score_max:
+                               score_max = ret_analyz[u'GlobalRiskScore']
+                           ret_analyz.pop(u'GlobalRiskScore', None)
+                           ret_analyz.pop(u'GlobalRiskScoreCoef', None)
+                           ret[u'ContainedObjects'].append(ret_analyz)
+                           score_max
+                       if json_find:
+                           find_md5 = getpath(result_extract, md5_file)
+                           if find_md5:
+                               for pmd5 in find_md5:
+                                       reta = adddict(result_extract,u'FileParentType',ret[u'FileParentType'],pmd5[0:len(pmd5)-1],fpresent)
+                                       reta = adddict(result_extract,u'PathFile',ret[u'PathFile'],pmd5[0:len(pmd5)-1],fpresent)
+                                       reta = adddict(result_extract,u'RiskScore',ret[u'RiskScore'],pmd5[0:len(pmd5)-1],fpresent)
+                                       reta = adddict(result_extract,u'Yara',ret[u'Yara'],pmd5[0:len(pmd5)-1],fpresent)
+                                       reta = adddict(result_extract,u'ExtractInfo',ret[u'ExtractInfo'],pmd5[0:len(pmd5)-1],fpresent)
+                                       if swf_add_info:
+                                           reta = adddict(result_extract,u'SWF_attributes',ret[u'SWF_attributes'],pmd5[0:len(pmd5)-1],fpresent)
+                                       if ret_analyz:
+                                           print "RET ANALYZ -- ADD1"
+                                           pp = pprint.PrettyPrinter(indent=4)
+                                           pp.pprint(ret)
+                                           reta = adddict(result_extract,u'ContainedObjects',ret_analyz,pmd5[0:len(pmd5)-1],fpresent)
+                           else:
+                               #md5 not present in json
+                               for pmd5 in temp_json[dirx]['find_md5']:
+                                   reta = adddict(result_extract,u'ContainedObjects',ret,pmd5[0:len(pmd5)-1])
+                       else:
+                           if level_cour == 1:
+                               result_extract["ContainedObjects"].append(ret)
+                           else:
+                               for pmd5 in temp_json[dirx]['find_md5']:
+                                   reta = adddict(result_extract,u'ContainedObjects',ret,pmd5[0:len(pmd5)-1])
                    cl_parentmd5 = md5_file 
         #actualiz score max
         result_extract[u'GlobalRiskScore'] = score_max

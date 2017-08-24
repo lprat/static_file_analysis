@@ -53,3 +53,14 @@ rule eval_in_JS {
     condition:
         $s1 and 2 of ($js*) and 2 of ($k*) and $s2 and $func and $var
 }
+
+rule dangerous_embed_file{
+	meta:
+		author = "Lionel PRAT"
+		version = "0.1"
+		weight = 5
+		description = "Dangerous embed file"
+		
+	condition:
+		FileParentType matches /->/ and FileType matches /CL_TYPE_MSEXE|CL_TYPE_MS-EXE|CL_TYPE_MS-DLL|CL_TYPE_ELF|CL_TYPE_MACHO|CL_TYPE_OLE2|CL_TYPE_MSOLE2|CL_TYPE_MSCAB|CL_TYPE_RTF|CL_TYPE_ZIP|CL_TYPE_OOXML|CL_TYPE_AUTOIT|CL_TYPE_JAVA|CL_TYPE_SWF/
+}
