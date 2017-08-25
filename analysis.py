@@ -495,7 +495,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
         all_md5 = {}
         regexp_dir = re.compile(directory_tmp+r'\/clamav-[a-z0-9]{32}.tmp\/[a-zA-Z0-9\/\._-]+')
         regexp_dirx = re.compile(directory_tmp+r'\/clamav-[a-z0-9]{32}.tmp')
-        regexp_file = re.compile(directory_tmp+r'\/clamav-[a-z0-9]{32}.tmp[^\/]')        
+        regexp_file = re.compile(directory_tmp+r'\/clamav-[a-z0-9]{32}.tmp([^\/]|$|\n)')        
         #TODO: ADD SPECIAL PROCESS FOR CL_TYPE_MHTML->CL_TYPE_BINARY_DATA(ActiveMime)
         for linex in serr.splitlines():
            #parse result clamav for make json result
@@ -508,10 +508,12 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                    filex=matchx.group(0)
                elif matchf:
                    tmpf = regexp_dirx.search(matchf.group(0))
+                   print "MATCHF:"+str(matchf.group(0))
                    if tmpf:
                        filex=tmpf.group(0)
                    else:
                        continue
+                   print "MATCHF OK:"+str(filex)
                if os.path.isfile(filex) and json_file != filex:
                    #file exist
                    #check md5sum
