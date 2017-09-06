@@ -13,7 +13,7 @@ import tempfile
 import yara
 import re
 import errno
-from datetime import datetime
+from datetime import datetime, timedelta
 import subprocess
 import sys, getopt
 import collections
@@ -22,7 +22,7 @@ import zlib
 ## file[path], direcory_extract[path], graph[bool]
 #verify clamscan present, or verify ENV CLAMSCAN_PATH
 #verify option else display menu
-
+#TODO: verify other md5 present in json result and find in directory
 
 #########################################################################################################
 ##### USE MSO FILE EXTRACT because clamav don't uncompress activemime
@@ -376,6 +376,10 @@ def scan_json(filename, cl_parent, cl_type, patterndb, var_dynamic, extract_var_
     return score_max, var_dynamic, extract_var_global, result_file
     
 def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef, verbose):
+    #add time in external variable yara for special ch\teck
+    now=datetime.now()
+    dd=datetime(int(now.strftime('%Y')),int(now.strftime('%m')),int(now.strftime('%d')))+timedelta(days=-7)
+    tnow7=dd.strftime("%s000")
     result_extract = {}
     coefx = 1 
     print "Extract emmbedded file(s) with clamav..."
@@ -414,6 +418,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                         result_extract = json.load(data_file)
                     except:
                         print "Error to parse json result..."
+        var_dynamic['now_7_int'] = int(tnow7)
         if result_extract:
             json_find = True
             remove_double(result_extract)
@@ -643,7 +648,6 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                            ret_analyz.pop(u'GlobalRiskScore', None)
                            ret_analyz.pop(u'GlobalRiskScoreCoef', None)
                            ret[u'ContainedObjects'].append(ret_analyz)
-                           score_max
                        if json_find:
                            find_md5 = getpath(result_extract, md5_file)
                            if find_md5:
@@ -671,6 +675,45 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                                for pmd5 in temp_json[dirx]['find_md5']:
                                    reta = adddict(result_extract,u'ContainedObjects',ret,pmd5[0:len(pmd5)-1])
                    cl_parentmd5 = md5_file 
+        #verify json with md5 not find in debug log
+        if json_find:
+            fpresent = True
+            md5_list = []
+            #parse json result and find md5 not in debug log
+            md5_free = find_md5free(result_extract)
+            #find file with md5 in tmp folder
+            for root, directories, filenames in os.walk(directory_tmp):
+                for filename in filenames:
+                    md5_file = unicode(md5(os.path.join(root, filename)), "utf-8")
+                    if md5_file in md5_free and md5_file not in md5_list:
+                        md5_list.append(md5_file)
+                        #analyz
+                        type_file = "UNKNOWN"
+                        list_PType = ""
+                        #find type in json
+                        find_type = getpath(result_extract, md5_file)
+                        if find_type:
+                            for pmd5 in find_type:
+                                #find parent type
+                                for x in xrange(len(pmd5)-1):
+                                    fpmd5 = pmd5[0:x]
+                                    fpmd5 = fpmd5 + (u'FileType',)
+                                    type_parent = readdict(result_extract,fpmd5)
+                                    if type_parent:
+                                        list_PType += "->" + type_parent
+                            find_typex = find_type[0] + (u'FileType',)
+                            type_file_tmp = readdict(result_extract,find_typex)
+                            if type_file_tmp:
+                                type_file = type_file_tmp
+                            #extract extra info of clamav
+                            externals_var_extra=dict_extract_path(result_extract,find_type[0][0:len(find_type[0])-1])
+                        score_max, var_dynamic, extract_var_global, ret = scan_json(os.path.join(root, filename), list_PType, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, score_max, md5_file, externals_var_extra)
+                        for pmd5 in find_type:
+                            reta = adddict(result_extract,u'FileParentType',ret[u'FileParentType'],pmd5[0:len(pmd5)-1],fpresent)
+                            reta = adddict(result_extract,u'PathFile',ret[u'PathFile'],pmd5[0:len(pmd5)-1],fpresent)
+                            reta = adddict(result_extract,u'RiskScore',ret[u'RiskScore'],pmd5[0:len(pmd5)-1],fpresent)
+                            reta = adddict(result_extract,u'Yara',ret[u'Yara'],pmd5[0:len(pmd5)-1],fpresent)
+                            reta = adddict(result_extract,u'ExtractInfo',ret[u'ExtractInfo'],pmd5[0:len(pmd5)-1],fpresent)
         #actualiz score max
         result_extract[u'GlobalRiskScore'] = score_max
         result_extract[u'GlobalRiskScoreCoef'] = coefx
@@ -694,6 +737,17 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
     print "Phase one finish!\n"
     return result_extract
 
+def find_md5free(nested_dict):
+    md5_list = []
+    if u'FileMD5' in nested_dict and not u'RiskScore' in nested_dict:
+        md5_list.append(nested_dict[u'FileMD5'])
+    if "ContainedObjects" in nested_dict:
+        for elem in nested_dict["ContainedObjects"]:
+            if type(elem) is dict:
+               ret = find_md5free(elem) # recursive call
+               md5_list += ret
+    return md5_list
+        
 def json2dot(nested_dict, dangerous_score, name_cour, name_parent):
     dot_content = ""
     if u'FileMD5' in nested_dict and not u'RootFileType' in nested_dict:
