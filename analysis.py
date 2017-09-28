@@ -104,7 +104,26 @@ def usage():
     print "\t -v/--verbose= : verbose mode\n"
     print "\t example: analysis.py -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules/ -g\n"
 
-#https://stackoverflow.com/questions/3431825/generating-an-md5-checksum-of-a-file
+#source: https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+def which(program):
+    import os
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None
+    
+#source: https://stackoverflow.com/questions/3431825/generating-an-md5-checksum-of-a-file
 def md5(fname):
     hash_md5 = hashlib.md5()
     with open(fname, "rb") as f:
@@ -112,7 +131,7 @@ def md5(fname):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
-#https://stackoverflow.com/questions/6027558/flatten-nested-python-dictionaries-compressing-keys
+#source: https://stackoverflow.com/questions/6027558/flatten-nested-python-dictionaries-compressing-keys
 def flatten(d, parent_key='', sep='_'):
     items = []
     for k, v in d.items():
@@ -758,7 +777,7 @@ def json2dot(nested_dict, dangerous_score, name_cour, name_parent):
             color="red"
         dot_content += name_cour + ' [shape=record, label="{{' + nested_dict[u'FileMD5'].encode('utf8') + '|' + str(nested_dict[u'RiskScore']) + '}|' + nested_dict[u'FileType'].encode('utf8') + '}", color=' + color + '];\n'    
         if nested_dict[u'Yara']:
-            dot_content += name_cour + '_info [label="' + str(nested_dict[u'Yara']).replace('"', '').replace("'", '').encode('utf8') + '", color=blue];\n'    
+            dot_content += name_cour + '_info [label="' + str(nested_dict[u'Yara']).replace('}, {', '},\n{').replace('"', '').replace("'", '').encode('utf8') + '", color=blue];\n'    
         # create link
         if color == 'red':
             dot_content += name_parent + ' -> ' + name_cour + ' [color=red];\n'
@@ -778,13 +797,13 @@ def json2dot(nested_dict, dangerous_score, name_cour, name_parent):
 
 def create_graph(filename, result_extract, verbose, path_write_png='/tmp/analysis_result.png', dangerous_score=5):
     #create DOT
-    dot_content = 'digraph Analysis {\nratio=auto;\npage="20,47";\n'
+    dot_content = 'digraph Analysis {\nratio=auto;\nnodesep="2.5 equally";\nranksep="2.5 equally";\n'
     color="green"
     if result_extract[u'GlobalRiskScore'] >= dangerous_score:
         color="red"
     dot_content += 'R_0 [shape=record, label="{{' + os.path.basename(filename) + '|' + str(result_extract[u'GlobalRiskScore']) + '|' + 'Coef:' + str(result_extract[u'GlobalRiskScoreCoef']) + '}|' + result_extract[u'RootFileType'].encode('utf8') + '}", color=' + color + '];\n'
     if result_extract[u'Yara']:
-            dot_content += 'R_0_info [label="' + str(result_extract[u'Yara']).replace('"', '').replace("'", '').encode('utf8') + '", color=blue];\n' 
+            dot_content += 'R_0_info [label="' + str(result_extract[u'Yara']).replace('}, {', '},\n{').replace('"', '').replace("'", '').encode('utf8') + '", color=blue];\n' 
             dot_content += 'R_0 -- R_0_info [style=dotted];\n'
     dot_content += json2dot(result_extract, dangerous_score, 'R_0', 'R_0')
     dot_content += '}'
