@@ -3,6 +3,7 @@
 # (c) 2017, Lionel PRAT <lionel.prat9@gmail.com>
 # Analysis by clamav extraction and yara rules
 # All rights reserved.
+#Require: pydot==1.2.3 && pyparsing==2.2.0
 import logging
 import pydot
 import hashlib
@@ -871,13 +872,13 @@ def main(argv):
             verbose = True
         elif opt in ("-s", "--save_graph"):
             make_graphe = True
-            (working_dir, filename) = os.path.split(arg)
-            if os.path.isdir(working_dir):
+            (working_dirgr, filegr) = os.path.split(arg)
+            if os.path.isdir(working_dirgr):
                 if os.path.splitext(arg)[1] != '.png':
                     arg += '.png'
                 graph_file = arg
             else:
-                print "Error: unuable to create directory: " + working_dir + ".\n"
+                print "Error: unuable to create directory: " + working_dirgr + ".\n"
                 sys.exit()
         elif opt in ("-p", "--pattern"):
             #pattern load
