@@ -91,10 +91,11 @@ def mso_file_extract(data):
 ############ END OF FUNCTION ORIGIN: https://github.com/decalage2/oletools/blob/master/oletools/olevba.py
 #########################################################################################################
 def usage():
-    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] -f path_filename -y yara_rules_path/\n\n"
+    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] -f path_filename -y yara_rules_path/\n\n"
     print "\t -h/--help : for help to use\n"
     print "\t -f/--filename= : path of filename to analysis\n"
     print "\t -y/--yara_rules_path= : path of filename to analysis\n"
+    print "\t -p/--pattern= : path of pattern filename for data miner\n"
     print "\t -c/--clamscan_path= : path of binary clamscan [>=0.99.3]\n"
     print "\t -m/--coef_path= : path of coef config file\n"
     print "\t -d/--directory_tmp= : path of directory to extract emmbedded file(s)\n"
@@ -532,12 +533,10 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                    filex=matchx.group(0)
                elif matchf:
                    tmpf = regexp_dirx.search(matchf.group(0))
-                   print "MATCHF:"+str(matchf.group(0))
                    if tmpf:
                        filex=tmpf.group(0)
                    else:
                        continue
-                   print "MATCHF OK:"+str(filex)
                if os.path.isfile(filex) and json_file != filex:
                    #file exist
                    #check md5sum
@@ -587,10 +586,10 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                        swf_add_info = {u'SWF_attributes': {}}
                        if aswf:
                            r=re.compile("LibClamAV debug:\s+\*\s+(?P<type>[^\n]+)")
-                           print "SWG G0:" + str(aswf.group(0))
+                           #print "SWG G0:" + str(aswf.group(0))
                            for m in r.finditer(aswf.group(0)):
                                retx=m.groupdict() 
-                               print "SWG RET:" + str(retx)
+                               #print "SWG RET:" + str(retx)
                                if retx['type']:
                                    swf_add_info[u'SWF_attributes'][retx['type'].replace(" ", "_")]=True
                                    externals_var_extra[u'swf_attributes_'+retx['type'].replace(" ", "_").replace(".", "").lower()+'_bool']=True
@@ -679,7 +678,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                                        if swf_add_info:
                                            reta = adddict(result_extract,u'SWF_attributes',ret[u'SWF_attributes'],pmd5[0:len(pmd5)-1],fpresent)
                                        if ret_analyz:
-                                           print "RET ANALYZ -- ADD1"
+                                           #print "RET ANALYZ -- ADD1"
                                            pp = pprint.PrettyPrinter(indent=4)
                                            pp.pprint(ret)
                                            reta = adddict(result_extract,u'ContainedObjects',ret_analyz,pmd5[0:len(pmd5)-1],fpresent)
@@ -736,6 +735,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
         #actualiz score max
         result_extract[u'GlobalRiskScore'] = score_max
         result_extract[u'GlobalRiskScoreCoef'] = coefx
+        #add info tmp dir
+        result_extract[u'TempDirExtract'] =  directory_tmp
         #calcul globalriskscore with coef
         if coef:
             scores=check_all_score(result_extract)

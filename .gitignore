@@ -102,3 +102,6 @@ ENV/
 
 #test infected
 tests/*
+
+#clamav remake
+clamav-devel/*
