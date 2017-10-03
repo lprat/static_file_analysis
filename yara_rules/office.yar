@@ -21,7 +21,7 @@ rule XMLHTTP_Vba_OFFICE {
 	strings:
 		$o1 = "Microsoft.XMLHTTP" nocase
 	condition:
-	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML/) and $o1
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and $o1
 }
 
 rule Activemime_MHTML {
@@ -62,7 +62,7 @@ rule Autorun_VBA_OFFICE
         $m = "Auto_Close" nocase fullword
         $n = "Workbook_Close" nocase fullword
     condition:
-        FileParentType matches /->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML/ and any of ($*)
+        FileParentType matches /->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/ and any of ($*)
 }
 
 rule Auto_OLE_OFFICE
@@ -77,7 +77,7 @@ rule Auto_OLE_OFFICE
     strings:
         $a = "stdole2.tlb" nocase fullword
     condition:
-        FileParentType matches /->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD/ and $a
+        FileParentType matches /->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/ and $a
 }
 
 rule OLE_EMBEDDED_OFFICE
@@ -192,7 +192,7 @@ rule Execute_Vba_OFFICE {
         $a13 = "Auto_Close" nocase fullword
         $a14 = "Workbook_Close" nocase fullword
 	condition:
-	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML/) and 1 of ($o*) and (any of ($a*) or vba_autorun_bool)
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSXL|->CL_TYPE_MSWORD/) and 1 of ($o*) and (any of ($a*) or vba_autorun_bool)
 }
 
 rule Download_Vba_OFFICE {
@@ -221,7 +221,7 @@ rule Download_Vba_OFFICE {
         $a13 = "Auto_Close" nocase fullword
         $a14 = "Workbook_Close" nocase fullword
 	condition:
-	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD/) and any of ($o*) and (any of ($a*) or vba_autorun_bool)
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and any of ($o*) and (any of ($a*) or vba_autorun_bool)
 }
 
 rule CreateObject_Vba_OFFICE {
@@ -248,7 +248,7 @@ rule CreateObject_Vba_OFFICE {
         $a13 = "Auto_Close" nocase fullword
         $a14 = "Workbook_Close" nocase fullword
 	condition:
-	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD/) and $o1 and (any of ($a*) or vba_autorun_bool)
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and $o1 and (any of ($a*) or vba_autorun_bool)
 }
 
 rule Filesystem_Vba_OFFICE {
@@ -277,7 +277,7 @@ rule Filesystem_Vba_OFFICE {
         $a13 = "Auto_Close" nocase fullword
         $a14 = "Workbook_Close" nocase fullword
 	condition:
-	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD/) and 1 of ($o*) and (any of ($a*) or vba_autorun_bool)
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and 1 of ($o*) and (any of ($a*) or vba_autorun_bool)
 }
 
 rule certutil_Vba_OFFICE {
@@ -307,7 +307,7 @@ rule certutil_Vba_OFFICE {
         $a13 = "Auto_Close" nocase fullword
         $a14 = "Workbook_Close" nocase fullword
 	condition:
-	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD/) and all of ($c*) and (1 of ($o*) or vba_fs_bool) and (any of ($a*) or vba_autorun_bool)
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and all of ($c*) and (1 of ($o*) or vba_fs_bool) and (any of ($a*) or vba_autorun_bool)
 }
 
 rule script_Office {
@@ -321,7 +321,7 @@ rule script_Office {
 		$o1 = "oleObject" nocase
 		$o2 = /Target=(\"|\')script\:(http|ftp)/ nocase
 	condition:
-	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD/) and $o1 and $o2
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and $o1 and $o2
 }
 
 rule ppaction_Office {
@@ -334,7 +334,7 @@ rule ppaction_Office {
 	strings:
 		$o1 = /action=(\"|\')ppaction\:/ nocase
 	condition:
-	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD/) and $o1
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and $o1
 }
 
 rule powershell_Office {
@@ -347,7 +347,7 @@ rule powershell_Office {
 	strings:
 		$o1 = /target\=(\"|\')powershell/ nocase
 	condition:
-	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD/) and $o1
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and $o1
 }
 
 rule Suspect_MACRO_OFFICE {
@@ -364,6 +364,6 @@ rule Suspect_MACRO_OFFICE {
         $a4 = "RtlMoveMemory" nocase fullword
         $a5 = "VirtualAlloc" nocase fullword
 	condition:
-	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD/) and any of ($a*)
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and any of ($a*)
 }
 
