@@ -203,6 +203,7 @@ rule Download_Vba_OFFICE {
 		weight = 6
 		reference = "eb680f46c268e6eac359b574538de569"
 	strings:
+	    $reg = /downloadfile/
 		$o1 = "Microsoft.XMLHTTP" nocase
 		$o2 = "URLDownloadToFile" nocase
 		$o3 = "ADODB.Stream" nocase
@@ -342,12 +343,16 @@ rule powershell_Office {
 		description = "powershell command in OFFice"
 		author = "Lionel PRAT"
         version = "0.1"
-		weight = 5
+		weight = 6
 		reference = "3bff3e4fec2b6030c89e792c05f049fc"
 	strings:
 		$o1 = /target\=(\"|\')powershell/ nocase
+		$a1 = ".Invoke" nocase fullword
+		$a2 = "new-object" nocase fullword
+		$a3 = "webclient" nocase fullword
+		$a4 = "downloadfile" nocase fullword
 	condition:
-	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and $o1
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and ($o1 or any of ($a*))
 }
 
 rule Suspect_MACRO_OFFICE {
