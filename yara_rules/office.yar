@@ -203,7 +203,6 @@ rule Download_Vba_OFFICE {
 		weight = 6
 		reference = "eb680f46c268e6eac359b574538de569"
 	strings:
-	    $reg = /downloadfile/
 		$o1 = "Microsoft.XMLHTTP" nocase
 		$o2 = "URLDownloadToFile" nocase
 		$o3 = "ADODB.Stream" nocase
@@ -351,6 +350,8 @@ rule powershell_Office {
 		$a2 = "new-object" nocase fullword
 		$a3 = "webclient" nocase fullword
 		$a4 = "downloadfile" nocase fullword
+		$a5 = "DownloadString" nocase fullword
+		$a6 = "powershell" nocase fullword
 	condition:
 	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and ($o1 or any of ($a*))
 }
@@ -372,3 +373,29 @@ rule Suspect_MACRO_OFFICE {
 	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and any of ($a*)
 }
 
+rule Suspect_DDE_OFFICE {
+	meta:
+		description = "Suspect call in macro: RegCreateKeyExA - RegSetValueExA - CallWindowProcA - RtlMoveMemory - VirtualAlloc "
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 6
+		reference = "https://sensepost.com/blog/2017/macro-less-code-exec-in-msword/"
+	strings:
+		$dde = ">DDEAUTO " nocase
+	condition:
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and $dde
+}
+
+rule Suspect_strings_OFFICE {
+	meta:
+		description = "Strings suspects in OFFICE DUCOMENTS"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 4
+	strings:
+		$a1 = "cmd.exe" nocase
+		$a2 = "powershell" nocase
+		$a3 = "\\system32\\" nocase
+	condition:
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and any of ($a*)
+}
