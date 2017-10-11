@@ -388,14 +388,30 @@ rule Suspect_DDE_OFFICE {
 
 rule Suspect_strings_OFFICE {
 	meta:
-		description = "Strings suspects in OFFICE DUCOMENTS"
+		description = "Strings suspects in OFFICE DOCUMENTS"
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 4
 	strings:
 		$a1 = "cmd.exe" nocase
 		$a2 = "powershell" nocase
-		$a3 = "\\system32\\" nocase
 	condition:
 	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and any of ($a*)
 }
+
+
+rule Suspect_SOAPWSDL_OFFICE {
+	meta:
+		description = "Suspects call wml web service in OFFICE DOCUMENTS"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 7
+		reference = "https://github.com/Voulnet/CVE-2017-8759-Exploit-sample" 
+	strings:
+		$a1 = "GetObject" nocase
+		$a2 = "soap:wsdl" nocase
+		$a3 = "://"
+	condition:
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and all of ($a*)
+}
+
