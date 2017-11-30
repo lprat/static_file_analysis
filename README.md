@@ -56,8 +56,10 @@ Phase one finish!
 
 ~~~
 
+## PNG report example for jaff
 ![alt text](https://github.com/lprat/static_analysis/raw/master/images/analysis_result.png "Tree analysis created")
 
+## JSON report example for jaff
 ```json
 {
     "ContainedObjects": [
@@ -1283,6 +1285,25 @@ Phase one finish!
     "Yara": []
 }
 ```
+
+## Requirements
+
+- clamav
+- python: yara, pydot, hashlib, zlib, json
+
+## Install
+
+~~~
+Recompile clamav with option json
+./remake_clamav.sh
+~~~
+
+## Configure
+
+- coef.conf : configuration for make coefficient score
+- pattern.db : configuration for extract pattern
+- yara_rules/ : directory contains yara rules
+
 ## Make your own yara rules
 
 For create yara rules to use in this tool, you must to have meta field:
@@ -1301,11 +1322,14 @@ Check in path yara_rules for view samples!
 ## Use tool in CRITS
 
 I added this tool in CRITS services. I created pull request in CRITS service but it's not validated yet , but you can use repository of my github in wait.
+
 [Collaborative Research Into Threats - CRITS](https://crits.github.io/)
+
 [Github CRITS services](https://github.com/crits/crits_services)
+
 [My Github account of modified CRITS services](https://github.com/lprat/crits_services/tree/extract_embedded_service)
 
-##Extra Trick for pdf analysis
+## Trick for pdf analysis
 $pdftk infector1.pdf output infector1_uncompress.pdf uncompress
 
 Contact: lionel.prat9@gmail.com
