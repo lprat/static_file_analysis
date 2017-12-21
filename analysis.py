@@ -419,7 +419,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
         print serr
     if proc.returncode:
         print "Error: clamscan could not process the file.\n"
-        sys.exit()
+        sys.exit(-1)
     #run command OK
     else:
         #find json file -- > json written to: tmp5//clamav-07c46ccfca138bfce61564c552931476.tmp
@@ -827,7 +827,7 @@ def yara_compile(yara_rules_path, ext_var={}):
             count += 1
             if count > 300:
                 print "Error: lot of Errors > 300 -- Yara rules compilations =>" + error
-                sys.exit()
+                sys.exit(-1)
             if r:
                if "_bool" in str(r[0]):
                    ext_var[str(r[0])]=False
@@ -842,7 +842,7 @@ def yara_compile(yara_rules_path, ext_var={}):
                    error = str(e)
             else:
                 print "Error: Yara rules compilations =>" + error
-                sys.exit()
+                sys.exit(-1)
     return rules
     
 def main(argv):
@@ -861,11 +861,11 @@ def main(argv):
         opts, args = getopt.getopt(argv, "hf:gc:d:y:s:j:p:m:v", ["help", "filename=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "save_graph=", "json_save=", "pattern=", "coef_path=", "verbose"])
     except getopt.GetoptError:
         usage()
-        sys.exit(2)
+        sys.exit(-1)
     for opt, arg in opts:
         if opt in ("-h", "--help"):
             usage()
-            sys.exit()
+            sys.exit(-1)
         elif opt in ("-g", "--graph"):
             make_graphe = True
         elif opt in ("-v", "--verbose"):
@@ -879,13 +879,13 @@ def main(argv):
                 graph_file = arg
             else:
                 print "Error: unuable to create directory: " + working_dirgr + ".\n"
-                sys.exit()
+                sys.exit(-1)
         elif opt in ("-p", "--pattern"):
             #pattern load
             if not os.path.isfile(arg):
                 print "Error: File: " + arg + " not exist.\n"
                 usage()
-                sys.exit()
+                sys.exit(-1)
             pattern_content = file(arg)
             for line in pattern_content:
                 words = line.split('=>>')
@@ -897,7 +897,7 @@ def main(argv):
             if not os.path.isfile(arg):
                 print "Error: File: " + arg + " not exist.\n"
                 usage()
-                sys.exit()
+                sys.exit(-1)
             tmp_content = file(arg)
             for line in tmp_content:
                 if '#' not in line and not '\n' == line:
@@ -913,7 +913,7 @@ def main(argv):
                 json_file = arg
             else:
                 print "Error: unuable to create directory: " + working_dirj + ".\n"
-                sys.exit()
+                sys.exit(-1)
         elif opt in ("-d", "--directory_tmp"):
             if not os.path.isdir(arg):
                 #make directory
@@ -921,7 +921,7 @@ def main(argv):
                     os.makedirs(arg)
                 except OSError as e:
                     print "Error: unuable to make directory temp.\n"
-                    sys.exit()
+                    sys.exit(-1)
             else:
                 #verify directory is empty
                 #ask for remove
@@ -932,7 +932,7 @@ def main(argv):
                         os.makedirs(arg)
                     except OSError as e:
                         print "Error: unuable to make directory temp.\n"
-                        sys.exit()
+                        sys.exit(-1)
             directory_tmp = arg
         elif opt in ("-f", "--filename"):
             filename = arg
@@ -940,7 +940,7 @@ def main(argv):
             if not os.path.isfile(filename):
                 print "Error: File: " + arg + " not exist.\n"
                 usage()
-                sys.exit()
+                sys.exit(-1)
         elif opt in ("-y", "--yara_rules_path"):
             #verify file exist
             if os.path.isfile(arg):
@@ -952,20 +952,20 @@ def main(argv):
                 if not yarapath:
                     print "Error: File(s) yara: " + arg + " not exist.\n"
                     usage()
-                    sys.exit()
+                    sys.exit(-1)
             else:
                 print "Error: Yara rules path: " + arg + " not exist.\n"
                 usage()
-                sys.exit()
+                sys.exit(-1)
         elif opt in ("-c", "--clamscan_path"):
             clamav_path = arg
     #verify option need
     if not filename:
         usage()
-        sys.exit()
+        sys.exit(-1)
     if not yarapath:
         usage()
-        sys.exit()
+        sys.exit(-1)
     if not directory_tmp:
         directory_tmp = tempfile.mkdtemp()
         print "Create directory temp for emmbedded file: " + directory_tmp + "\n"
@@ -973,7 +973,7 @@ def main(argv):
     if not os.path.isfile(clamav_path):
         print "Error: Binary clamscan [" + clamav_path + "] not exist.\n"
         usage()
-        sys.exit()
+        sys.exit(-1)
     #compile yara rules
     #run clamscan on file with yara rule empty and option: --gen-json --debug -d empty_rule.yara --leave-temps --tempdir=$DIR_TEMP/
     yara_RC = yara_compile(yarapath)
@@ -992,6 +992,12 @@ def main(argv):
             create_graph(filename,ret,verbose,graph_file)
         else:
             create_graph(filename,ret,verbose)
+    if not ret:
+        sys.exit(-1)
+    elif u'GlobalRiskScore' in ret:
+        sys.exit(int(ret[u'GlobalRiskScore']))
+    else:
+        sys.exit(0)
 #parse log for find json file
 #parse file for verify present in json, else parse log for find created
 

@@ -1298,6 +1298,17 @@ Recompile clamav with option json
 ./remake_clamav.sh
 ~~~
 
+### Docker install
+
+~~~
+git clone https://github.com/lprat/static_file_analysis
+cd static_file_analysis/docker
+mkdir /tmp/samples && cp file_to_analyz.pdf /tmp/samples
+docker-compose run sfa
+$python analysis.py -c /opt/static_file_analysis/clamav-devel/clamscan/clamscan -g -f /tmp/file_to_analyz.pdf -y yara_rules/  -j /tmp/log.json -p pattern.db -v &> /tmp/
+log
+~~~
+
 ## Configure
 
 - coef.conf : configuration for make coefficient score

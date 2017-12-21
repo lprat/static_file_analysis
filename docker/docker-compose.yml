@@ -1,0 +1,20 @@
+version: '2'
+
+services:
+    sfa:
+        build:
+            context: .
+            args:
+                - http_proxy=${http_proxy}
+                - https_proxy=${https_proxy}
+                - no_proxy=${no_proxy}
+        #mem_reservation: '512m'
+        #memswap_limit: '1g'
+        #mem_limit: '1g'
+        #cpuset: '1'
+        stdin_open: true
+        tty: true
+        volumes:
+            - /tmp/samples:/tmp/
+        #command: python analysis.py -c /opt/static_file_analysis/clamav-devel/clamscan/clamscan -g -f /tmp/file_to_analyz.pdf -y yara_rules/  -j /tmp/log.json -p pattern.db -v &> /tmp/log
+
