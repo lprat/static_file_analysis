@@ -1332,10 +1332,10 @@ I added this tool in CRITS services. I created pull request in CRITS service but
 ## Trick for pdf analysis
 $pdftk infector1.pdf output infector1_uncompress.pdf uncompress
 
-##Greetz
+## Greetz
 
 Stéphane L. for contributing!
 
-##Contact
+## Contact
 
 lionel.prat9@gmail.com
