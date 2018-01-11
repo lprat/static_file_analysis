@@ -1,17 +1,17 @@
 # Static analysis malicious files
 *Analysis malicious files in deep with clamscan and yara rules.*
 
-This tool in python langage that make link between clam and yara, can help you to score suspect file, make visiual tree graph for fast display embeded files (parent type, type, suspect or dangerous content), and extract indicator of compromise. It use clamav for extract embeded files and make json tree, then it send all embeded file to yara with context (in externs variables) for check rules. If rule matched in file, it give score of rule. The max rule score is added to top of tree, you can add globale score that use all score found for make coefficient score. Extra feature, the tool can extract specific pattern (URL, HOST, IP, ...).
+This tool written in python langage makes the link between clam and yara. It can help you to score suspect file, can build visual tree graph for fast display embeded files (parent type, type, suspect or dangerous content), and can compute indicator of compromission. It uses clamav in order to extract embeded files and make json tree, then it sends all embbeded files to yara with context (in externs variables) in order to check rules. If a rules matched, it gives score of this rule. The max rule score is added to top of tree, you can add globale score that use all score found for make coefficient score. Extra feature, the tool can extract specific pattern (URL, HOST, IP, ...).
 
 ## Features
-- Clamscan extract embbed files and make report json
-- Analysis json report and make tree json with consolidate informations
-- Extract pattern (pattern.db) and possibility to use in yara rules
-- Scan files embbed and root file with yara rules (+context informations in externs variables: type, parent type, pattern extract, ...)
-- Make risk score
+- Clamscan extracts embedded files and makes json report
+- Analyse json report and make json trees to consolidate informations
+- Extract patterns (pattern.db) with the ability to use the yara rules
+- Scan embedded files and root file with yara rules (+context informations in externs variables: type, parent type, pattern extract, ...)
+- Compute risk score
   - Put max score on top of tree
   - Add global score with coefficient mechanism (coef.conf) to max score
-- Create graph PNG for fast analysis
+- Create PNG graph for fast analysis
 - Output result tree json in a file
 
 ## Usage
@@ -20,11 +20,11 @@ Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com
 Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] -f path_filename -y yara_rules_path/
 
 
-	 -h/--help : for help to use
+	 -h/--help : how to use
 
-	 -f/--filename= : path of filename to analysis
+	 -f/--filename= : path of filename to analyse
 
-	 -y/--yara_rules_path= : path of filename to analysis
+	 -y/--yara_rules_path= : path of filename to analyse
 
 	 -p/--pattern= : path of pattern filename for data miner
 
@@ -36,9 +36,9 @@ Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p 
 
 	 -j/--json_save= : path filename where save json result (JSON)
 
-	 -g/--graph : generate graphe of analyz
+	 -g/--graph : generate graph of analyz
 
-	 -s/--save_graph= : path filename where save graph (PNG)
+	 -s/--save_graph= : path where to saves the graph (PNG)
 
 	 -v/--verbose= : verbose mode
 
@@ -1294,37 +1294,26 @@ Phase one finish!
 ## Install
 
 ~~~
-Recompile clamav with option json
+Recompile clamav with json options
 ./remake_clamav.sh
-~~~
-
-### Docker install
-
-~~~
-git clone https://github.com/lprat/static_file_analysis
-cd static_file_analysis/docker
-mkdir /tmp/samples && cp file_to_analyz.pdf /tmp/samples
-docker-compose run sfa
-$python analysis.py -c /opt/static_file_analysis/clamav-devel/clamscan/clamscan -g -f /tmp/file_to_analyz.pdf -y yara_rules/  -j /tmp/log.json -p pattern.db -v &> /tmp/
-log
 ~~~
 
 ## Configure
 
-- coef.conf : configuration for make coefficient score
-- pattern.db : configuration for extract pattern
-- yara_rules/ : directory contains yara rules
+- coef.conf : file configuration for evaluating coefficient score
+- pattern.db : file configuration with extracting pattern
+- yara_rules/ : directory which contains yara rules
 
 ## Make your own yara rules
 
-For create yara rules to use in this tool, you must to have meta field:
-- description: description of rule
-- weight: the score of rule
-- var_match: optionnal, you can add extern var if rule match for next check
+To create yara rules with this tool, you must use meta field:
+- description: description of the rule
+- weight: the score of the rule
+- var_match: optionnal, you can add extern var if rule match for subsequent check
 
-You can use externs variables make with context of clamav and send to yara by python script (analysis.py):
-- FileParentType: parent type of file, it's write as clamav output
-- FileType: Type of current file, it's write as clamav output
+You can use extern variables build with clamav context and send them to yara with python script (analysis.py):
+- FileParentType: parent type of file, it's written as clamav output
+- FileType: Type of current file, it's written as clamav output
 - All variables make in json report of clamav
 - All informations extracted by pattern match
 
@@ -1332,7 +1321,7 @@ Check in path yara_rules for view samples!
 
 ## Use tool in CRITS
 
-I added this tool in CRITS services. I created pull request in CRITS service but it's not validated yet , but you can use repository of my github in wait.
+I added this tool in CRITS services. I created pull request in CRITS service but it's not validated yet , but you can use my github repository so far.
 
 [Collaborative Research Into Threats - CRITS](https://crits.github.io/)
 
@@ -1343,4 +1332,10 @@ I added this tool in CRITS services. I created pull request in CRITS service but
 ## Trick for pdf analysis
 $pdftk infector1.pdf output infector1_uncompress.pdf uncompress
 
-Contact: lionel.prat9@gmail.com
+##Greetz
+
+Stéphane L. for contributing!
+
+##Contact
+
+lionel.prat9@gmail.com
