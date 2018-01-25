@@ -1300,7 +1300,7 @@ Recompile clamav with json options
 
 ### Docker install
 
--~~~
+~~~
 git clone https://github.com/lprat/static_file_analysis
 cd static_file_analysis/docker
 mkdir /tmp/samples && cp file_to_analyz.pdf /tmp/samples
@@ -1311,7 +1311,7 @@ log
 
 ### Docker install API REST
 
--~~~
+~~~
 git clone https://github.com/lprat/static_file_analysis
 cd static_file_analysis/docker
 #edit file docker-compose_api.yaml and change ENV APIKEY & UPDATE PROXY (if need)
@@ -1353,7 +1353,7 @@ I added this tool in CRITS services. I created pull request in CRITS service but
 
 Run docker compose or docker run for launch api
 
--~~~
+~~~
 docker-compose -f ./docker-compose_api.yml run sfa
 or
 docker run -ti -e "API_KEY=myapikey" -p 8000:8000 docker_sfa
@@ -1361,7 +1361,7 @@ docker run -ti -e "API_KEY=myapikey" -p 8000:8000 docker_sfa
 
 Request on port 8000:
 
--~~~
+~~~
 curl -k  -F 'file=@/home/lionel/malwares/calc.xll' -H "x-api-key: mykeyapi" https://127.0.0.1:8000/api/sfa_check_file
 Return score of file in field "risk_score" or '-1' if error to scan
 ~~~
