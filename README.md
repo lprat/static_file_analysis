@@ -1298,6 +1298,26 @@ Recompile clamav with json options
 ./remake_clamav.sh
 ~~~
 
+### Docker install
+
+-~~~
+git clone https://github.com/lprat/static_file_analysis
+cd static_file_analysis/docker
+mkdir /tmp/samples && cp file_to_analyz.pdf /tmp/samples
+docker-compose run sfa
+$python analysis.py -c /opt/static_file_analysis/clamav-devel/clamscan/clamscan -g -f /tmp/file_to_analyz.pdf -y yara_rules/  -j /tmp/log.json -p pattern.db -v &> /tmp/
+log
+~~~
+
+### Docker install API REST
+
+-~~~
+git clone https://github.com/lprat/static_file_analysis
+cd static_file_analysis/docker
+#edit file docker-compose_api.yaml and change ENV APIKEY & UPDATE PROXY (if need)
+docker-compose -f docker-compose_api.yml run sfa
+~~~
+
 ## Configure
 
 - coef.conf : file configuration for evaluating coefficient score
@@ -1328,6 +1348,23 @@ I added this tool in CRITS services. I created pull request in CRITS service but
 [Github CRITS services](https://github.com/crits/crits_services)
 
 [My Github account of modified CRITS services](https://github.com/lprat/crits_services/tree/extract_embedded_service)
+
+## Use API REST
+
+Run docker compose or docker run for launch api
+
+-~~~
+docker-compose -f ./docker-compose_api.yml run sfa
+or
+docker run -ti -e "API_KEY=myapikey" -p 8000:8000 docker_sfa
+~~~
+
+Request on port 8000:
+
+-~~~
+curl -k  -F 'file=@/home/lionel/malwares/calc.xll' -H "x-api-key: mykeyapi" https://127.0.0.1:8000/api/sfa_check_file
+Return score of file in field "risk_score" or '-1' if error to scan
+~~~
 
 ## Trick for pdf analysis
 $pdftk infector1.pdf output infector1_uncompress.pdf uncompress

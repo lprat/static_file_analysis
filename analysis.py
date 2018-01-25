@@ -103,6 +103,7 @@ def usage():
     print "\t -j/--json_save= : path filename where save json result (JSON)\n"
     print "\t -g/--graph : generate graphe of analyz\n"
     print "\t -s/--save_graph= : path filename where save graph (PNG)\n"
+    print "\t -r/--remove= : remove tempory files\n"
     print "\t -v/--verbose= : verbose mode\n"
     print "\t example: analysis.py -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules/ -g\n"
 
@@ -419,6 +420,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
         print serr
     if proc.returncode:
         print "Error: clamscan could not process the file.\n"
+        shutil.rmtree(directory_tmp)
         sys.exit(-1)
     #run command OK
     else:
@@ -796,7 +798,7 @@ def json2dot(nested_dict, dangerous_score, name_cour, name_parent):
                 dot_content += ret
             count += 1
     return dot_content
-
+	
 def create_graph(filename, result_extract, verbose, path_write_png='/tmp/analysis_result.png', dangerous_score=5):
     #create DOT
     dot_content = 'digraph Analysis {\nratio=auto;\nnodesep="2.5 equally";\nranksep="2.5 equally";\n'
@@ -815,7 +817,7 @@ def create_graph(filename, result_extract, verbose, path_write_png='/tmp/analysi
     (graph,) = pydot.graph_from_dot_data(dot_content)
     graph.write_png(path_write_png)
     
-def yara_compile(yara_rules_path, ext_var={}):
+def yara_compile(yara_rules_path, directory_tmp, ext_var={}):
     try:
         rules = yara.compile(filepaths=yara_rules_path, externals=ext_var)
     except Exception as e:
@@ -827,6 +829,7 @@ def yara_compile(yara_rules_path, ext_var={}):
             count += 1
             if count > 300:
                 print "Error: lot of Errors > 300 -- Yara rules compilations =>" + error
+                shutil.rmtree(directory_tmp)
                 sys.exit(-1)
             if r:
                if "_bool" in str(r[0]):
@@ -842,6 +845,7 @@ def yara_compile(yara_rules_path, ext_var={}):
                    error = str(e)
             else:
                 print "Error: Yara rules compilations =>" + error
+                shutil.rmtree(directory_tmp)
                 sys.exit(-1)
     return rules
     
@@ -856,9 +860,10 @@ def main(argv):
     patterndb = {}
     coef = {}
     verbose = False
+    removetmp = False
     make_graphe = False
     try:
-        opts, args = getopt.getopt(argv, "hf:gc:d:y:s:j:p:m:v", ["help", "filename=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "save_graph=", "json_save=", "pattern=", "coef_path=", "verbose"])
+        opts, args = getopt.getopt(argv, "hf:gc:d:y:s:j:p:m:vr", ["help", "filename=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "save_graph=", "json_save=", "pattern=", "coef_path=", "verbose", "remove"])
     except getopt.GetoptError:
         usage()
         sys.exit(-1)
@@ -870,6 +875,8 @@ def main(argv):
             make_graphe = True
         elif opt in ("-v", "--verbose"):
             verbose = True
+        elif opt in ("-r", "--remove"):
+            removetmp = True
         elif opt in ("-s", "--save_graph"):
             make_graphe = True
             (working_dirgr, filegr) = os.path.split(arg)
@@ -973,10 +980,12 @@ def main(argv):
     if not os.path.isfile(clamav_path):
         print "Error: Binary clamscan [" + clamav_path + "] not exist.\n"
         usage()
+        if not directory_tmp:
+            shutil.rmtree(directory_tmp)
         sys.exit(-1)
     #compile yara rules
     #run clamscan on file with yara rule empty and option: --gen-json --debug -d empty_rule.yara --leave-temps --tempdir=$DIR_TEMP/
-    yara_RC = yara_compile(yarapath)
+    yara_RC = yara_compile(yarapath, directory_tmp)
     ret = clamscan(clamav_path, directory_tmp, filename,yara_RC, patterndb, coef, verbose)
     if json_file:
         with open(json_file, 'w') as fp:
@@ -992,6 +1001,8 @@ def main(argv):
             create_graph(filename,ret,verbose,graph_file)
         else:
             create_graph(filename,ret,verbose)
+    if removetmp:
+        shutil.rmtree(directory_tmp)
     if not ret:
         sys.exit(-1)
     elif u'GlobalRiskScore' in ret:

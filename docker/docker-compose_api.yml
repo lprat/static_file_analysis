@@ -8,24 +8,20 @@ services:
                 - http_proxy=${http_proxy}
                 - https_proxy=${https_proxy}
                 - no_proxy=${no_proxy}
+        ports:
+            - "8000:8000"
+        environment:
+            - API_KEY=myapikey
+            - UPDATE_PROXY=${http_proxy}
+        restart: always
         #mem_reservation: '512m'
         #memswap_limit: '1g'
         #mem_limit: '1g'
         #cpuset: '1'
-        stdin_open: true
-        tty: true
-        ports:
-            - "8000:8000"
-        volumes:
-            - /tmp/samples:/tmp/
-        command: /bin/bash
-        #restart: always #for server API
         #logging:
         #    driver: "syslog"
         #    options:
         #        syslog-address: "tcp://172.17.0.1:514"
         #        tag: "docker_{{.ImageName}}_{{.Name}}"
-        #command: python analysis.py -c /opt/static_file_analysis/clamav-devel/clamscan/clamscan -g -f /tmp/file_to_analyz.pdf -y yara_rules/  -j /tmp/log.json -p pattern.db -v &> /tmp/log
         #curl -k  -F 'file=@/home/lionel/malwares/calc.xll' -H "x-api-key: mykeyapi" https://127.0.0.1:8000/api/sfa_check_file
         #return json with "risk_score"
-
