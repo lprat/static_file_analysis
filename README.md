@@ -1294,7 +1294,7 @@ Phase one finish!
 ## Install
 
 ~~~
-Recompile clamav with json options
+Recompile clamav with json options and HARDENING compilation
 ./remake_clamav.sh
 ~~~
 
