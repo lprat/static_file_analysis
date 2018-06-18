@@ -415,3 +415,14 @@ rule Suspect_SOAPWSDL_OFFICE {
 	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and all of ($a*)
 }
 
+
+rule Encrypted_OFFICE {
+        meta:
+                description = "Suspect encrypted OFFICE DOCUMENTS"
+                author = "Lionel PRAT"
+        version = "0.1"
+                weight = 7
+                reference = "https://isc.sans.edu/forums/diary/Malspam+pushing+ransomware+using+two+layers+of+password+protection+to+avoid+detection/23573/"
+        condition:
+            ( FileParentType matches /->CL_TYPE_MS/ or FileType matches /CL_TYPE_MS/ ) and ( Streams matches /encrypt/) 
+}
