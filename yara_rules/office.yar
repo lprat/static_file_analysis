@@ -19,7 +19,7 @@ rule XMLHTTP_Vba_OFFICE {
 		reference = "eb680f46c268e6eac359b574538de569"
 		var_match = "vba_xmlhttp_bool"
 	strings:
-		$o1 = "Microsoft.XMLHTTP" nocase
+		$o1 = "XMLHTTP" nocase
 	condition:
 	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and $o1
 }

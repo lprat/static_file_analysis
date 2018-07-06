@@ -40,6 +40,17 @@ rule Javascript_In_PDF {
       (uint32(0) == 0x46445025 or FileParentType matches /->CL_TYPE_PDF$/ or FileType matches /CL_TYPE_PDF/) and ($a or PDFStats_JavascriptObjects matches /[0-9]+/)
 }
 
+rule Encrypted_In_PDF {
+   meta:
+      description = "Detects part Encrypted in PDF"
+      author = "Lionel PRAT"
+      reference = "PDF encrypted"
+      version = "0.1"
+      weight = 6
+   condition:
+      (uint32(0) == 0x46445025 or FileParentType matches /->CL_TYPE_PDF$/ or FileType matches /CL_TYPE_PDF/) and PDFStats_Encrypted_bool
+}
+
 rule ASCIIDecode_In_PDF {
    meta:
       description = "Detects ASCII Decode in PDF"
