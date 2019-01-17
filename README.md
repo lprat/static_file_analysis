@@ -1334,6 +1334,9 @@ To create yara rules with this tool, you must use meta field:
 You can use extern variables build with clamav context and send them to yara with python script (analysis.py):
 - FileParentType: parent type of file, it's written as clamav output
 - FileType: Type of current file, it's written as clamav output
+- FileSize: Size of current fuke
+- FileMD5: MD5 of current file
+- CDBNAME: Original name of current file (exemple in MACRO file, or CHM file...)
 - All variables make in json report of clamav
 - All informations extracted by pattern match
 
