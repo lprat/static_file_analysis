@@ -25,7 +25,7 @@ rule Lnk_suspect {
         $dc14 = "sc" nocase
 		$rdc = /sc (co|en|fa|pa|q|st)/
 	condition:
-	    $lnkmagic at 0 and (any of ($dc*) or $rdc)
+	    ($lnkmagic at 0 or FileType matches /CL_TYPE_Microsoft_Windows_Shortcut_File/) and (any of ($dc*) or $rdc)
 }
 
 rule Lnk_exploit_CVE {
@@ -40,12 +40,12 @@ rule Lnk_exploit_CVE {
 	    $sploit1 = { 1f 00 e0 4f d0 20 ea 3a 69 10 a2 d8 08 00 2b 30 30 9d }
 	    $sploit2 = { 2e 1e 20 20 ec 21 ea 3a 69 10 a2 dd 08 00 2b 30 30 9d }
 	condition:
-	    $lnkmagic at 0 and any of ($sploit*)
+	    ($lnkmagic at 0 or FileType matches /CL_TYPE_Microsoft_Windows_Shortcut_File/) and any of ($sploit*)
 }
 
 rule Lnk_file {
 	meta:
-		description = "Lnk Windows shortcut"
+		description = "Windows shortcut (.lnk)"
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 1
@@ -53,5 +53,5 @@ rule Lnk_file {
 	strings:
 	    $lnkmagic = { 4c 00 00 00 01 14 02 00  00 00 00 00 c0 00 00 00 00 00 00 46 }
 	condition:
-	    $lnkmagic at 0
+	    $lnkmagic at 0 or FileType matches /CL_TYPE_Microsoft_Windows_Shortcut_File/
 }
