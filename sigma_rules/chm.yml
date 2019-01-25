@@ -1,0 +1,156 @@
+---
+action: global
+title: CHM created
+status: experimental
+description: Detects CHM created, use for correlation
+references:
+    - https://
+tags:
+    - attack.initial_access
+    - attack.t1189
+    - attack.t1192
+    - attack.t1193
+    - attack.t1194
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: low
+---
+# Windows Security Eventlog: Process Creation with Full Command Line
+logsource:
+    product: windows
+    service: mft
+    definition: 'Rule for PLASO type fs:stat'
+detection:
+    selection:
+        filename: '*/*.chm'
+---
+# Sysmon: File Creation (ID 11)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 11
+        TargetFilename: '*\*.chm'
+---
+# Sysmon: STREAM FILE (ID 15)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 15
+        TargetFilename: '*\*.chm'
+
+---
+action: global
+title: CHM opened
+status: experimental
+description: Detects CHM opened, use for correlation
+references:
+    - https://
+tags:
+    - attack.execution
+    - attack.Defense_Evasion
+    - attack.t1223
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: low
+---
+# Windows Security Eventlog: Process Creation with Full Command Line
+logsource:
+    product: windows
+    service: mft
+    definition: 'Rule for PLASO type windows:lnk:link'
+detection:
+    selection:
+        filename: '*/AppData/Roaming/Microsoft/Windows/Recent/*.chm.lnk'
+---
+# Windows Security Eventlog: Process Creation with Full Command Line
+logsource:
+    product: windows
+    service: mft
+    definition: 'Rule for PLASO type windows:prefetch:execution'
+detection:
+    selection:
+        display_name: '*/Windows/Prefetch/HH.EXE*'
+---
+# Sysmon: Process Creation (ID 1)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 1
+        Image: '*\hh.exe'
+---
+# Sysmon: Process Creation (ID 1)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 1
+        CommandLine: '*\hh.exe *'
+---
+# Sysmon: File Creation (ID 11)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 11
+        TargetFilename: '*/Windows/Prefetch/HH.EXE*'
+---
+# Windows Security Eventlog: Process Creation with Full Command Line
+logsource:
+    product: windows
+    service: security
+    definition: 'Requirements: Audit Policy : Detailed Tracking > Audit Process creation, Group Policy : Administrative Templates\System\Audit Process Creation'
+detection:
+    selection:
+        EventID: 4688
+        ProcessCommandLine: '*\hh.exe *'
+---
+# Microsoft-Windows-Application-Experience
+logsource:
+    product: windows
+    service: Microsoft-Windows-Application-Experience
+detection:
+    selection:
+        EventID: 500
+        ExePath: '*\hh.exe'
+---
+# Windows registry userassist HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{CEBFF5CD-ACE2-4F4F-9178-9926F41749EA}\\Count
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule- not possible with sysmon because rot13 encode'
+detection:
+    selection:
+        parser: 'winreg/userassist'
+        value_name: '*\hh.exe'
+---
+# Windows registry MRU
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/mru*'
+        regvalue: 'hh.exe'
+---
+# Sysmon: Registry Value Set (ID 13) MRU
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.chm\OpenWithList'
+
