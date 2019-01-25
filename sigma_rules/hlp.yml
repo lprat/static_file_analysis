@@ -17,11 +17,21 @@ detection:
     condition: selection
 level: low
 ---
-# Windows Security Eventlog: Process Creation with Full Command Line
+# Windows MFT
 logsource:
     product: windows
     service: mft
-    definition: 'Rule for PLASO type fs:stat'
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        parser: 'mft'
+        name: '*/*.hlp'
+---
+# Windows File
+logsource:
+    product: windows
+    service: file
+    definition: 'Rule for PLASO type fs:stat*'
 detection:
     selection:
         filename: '*/*.hlp'
@@ -61,19 +71,39 @@ detection:
     condition: selection
 level: low
 ---
-# Windows Security Eventlog: Process Creation with Full Command Line
+#Windows Jump list by MFT
 logsource:
     product: windows
     service: mft
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        parser: 'mft'
+        name: '*/AppData/Roaming/Microsoft/Windows/Recent/*.hlp.lnk'
+---
+#Windows Jump list by File
+logsource:
+    product: windows
+    service: link
     definition: 'Rule for PLASO type windows:lnk:link'
 detection:
     selection:
         filename: '*/AppData/Roaming/Microsoft/Windows/Recent/*.hlp.lnk'
 ---
-# Windows Security Eventlog: Process Creation with Full Command Line
+# Windows Prefetch
 logsource:
     product: windows
     service: mft
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        parser: 'mft'
+        name: '*/Windows/Prefetch/Winhlp32.exe*'
+---
+# Windows Prefetch
+logsource:
+    product: windows
+    service: prefetch
     definition: 'Rule for PLASO type windows:prefetch:execution'
 detection:
     selection:
@@ -135,6 +165,16 @@ detection:
         parser: 'winreg/userassist'
         value_name: '*\Winhlp32.exe'
 ---
+# Windows registry SIMCACHE HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\AppCompatCache
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule- not possible with sysmon because binary data'
+detection:
+    selection:
+        parser: 'winreg/appcompatcache'
+        path: '*\Winhlp32.exe'
+---
 # Windows registry MRU
 logsource:
     product: windows
@@ -144,6 +184,16 @@ detection:
     selection:
         parser: 'winreg/mru*'
         regvalue: 'Winhlp32.exe'
+---
+# Windows registry AmCache - Get sha1 of file executed (field sha1)
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule- data_type: windows:registry:amcache'
+detection:
+    selection:
+        parser: '*amcache*'
+        full_path: 'hh.exe'
 ---
 # Sysmon: Registry Value Set (ID 13) MRU
 logsource:
