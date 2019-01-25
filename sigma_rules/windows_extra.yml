@@ -1,0 +1,51 @@
+action: global
+title: Execute new program never seen
+status: experimental
+description: Detects execution of new program
+references:
+    - https://digital-forensics.sans.org/media/SANS_Poster_2018_Hunt_Evil_FINAL.pdf
+tags:
+    - attack.execution
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: low
+---
+# Windows Registry RecentApps - Plaso not parser for RecentApps https://github.com/log2timeline/plaso/tree/cd70e594168a8edad133b5a02e211d29e0762772/plaso/parsers/winreg_plugins
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule - data_type: windows:registry:key_value'
+detection:
+    selection:
+        key_path: '*\Software\Microsoft\Windows\Current Version\Search\RecentApps\*'
+---
+# Windows Registry BAM - Plaso not parser for BAM https://github.com/log2timeline/plaso/tree/cd70e594168a8edad133b5a02e211d29e0762772/plaso/parsers/winreg_plugins
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule - data_type: windows:registry:key_value'
+detection:
+    selection:
+        key_path: '*\SYSTEM\CurrentControlSet\Services\bam\UserSettings\*'
+---
+# Sysmon: Registry Value Create (ID 12) RecentApps
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Software\Microsoft\Windows\Current Version\Search\RecentApps\'
+---
+# Sysmon: Registry Value Set (ID 13) AppID
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Windows\Current Version\Search\RecentApps\*'
+---
+
