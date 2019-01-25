@@ -1,0 +1,68 @@
+---
+action: global
+title: LNK created
+status: experimental
+description: Detects LNK created, use for correlation
+references:
+    - https://
+tags:
+    - attack.initial_access
+    - attack.persistence
+    - attack.t1189
+    - attack.t1192
+    - attack.t1193
+    - attack.t1194
+    - attack.T1023
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection and not filter
+level: low
+---
+# Windows MFT
+logsource:
+    product: windows
+    service: mft
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        parser: 'mft'
+        name: '*/*.lnk'
+    filter:
+        name: 'Windows/Recent/'
+---
+# Windows File link
+logsource:
+    product: windows
+    service: link
+    definition: 'Rule for PLASO type windows:lnk:link'
+detection:
+    selection:
+        filename: '*/*.lnk'
+    filter:
+        filename: 'Windows/Recent/'
+---
+# Sysmon: File Creation (ID 11)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 11
+        TargetFilename: '*\*.lnk'
+    filter:
+        TargetFilename: 'Windows\Recent\'
+---
+# Sysmon: STREAM FILE (ID 15)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 15
+        TargetFilename: '*\*.lnk'
+    filter:
+        TargetFilename: 'Windows\Recent\'
+
+
+
