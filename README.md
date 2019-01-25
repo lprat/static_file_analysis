@@ -1372,6 +1372,9 @@ Return score of file in field "risk_score" or '-1' if error to scan
 ## Trick for pdf analysis
 $pdftk infector1.pdf output infector1_uncompress.pdf uncompress
 
+## Extra
+In Sigma_rules, you can find rule format SIGMA for detect files to analyse.
+
 ## Greetz
 
 Stéphane L. for contributing!
