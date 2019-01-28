@@ -1,0 +1,80 @@
+---
+action: global
+title: Shortcut Internet File created
+status: experimental
+description: Detects Shortcut Internet (.url)
+references:
+    - https://
+tags:
+    - attack.initial_access
+    - attack.t1189
+    - attack.t1192
+    - attack.t1193
+    - attack.t1194
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: low
+---
+# Windows MFT
+logsource:
+    product: windows
+    service: mft
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        parser: 'mft'
+        name: '*/*.url'
+---
+# Windows File
+logsource:
+    product: windows
+    service: file
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        filename: '*/*.url'
+---
+# Sysmon: File Creation (ID 11)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 11
+        TargetFilename: '*\*.url'
+---
+# Sysmon: STREAM FILE (ID 15)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 15
+        TargetFilename: '*\*.url'
+
+---
+action: global
+title: Shortcut Internet File opened
+status: experimental
+description: Detects Shortcut Internet File opened, use for correlation
+references:
+    - https://
+tags:
+    - attack.execution
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: low
+---
+# Sysmon: Registry Value Set (ID 13) MRU
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.url\OpenWithList'
+
