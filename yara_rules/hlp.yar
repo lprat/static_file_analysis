@@ -7,6 +7,7 @@ rule chm_suspect {
         version = "0.1"
 		weight = 7
 		reference = "https://github.com/offensive-security/exploitdb-bin-sploits/raw/master/bin-sploits/11615.zip"
+		tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.execution"
 	strings:
 	    $hlpmagic = { 3f 5f 03 00 }
 		$dc0 = "powershell" nocase

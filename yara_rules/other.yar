@@ -4,6 +4,7 @@ rule ACE_file {
         description = "Looks for ACE Archives"
         date = "2015-09-09"
         weight = 5
+        tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194"
     strings:
         $header = { 2a 2a 41 43 45 2a 2a }
 
@@ -60,7 +61,7 @@ rule dangerous_embed_file{
 		version = "0.1"
 		weight = 5
 		description = "Dangerous embed file"
-		
+		tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.execution"
 	condition:
 		FileParentType matches /->/ and FileType matches /CL_TYPE_MSEXE|CL_TYPE_MS-EXE|CL_TYPE_MS-DLL|CL_TYPE_ELF|CL_TYPE_MACHO|CL_TYPE_OLE2|CL_TYPE_MSOLE2|CL_TYPE_MSCAB|CL_TYPE_RTF|CL_TYPE_ZIP|CL_TYPE_OOXML|CL_TYPE_AUTOIT|CL_TYPE_JAVA|CL_TYPE_SWF/
 }

@@ -7,6 +7,7 @@ rule chm_powershell_obfusc {
         version = "0.1"
 		weight = 8
 		reference = "https://www.sans.org/cyber-security-summit/archives/file/summit-archive-1492186586.pdf"
+		tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.t1223,attack.t1086,attack.execution,attack.defense_evasion"
 	strings:
 	    $chmmagic = { 49 54 53 46 03 00 00 00  60 00 00 00 }
 	    $pws0 = "powershell" nocase
@@ -32,6 +33,7 @@ rule chm_network {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.t1223,attack.t1064,attack.execution,attack.defense_evasion"
 	strings:
 	    $chmmagic = { 49 54 53 46 03 00 00 00  60 00 00 00 }
 		$dc0 = "XMLHTTP" nocase
@@ -59,6 +61,7 @@ rule chm_activeX {
         version = "0.1"
 		weight = 7
 		reference = "https://www.cert.ssi.gouv.fr/avis/CERTA-2000-AVI-009/"
+	    tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.t1223,attack.t1064,attack.execution,attack.defense_evasion"
 	strings:
 	    $chmmagic = { 49 54 53 46 03 00 00 00  60 00 00 00 }
 		$dc0 = "CreateObject" nocase
@@ -77,6 +80,7 @@ rule chm_suspect {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+	    tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.t1223,attack.t1064,attack.execution,attack.defense_evasion"
 	strings:
 	    $chmmagic = { 49 54 53 46 03 00 00 00  60 00 00 00 }
 		$dc0 = "powershell" nocase
@@ -109,6 +113,7 @@ rule CHM_script {
 		weight = 2
 		reference = "eb680f46c268e6eac359b574538de569"
 		var_match = "chm_file_script_bool"
+		tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.t1223,attack.execution,attack.defense_evasion"
 	strings:
 	    $script1 = "<script>"
 	    $script2 = "<script "

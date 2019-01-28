@@ -4,6 +4,7 @@ rule Embedded_EXE_Cloaking {
                 author = "Florian Roth"
                 date = "2015/02/27"
                 weight = 9
+                tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.execution"
         strings:
                 $noex_png = { 89 50 4E 47 }
                 $noex_pdf = { 25 50 44 46 }

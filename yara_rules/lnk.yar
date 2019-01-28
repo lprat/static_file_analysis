@@ -6,6 +6,7 @@ rule Lnk_suspect {
         version = "0.1"
 		weight = 7
 		reference = "https://github.com/carnal0wnage/python_lnk_make"
+		tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.execution,attack.t1064"
 	strings:
 	    $lnkmagic = { 4c 00 00 00 01 14 02 00  00 00 00 00 c0 00 00 00 00 00 00 46 }
 		$dc0 = "powershell" nocase
@@ -35,6 +36,7 @@ rule Lnk_exploit_CVE {
         version = "0.1"
 		weight = 10
 		reference = "https://github.com/CCrashBandicot/helpful/blob/master/CVE-2015-0096.rb & https://www.exploit-db.com/exploits/16574"
+		tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.execution"
 	strings:
 	    $lnkmagic = { 4c 00 00 00 01 14 02 00  00 00 00 00 c0 00 00 00 00 00 00 46 }
 	    $sploit1 = { 1f 00 e0 4f d0 20 ea 3a 69 10 a2 d8 08 00 2b 30 30 9d }
