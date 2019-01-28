@@ -1,0 +1,288 @@
+---
+action: global
+title: Sidebar gadget File created
+status: experimental
+description: Detects Sidebar gadget file (.gadget)
+references:
+    - https://
+tags:
+    - attack.initial_access
+    - attack.t1189
+    - attack.t1192
+    - attack.t1193
+    - attack.t1194
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: low
+---
+# Windows MFT
+logsource:
+    product: windows
+    service: mft
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        parser: 'mft'
+        name: '*/*.gadget'
+---
+# Windows File
+logsource:
+    product: windows
+    service: file
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        filename: '*/*.gadget'
+---
+# Sysmon: File Creation (ID 11)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 11
+        TargetFilename: '*\*.gadget'
+---
+# Sysmon: STREAM FILE (ID 15)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 15
+        TargetFilename: '*\*.gadget'
+
+---
+action: global
+title: Sidebar gadget File opened
+status: experimental
+description: Detects Sidebar gadget File opened, use for correlation
+references:
+    - https://
+tags:
+    - attack.execution
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: low
+---
+#Windows Jump list by MFT
+logsource:
+    product: windows
+    service: mft
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        parser: 'mft'
+        name: '*/AppData/Roaming/Microsoft/Windows/Recent/*.gadget.lnk'
+---
+#Windows Jump list by File
+logsource:
+    product: windows
+    service: link
+    definition: 'Rule for PLASO type windows:lnk:link'
+detection:
+    selection:
+        filename: '*/AppData/Roaming/Microsoft/Windows/Recent/*.gadget.lnk'
+---
+#Windows Jump list by MFT
+logsource:
+    product: windows
+    service: mft
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        parser: 'mft'
+        name: '*\AppData\Local\Microsoft\Windows Sidebar\Gadgets\*'
+---
+#Windows Jump list by File
+logsource:
+    product: windows
+    service: link
+    definition: 'Rule for PLASO type windows:lnk:link'
+detection:
+    selection:
+        filename: '*\AppData\Local\Microsoft\Windows Sidebar\Gadgets\*'
+---
+#Windows Jump list by MFT
+logsource:
+    product: windows
+    service: mft
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        parser: 'mft'
+        name: '*\Program Files\Windows Sidebar\Shared Gadgets\*'
+---
+#Windows Jump list by File
+logsource:
+    product: windows
+    service: link
+    definition: 'Rule for PLASO type windows:lnk:link'
+detection:
+    selection:
+        filename: '*\Program Files\Windows Sidebar\Shared Gadgets\*'
+---
+#Windows Jump list by MFT
+logsource:
+    product: windows
+    service: mft
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        parser: 'mft'
+        name: '*\Program Files\Windows Sidebar\Gadgets\*'
+---
+#Windows Jump list by File
+logsource:
+    product: windows
+    service: link
+    definition: 'Rule for PLASO type windows:lnk:link'
+detection:
+    selection:
+        filename: '*\Program Files\Windows Sidebar\Gadgets\*'
+---
+# Windows Prefetch
+logsource:
+    product: windows
+    service: mft
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        parser: 'mft'
+        name: '*/Windows/Prefetch/sidebar.exe*'
+---
+# Windows Prefetch
+logsource:
+    product: windows
+    service: prefetch
+    definition: 'Rule for PLASO type windows:prefetch:execution'
+detection:
+    selection:
+        display_name: '*/Windows/Prefetch/sidebar.exe*'
+---
+# Sysmon: Process Creation (ID 1)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 1
+        Image: '*\sidebar.exe'
+---
+# Sysmon: Process Creation (ID 1)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 1
+        CommandLine: '*\sidebar.exe *'
+---
+# Sysmon: File Creation (ID 11)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 11
+        TargetFilename: '*/Windows/Prefetch/sidebar.exe*'
+---
+# Sysmon: File Creation (ID 11)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 11
+        TargetFilename: '*\Program Files\Windows Sidebar\Shared Gadgets*'
+---
+# Sysmon: File Creation (ID 11)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 11
+        TargetFilename: '*\AppData\Local\Microsoft\Windows Sidebar\Gadgets\*'
+---
+# Sysmon: File Creation (ID 11)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 11
+        TargetFilename: '*\Program Files\Windows Sidebar\Gadgets\*'
+---
+# Windows Security Eventlog: Process Creation with Full Command Line
+logsource:
+    product: windows
+    service: security
+    definition: 'Requirements: Audit Policy : Detailed Tracking > Audit Process creation, Group Policy : Administrative Templates\System\Audit Process Creation'
+detection:
+    selection:
+        EventID: 4688
+        ProcessCommandLine: '*\sidebar.exe *'
+---
+# Microsoft-Windows-Application-Experience
+logsource:
+    product: windows
+    service: Microsoft-Windows-Application-Experience
+detection:
+    selection:
+        EventID: 500
+        ExePath: '*\sidebar.exe'
+---
+# Windows registry userassist HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{CEBFF5CD-ACE2-4F4F-9178-9926F41749EA}\\Count
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule- not possible with sysmon because rot13 encode'
+detection:
+    selection:
+        parser: 'winreg/userassist'
+        value_name: '*\sidebar.exe'
+---
+# Windows registry SIMCACHE HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\AppCompatCache
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule- not possible with sysmon because binary data'
+detection:
+    selection:
+        parser: 'winreg/appcompatcache'
+        path: '*\sidebar.exe'
+---
+# Windows registry MRU
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/mru*'
+        regvalue: 'sidebar.exe'
+---
+# Windows registry AmCache - Get sha1 of file executed (field sha1)
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule- data_type: windows:registry:amcache'
+detection:
+    selection:
+        parser: '*amcache*'
+        full_path: 'sidebar.exe'
+---
+# Sysmon: Registry Value Set (ID 13) MRU
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.gadget\OpenWithList'
+
