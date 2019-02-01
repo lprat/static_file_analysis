@@ -679,9 +679,9 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                                    type_file = ret['type']
                    #Extract CDBNAME
                    origname_file = ""
-                   r=re.compile(filex+"(.*\n){0,10}LibClamAV debug:\s+CDBNAME:[^:]+:[^:]+:(?P<name>[^:]+):", re.MULTILINE)
+                   r=re.compile("LibClamAV debug:\s+CDBNAME:[^:]+:[^:]+:(?P<name>[^:]+):.*(\n.*){0,10}"+filex, re.MULTILINE)
                    if md5match:
-                       r=re.compile(matchm.group(0)+"(.*\n){0,10}LibClamAV debug:\s+CDBNAME:[^:]+:[^:]+:(?P<name>[^:]+):", re.MULTILINE)
+                       r=re.compile("LibClamAV debug:\s+CDBNAME:[^:]+:[^:]+:(?P<name>[^:]+):.*(\n.*){0,10}"+matchm.group(0), re.MULTILINE)
                    for m in r.finditer(serr):
                        ret=m.groupdict()
                        if ret['name']:
