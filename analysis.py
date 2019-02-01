@@ -496,13 +496,13 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
         if json_find:
             externals_var=dict_extract_path(result_extract,())
         else:
-            externals_var = {'RootFileType': "CL_TYPE_" + type_file, 'FileType': "CL_TYPE_" + type_file, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8')}
+            externals_var = {'RootFileType': "CL_TYPE_" + type_file, 'FileType': "CL_TYPE_" + type_file, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8'), 'PathFile': filename_path}
         #add var_dynamic in var ext
         externals_var.update(var_dynamic)
         #add extinfo in var_dyn
         externals_var.update(extract_var_local)
         externals_var.update(extract_var_global)
-        ret_yara = yara_RC.match(filename_path, externals=externals_var, timeout=120)
+        ret_yara = yara_RC.match(filename_path, externals=externals_var, timeout=120) #First yara scan on Parent file
         detect_yara_rule = []
         detect_yara_score = 0
         detect_yara_strings = ext_info
