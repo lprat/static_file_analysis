@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# (c) 2017, Lionel PRAT <lionel.prat9@gmail.com>
+# (c) 2017-2019, Lionel PRAT <lionel.prat9@gmail.com>
 # Analysis by clamav extraction and yara rules
 # All rights reserved.
 #Require: pydot==1.2.3 && pyparsing==2.2.0
@@ -92,10 +92,11 @@ def mso_file_extract(data):
 ############ END OF FUNCTION ORIGIN: https://github.com/decalage2/oletools/blob/master/oletools/olevba.py
 #########################################################################################################
 def usage():
-    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] -f path_filename -y yara_rules_path/\n\n"
+    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/\n\n"
     print "\t -h/--help : for help to use\n"
     print "\t -f/--filename= : path of filename to analysis\n"
-    print "\t -y/--yara_rules_path= : path of filename to analysis\n"
+    print "\t -y/--yara_rules_path= : path of rules yara level 1\n"
+    print "\t -a/--yara_rules_path2= : path of rules yara level 2\n"
     print "\t -p/--pattern= : path of pattern filename for data miner\n"
     print "\t -c/--clamscan_path= : path of binary clamscan [>=0.99.3]\n"
     print "\t -m/--coef_path= : path of coef config file\n"
@@ -105,7 +106,7 @@ def usage():
     print "\t -s/--save_graph= : path filename where save graph (PNG)\n"
     print "\t -r/--remove= : remove tempory files\n"
     print "\t -v/--verbose= : verbose mode\n"
-    print "\t example: analysis.py -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules/ -g\n"
+    print "\t example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -g\n"
 
 #source: https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
 def which(program):
@@ -352,8 +353,8 @@ def remove_double(nested_dict):
                     remove_double(elem)
         elif type(v) is dict: # v is a dict
             remove_double(v) # recursive call
-  
-def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, extract_var_global, yara_RC, score_max, md5_file, externals_var_extra={}):
+
+def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra={}):
     #find size file 
     size_file = os.path.getsize(filename)
     #extract info
@@ -379,10 +380,33 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
     #add extinfo in var_dyn
     externals_var.update(extract_var_local)
     externals_var.update(extract_var_global)
-    ret_yara = yara_RC.match(filename, externals=externals_var, timeout=120)
     detect_yara_rule = []
     detect_yara_score = 0
     detect_yara_strings = ext_info
+    #Check YARA rules level 1
+    ret_yara = yara_RC.match(filename, externals=externals_var, timeout=120)
+    check_level2 = {}
+    for match in ret_yara:
+        if 'check_level2' in match.meta:
+            #split "val1,val2"
+            check2vals=str(match.meta['check_level2']).split(",")
+            for check2val in check2vals:
+                check_level2[str(check2val)] = True
+        if match.meta['weight'] > 0:
+            detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
+            if match.meta['weight'] > detect_yara_score:
+                detect_yara_score = match.meta['weight']
+                if detect_yara_score > score_max:
+                    score_max = detect_yara_score
+            #detect_yara_strings += match.strings
+            #detect_yara_strings = list(set(detect_yara_strings))
+            if 'var_match' in match.meta:
+                var_dynamic[str(match.meta['var_match'])] = True
+        elif 'var_match' in match.meta:
+            var_dynamic[str(match.meta['var_match'])] = True
+    #Check YARA rules level 2
+    externals_var.update(check_level2)
+    ret_yara = yara_RC2.match(filename, externals=externals_var, timeout=120)
     for match in ret_yara:
         if match.meta['weight'] > 0:
             detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
@@ -401,7 +425,7 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
         result_file[u'CDBNAME']=cdbname
     return score_max, var_dynamic, extract_var_global, result_file
     
-def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef, verbose):
+def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patterndb, coef, verbose):
     #add time in external variable yara for special ch\teck
     now=datetime.now()
     dd=datetime(int(now.strftime('%Y')),int(now.strftime('%m')),int(now.strftime('%d')))+timedelta(days=-7)
@@ -502,10 +526,33 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
         #add extinfo in var_dyn
         externals_var.update(extract_var_local)
         externals_var.update(extract_var_global)
-        ret_yara = yara_RC.match(filename_path, externals=externals_var, timeout=120) #First yara scan on Parent file
         detect_yara_rule = []
         detect_yara_score = 0
         detect_yara_strings = ext_info
+        #Check YARA rules level 1
+        ret_yara = yara_RC.match(filename_path, externals=externals_var, timeout=120) #First yara scan on Parent file -- Level 1
+        check_level2 = {}
+        for match in ret_yara:
+            if 'check_level2' in match.meta:
+                #split "val1,val2"
+                check2vals=str(match.meta['check_level2']).split(",")
+                for check2val in check2vals:
+                    check_level2[str(check2val)] = True
+            if match.meta['weight'] > 0:
+                detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
+                if match.meta['weight'] > detect_yara_score:
+                    detect_yara_score = match.meta['weight']
+                    if detect_yara_score > score_max:
+                       score_max = detect_yara_score
+                #detect_yara_strings += match.strings
+                #detect_yara_strings = list(set(detect_yara_strings))
+                if 'var_match' in match.meta:
+                    var_dynamic[str(match.meta['var_match'])] = True
+            elif 'var_match' in match.meta:
+                var_dynamic[str(match.meta['var_match'])] = True
+        #Check YARA rules level 2
+        externals_var.update(check_level2)
+        ret_yara = yara_RC2.match(filename_path, externals=externals_var, timeout=120) #Second yara scan on Parent file -- Level 2
         for match in ret_yara:
             if match.meta['weight'] > 0:
                 detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
@@ -685,7 +732,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                                    list_PType += "->" + type_parent
                            temp_json[dirx]['cl_parent'] = list_PType
                        #scan yara and make json
-                       score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, score_max, md5_file, externals_var_extra)
+                       score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra)
                        temp_json[dirx]['files'].append(md5_file)
                        if matchx:
                            all_md5[md5_file] = 0
@@ -694,7 +741,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                    elif tempdir_cour == dirx:
                        #new file in same level
                        if not md5_file in temp_json[dirx]['files']:
-                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, score_max, md5_file, externals_var_extra)
+                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra)
                            temp_json[dirx]['files'].append(md5_file)
                            if matchx:
                                all_md5[md5_file] = 0
@@ -708,7 +755,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                        cl_parent = temp_json[dirx]["cl_parent"]
                        tempdir_cour = dirx
                        if not md5_file in temp_json[dirx]['files']:
-                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, score_max, md5_file, externals_var_extra)
+                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra)
                            temp_json[dirx]['files'].append(md5_file)
                            if matchx:
                                all_md5[md5_file] = 0
@@ -788,7 +835,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, patterndb, coef
                                 type_file = type_file_tmp
                             #extract extra info of clamav
                             externals_var_extra=dict_extract_path(result_extract,find_type[0][0:len(find_type[0])-1])
-                        score_max, var_dynamic, extract_var_global, ret = scan_json(os.path.join(root, filename), list_PType, "", type_file, patterndb, var_dynamic, extract_var_global, yara_RC, score_max, md5_file, externals_var_extra)
+                        score_max, var_dynamic, extract_var_global, ret = scan_json(os.path.join(root, filename), list_PType, "", type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra)
                         for pmd5 in find_type:
                             reta = adddict(result_extract,u'FileParentType',ret[u'FileParentType'],pmd5[0:len(pmd5)-1],fpresent)
                             reta = adddict(result_extract,u'PathFile',ret[u'PathFile'],pmd5[0:len(pmd5)-1],fpresent)
@@ -917,13 +964,14 @@ def main(argv):
     graph_file = ""
     json_file = ""
     yarapath = {}
+    yarapath2 = {}
     patterndb = {}
     coef = {}
     verbose = False
     removetmp = False
     make_graphe = False
     try:
-        opts, args = getopt.getopt(argv, "hf:gc:d:y:s:j:p:m:vr", ["help", "filename=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "save_graph=", "json_save=", "pattern=", "coef_path=", "verbose", "remove"])
+        opts, args = getopt.getopt(argv, "hf:gc:d:y:a:s:j:p:m:vr", ["help", "filename=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "yara_rules_path2=", "save_graph=", "json_save=", "pattern=", "coef_path=", "verbose", "remove"])
     except getopt.GetoptError:
         usage()
         sys.exit(-1)
@@ -1017,11 +1065,27 @@ def main(argv):
                     for filen in filenames:
                         yarapath[str(os.path.basename(filen))] = str(os.path.join(root, filen))
                 if not yarapath:
-                    print "Error: File(s) yara: " + arg + " not exist.\n"
+                    print "Error: File(s) yara level 1: " + arg + " not exist.\n"
                     usage()
                     sys.exit(-1)
             else:
-                print "Error: Yara rules path: " + arg + " not exist.\n"
+                print "Error: Yara rules path level1: " + arg + " not exist.\n"
+                usage()
+                sys.exit(-1)
+        elif opt in ("-a", "--yara_rules_path2"):
+            #verify file exist
+            if os.path.isfile(arg):
+                yarapath2[str(os.path.basename(arg))] = str(arg)
+            elif os.path.isdir(arg):
+                for root, directories, filenames in os.walk(arg):
+                    for filen in filenames:
+                        yarapath2[str(os.path.basename(filen))] = str(os.path.join(root, filen))
+                if not yarapath2:
+                    print "Error: File(s) yara rules level 2: " + arg + " not exist.\n"
+                    usage()
+                    sys.exit(-1)
+            else:
+                print "Error: Yara rules path level 2: " + arg + " not exist.\n"
                 usage()
                 sys.exit(-1)
         elif opt in ("-c", "--clamscan_path"):
@@ -1044,9 +1108,21 @@ def main(argv):
             shutil.rmtree(directory_tmp)
         sys.exit(-1)
     #compile yara rules
+    #Make Yara rules on 2 level order, for:
+    # - Gain fast
+    # - Avoid multi rules (same) for each extension
+    #First stage (format-specific rule):
+    # - check file type (reg, chm, pdf, exe,...) and potential content risk (autoopen, script, ...). Then add var yara for check only element linked with extension in level 2
+    # - check file origin: embed file
+    #Second stage (global search same for multi format):
+    #  - check if unknown file type (extension): entropy, internal embed (binwalk)
+    #  - check risk file: obfuscate, cypher, packed
+    #  - check dangerous elements (Mitre Attack): registry, command, 
+    #  - check IOC familly malware: 
     #run clamscan on file with yara rule empty and option: --gen-json --debug -d empty_rule.yara --leave-temps --tempdir=$DIR_TEMP/
     yara_RC = yara_compile(yarapath, directory_tmp)
-    ret = clamscan(clamav_path, directory_tmp, filename,yara_RC, patterndb, coef, verbose)
+    yara_RC2 = yara_compile(yarapath2, directory_tmp)
+    ret = clamscan(clamav_path, directory_tmp, filename,yara_RC, yara_RC2, patterndb, coef, verbose)
     if json_file:
         with open(json_file, 'w') as fp:
             json.dump(ret, fp, sort_keys=True, indent=4)
