@@ -688,7 +688,6 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                            origname_file = ret['name']
                    if not origname_file and " OLE2 " in serr:
                        #LibClamAV debug: OLE2 [handler_otf]: Dumping '_1_ole' to '/tmp/tmpwFCXje/clamav-0e6879498b7c81df08ddb7d7ee1f0e9d.tmp'
-                       print "ENTER OLE "+filex
                        r=re.compile("LibClamAV debug:\s+OLE2\s+\[[^\]]+\]\:\s+Dumping\s+\'(?P<name>[^\']+)\'\s+to\s+\'"+filex+"\'", re.MULTILINE)
                        for m in r.finditer(serr):
                            ret=m.groupdict()
