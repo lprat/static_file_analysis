@@ -45,8 +45,8 @@ def run_sfa(file):
         try:
             file.save(temp_file_name)
             new_env = dict(os.environ)
-            #python analysis.py -c /opt/static_file_analysis/clamav-devel/clamscan/clamscan -f /tmp/file_to_analyz.pdf -y yara_rules/  -j /tmp/log.json -p pattern.db -v
-            args = ['/usr/bin/python', '/opt/static_file_analysis/analysis.py', '-c', '/opt/static_file_analysis/clamav-devel/clamscan/clamscan' , '-f', temp_file_name, '-y', '/opt/static_file_analysis/yara_rules/', '-m', '/opt/static_file_analysis/coef.conf', '-r']
+            #python analysis.py -c /opt/static_file_analysis/clamav-devel/clamscan/clamscan -f /tmp/file_to_analyz.pdf -y yara_rules1/ -a yara_rules2/ -j /tmp/log.json -p pattern.db -v
+            args = ['/usr/bin/python', '/opt/static_file_analysis/analysis.py', '-c', '/opt/static_file_analysis/clamav-devel/clamscan/clamscan' , '-f', temp_file_name, '-y', '/opt/static_file_analysis/yara_rules1/', '-a', '/opt/static_file_analysis/yara_rules2/', '-m', '/opt/static_file_analysis/coef.conf', '-r']
             proc = subprocess.Popen(args, env=new_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd='/opt/static_file_analysis/')
             output, serr = proc.communicate()
             score = proc.returncode

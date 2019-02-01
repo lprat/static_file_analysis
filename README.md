@@ -8,6 +8,15 @@ This tool written in python langage makes the link between clam and yara. It can
 - Analyse json report and make json trees to consolidate informations
 - Extract patterns (pattern.db) with the ability to use the yara rules
 - Scan embedded files and root file with yara rules (+context informations in externs variables: type, parent type, pattern extract, ...)
+  - 2 level of yara rules (order), for gain fast and avoid multi rules (same) for each extension
+    - First level: format-specific rule 
+      - check file type (reg, chm, exe, dll, ...) and potential risk according by extension (script, autopen, ...).Then push (by external variable) check only element linked with extension for level 2
+      - check file origin: embed file
+    - Second level: global rules same for multi format
+      - check if unknown file type (extension): entropy, ...
+      - check suspect content file: obfuscate, cypher, packed, ...
+      - check dangerous elements (Mitre Attack): registry, command, ... 
+      - check IOC familly malware (MISP import)
 - Compute risk score
   - Put max score on top of tree
   - Add global score with coefficient mechanism (coef.conf) to max score
@@ -17,14 +26,16 @@ This tool written in python langage makes the link between clam and yara. It can
 ## Usage
 ~~~
 Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com
-Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] -f path_filename -y yara_rules_path/
+Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/
 
 
 	 -h/--help : how to use
 
 	 -f/--filename= : path of filename to analyse
 
-	 -y/--yara_rules_path= : path of filename to analyse
+	 -y/--yara_rules_path= : path of rules yara level 1
+
+         -a/--yara_rules_path2= : path of rules yara level 2
 
 	 -p/--pattern= : path of pattern filename for data miner
 
@@ -42,7 +53,7 @@ Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p 
 
 	 -v/--verbose= : verbose mode
 
-	 example: analysis.py -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules/ -g
+	 example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -g
 
 lionel@local:~/static_analysis$ python analysis.py -c clamav-devel/clamscan/clamscan -g -f tests/pdf/jaff.pdf -y yara_rules/  -j /tmp/log.json -p pattern.db
 Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com
@@ -1329,9 +1340,11 @@ docker-compose -f docker-compose_api.yml run sfa
 To create yara rules with this tool, you must use meta field:
 - description: description of the rule
 - weight: the score of the rule
-- var_match: optionnal, you can add extern var if rule match for subsequent check
+- var_match: optionnal, you can add extern var if rule match for subsequent check (variable global - on all files)
+- check_level2: optionnal, you can add extern var used to choice level 2 check (value: "check_command_bool,check_registry_bool") (variable local - only on current files)
 
 You can use extern variables build with clamav context and send them to yara with python script (analysis.py):
+- PathFile: filename and path
 - FileParentType: parent type of file, it's written as clamav output
 - FileType: Type of current file, it's written as clamav output
 - FileSize: Size of current fuke
