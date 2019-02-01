@@ -713,7 +713,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                        if os.path.isfile(filex+'_activemime'):
                            #run analyz clamav
                            print "\tAnalyz interne activemime on " + str(md5_file) + "..."
-                           ret_analyz=clamscan(clamav_path, directory_tmp, filex+'_activemime', yara_RC, patterndb, {}, verbose)
+                           ret_analyz=clamscan(clamav_path, directory_tmp, filex+'_activemime', yara_RC, yara_RC2, patterndb, {}, verbose)
                            print "\tEnd of analyz interne activemime!"
                    if not dirx in temp_json:
                        #new dir -> new level OR first file!
