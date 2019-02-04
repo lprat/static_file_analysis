@@ -893,7 +893,10 @@ def json2dot(nested_dict, dangerous_score, name_cour, name_parent):
         #if u'GlobalRiskScore' in nested_dict and nested_dict[u'GlobalRiskScore'] >= dangerous_score:
         if nested_dict[u'RiskScore'] >= dangerous_score:
             color="red"
-        dot_content += name_cour + ' [shape=record, label="{{' + nested_dict[u'FileMD5'].encode('utf8') + '|' + str(nested_dict[u'RiskScore']) + '}|' + nested_dict[u'FileType'].encode('utf8') + '}", color=' + color + '];\n'    
+        if u'CDBNAME' in nested_dict:
+            dot_content += name_cour + ' [shape=record, label="{{' + nested_dict[u'CDBNAME'].encode('utf8') + "(" + nested_dict[u'FileMD5'].encode('utf8') + ')|' + str(nested_dict[u'RiskScore']) + '}|' + nested_dict[u'FileType'].encode('utf8') + '}", color=' + color + '];\n'    
+        else:
+            dot_content += name_cour + ' [shape=record, label="{{' + nested_dict[u'FileMD5'].encode('utf8') + '|' + str(nested_dict[u'RiskScore']) + '}|' + nested_dict[u'FileType'].encode('utf8') + '}", color=' + color + '];\n'    
         if nested_dict[u'Yara']:
             dot_content += name_cour + '_info [label="' + str(nested_dict[u'Yara']).replace('}, {', '},\n{').replace('"', '').replace("'", '').encode('utf8') + '", color=blue];\n'    
         # create link
