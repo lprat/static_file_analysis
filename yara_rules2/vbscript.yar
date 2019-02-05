@@ -251,7 +251,7 @@ rule vbscript_wmi {
 	    tag = "attack.defense_evasion,attack.collection,attack.persistence"
 	strings:
 		$elem0 = "\\root\\cimv2" nocase
-		$elem1 = ".ExecQuery" nocase
+		//$elem1 = ".ExecQuery" nocase // false positive
 		$elem2 = "Winmgmts:" nocase
 		$elem3 = "WbemScripting.SWbemLocator" nocase
 	condition:
