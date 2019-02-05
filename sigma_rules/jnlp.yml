@@ -200,5 +200,5 @@ logsource:
 detection:
     selection:
         EventID: 13
-        TargetObject: '*\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.jnlp\OpenWithList'
+        TargetObject: '*\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.jnlp\OpenWithList\MRUList'
 

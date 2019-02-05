@@ -1,0 +1,37 @@
+action: global
+title: Detect new profile Network
+status: experimental
+description: Detect new profile Network
+references:
+    - https://
+tags:
+    - attack.exfiltration
+    - attack.t1011
+    - attack.Initial_access
+    - attack.t1200
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Detect new profile Network
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\CurrentVersion\NetworkList\Profiles\'
+---
+# Windows registry - Detect new profile Network
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\NetworkList\\Profiles\\'
+        regvalue: '*Override'
+---

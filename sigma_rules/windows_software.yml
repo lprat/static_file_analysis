@@ -1,0 +1,54 @@
+action: global
+title: Install windows software
+status: experimental
+description: Install windows software
+references:
+    - https://
+tags:
+    - attack.execution
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Install windows software
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\CurrentVersion\Uninstall\*\InstallSource'
+---
+# Sysmon: Registry New Value (ID 12) Install windows software
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\CurrentVersion\Uninstall\*\UrlUpdateInfo'
+---
+# Windows registry - Install windows software
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\\Uninstall\\'
+        regvalue: '*UrlUpdateInfo'
+---
+# Windows registry - Install windows software
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\\Uninstall\\'
+        regvalue: '*InstallSource'
+---

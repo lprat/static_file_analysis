@@ -1,0 +1,37 @@
+action: global
+title: Detect new device
+status: experimental
+description: Detect new device
+references:
+    - https://
+tags:
+    - attack.exfiltration
+    - attack.t1052
+    - attack.Initial_access
+    - attack.t1200
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12)Detect new device
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Devices\*\FriendlyName'
+---
+# Windows registry - Detect new device
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Devices\\'
+        regvalue: '*FriendlyName'
+---

@@ -1,0 +1,3436 @@
+---
+action: global
+title: Registry File created
+status: experimental
+description: Detects REG file created, use for correlation
+references:
+    - https://
+tags:
+    - attack.initial_access
+    - attack.t1189
+    - attack.t1192
+    - attack.t1193
+    - attack.t1194
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: low
+---
+# Windows MFT
+logsource:
+    product: windows
+    service: mft
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        parser: 'mft'
+        name: '*/*.reg'
+---
+# Windows File
+logsource:
+    product: windows
+    service: file
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        filename: '*/*.reg'
+---
+# Sysmon: File Creation (ID 11)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 11
+        TargetFilename: '*\*.reg'
+---
+# Sysmon: STREAM FILE (ID 15)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 15
+        TargetFilename: '*\*.reg'
+
+---
+action: global
+title: Registry File opened
+status: experimental
+description: Detects REG file opened or registry command invok, use for correlation
+references:
+    - https://
+tags:
+    - attack.execution
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: low
+---
+#Windows Jump list by MFT
+logsource:
+    product: windows
+    service: mft
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        parser: 'mft'
+        name: '*/AppData/Roaming/Microsoft/Windows/Recent/*.reg.lnk'
+---
+#Windows Jump list by File
+logsource:
+    product: windows
+    service: link
+    definition: 'Rule for PLASO type windows:lnk:link'
+detection:
+    selection:
+        filename: '*/AppData/Roaming/Microsoft/Windows/Recent/*.reg.lnk'
+---
+# Windows Prefetch
+logsource:
+    product: windows
+    service: mft
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        parser: 'mft'
+        name: '*/Windows/Prefetch/REGEDIT.EXE*'
+---
+# Windows Prefetch
+logsource:
+    product: windows
+    service: prefetch
+    definition: 'Rule for PLASO type windows:prefetch:execution'
+detection:
+    selection:
+        display_name: '*/Windows/Prefetch/REGEDIT.EXE*'
+---
+# Windows Prefetch
+logsource:
+    product: windows
+    service: mft
+    definition: 'Rule for PLASO type fs:stat*'
+detection:
+    selection:
+        parser: 'mft'
+        name: '*/Windows/Prefetch/REG.EXE*'
+---
+# Windows Prefetch
+logsource:
+    product: windows
+    service: prefetch
+    definition: 'Rule for PLASO type windows:prefetch:execution'
+detection:
+    selection:
+        display_name: '*/Windows/Prefetch/REG.EXE*'
+---
+# Sysmon: Process Creation (ID 1)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 1
+        Image: '*\regedit.exe'
+---
+# Sysmon: Process Creation (ID 1)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 1
+        CommandLine: '*\regedit.exe *'
+---
+# Sysmon: Process Creation (ID 1)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 1
+        Image: '*\reg.exe'
+---
+# Sysmon: Process Creation (ID 1)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 1
+        CommandLine: '*reg.exe *'
+---
+# Sysmon: Process Creation (ID 1)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 1
+        CommandLine: '*reg *'
+---
+# Sysmon: File Creation (ID 11)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 11
+        TargetFilename: '*/Windows/Prefetch/REGEDIT.EXE*'
+---
+# Sysmon: File Creation (ID 11)
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 11
+        TargetFilename: '*/Windows/Prefetch/REG.EXE*'
+---
+# Windows Security Eventlog: Process Creation with Full Command Line
+logsource:
+    product: windows
+    service: security
+    definition: 'Requirements: Audit Policy : Detailed Tracking > Audit Process creation, Group Policy : Administrative Templates\System\Audit Process Creation'
+detection:
+    selection:
+        EventID: 4688
+        ProcessCommandLine: '*\regedit.exe *'
+---
+# Windows Security Eventlog: Process Creation with Full Command Line
+logsource:
+    product: windows
+    service: security
+    definition: 'Requirements: Audit Policy : Detailed Tracking > Audit Process creation, Group Policy : Administrative Templates\System\Audit Process Creation'
+detection:
+    selection:
+        EventID: 4688
+        ProcessCommandLine: '*reg.exe *'
+---
+# Windows Security Eventlog: Process Creation with Full Command Line
+logsource:
+    product: windows
+    service: security
+    definition: 'Requirements: Audit Policy : Detailed Tracking > Audit Process creation, Group Policy : Administrative Templates\System\Audit Process Creation'
+detection:
+    selection:
+        EventID: 4688
+        ProcessCommandLine: '*reg *'
+---
+# Microsoft-Windows-Application-Experience
+logsource:
+    product: windows
+    service: Microsoft-Windows-Application-Experience
+detection:
+    selection:
+        EventID: 500
+        ExePath: '*\regedit.exe'
+---
+# Microsoft-Windows-Application-Experience
+logsource:
+    product: windows
+    service: Microsoft-Windows-Application-Experience
+detection:
+    selection:
+        EventID: 500
+        ExePath: '*\reg.exe'
+---
+# Windows registry userassist HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{CEBFF5CD-ACE2-4F4F-9178-9926F41749EA}\\Count
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule- not possible with sysmon because rot13 encode'
+detection:
+    selection:
+        parser: 'winreg/userassist'
+        value_name: '*\regedit.exe'
+---
+# Windows registry userassist HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{CEBFF5CD-ACE2-4F4F-9178-9926F41749EA}\\Count
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule- not possible with sysmon because rot13 encode'
+detection:
+    selection:
+        parser: 'winreg/userassist'
+        value_name: '*reg.exe'
+---
+# Windows registry SIMCACHE HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\AppCompatCache
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule- not possible with sysmon because binary data'
+detection:
+    selection:
+        parser: 'winreg/appcompatcache'
+        path: '*\regedit.exe'
+---
+# Windows registry SIMCACHE HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\AppCompatCache
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule- not possible with sysmon because binary data'
+detection:
+    selection:
+        parser: 'winreg/appcompatcache'
+        path: '*\reg.exe'
+---
+# Windows registry MRU
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/mru*'
+        regvalue: 'regedit.exe'
+---
+# Windows registry MRU
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/mru*'
+        regvalue: 'reg.exe'
+---
+# Windows registry AmCache - Get sha1 of file executed (field sha1)
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule- data_type: windows:registry:amcache'
+detection:
+    selection:
+        parser: '*amcache*'
+        full_path: 'regedit.exe'
+---
+# Windows registry AmCache - Get sha1 of file executed (field sha1)
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule- data_type: windows:registry:amcache'
+detection:
+    selection:
+        parser: '*amcache*'
+        full_path: 'reg.exe'
+---
+# Sysmon: Registry Value Set (ID 13) MRU
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.reg\OpenWithList\MRUList'
+---
+action: global
+title: Registry Change Default File Association
+status: experimental
+description: Registry Change Default File Association
+references:
+    - https://attack.mitre.org/techniques/T1042/
+tags:
+    - attack.t1042
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection and not filter
+level: medium
+---
+# Sysmon: Registry Value Set (ID 13) Change Default File Association on HKEY_CURRENT_USER
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\*\OpenWithList\'
+    filter:
+        TargetObject: 'OpenWithList\MRUList'
+---
+# Sysmon: Registry Value Set (ID 13) Change Default File Association on HKEY_CURRENT_USER
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\*\OpenWithProgids\'
+---
+# Sysmon: Registry Value Set (ID 13) Change Default File Association on HKEY_CLASSES_ROOT
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: 'HKEY_CLASSES_ROOT\.*' #!!HKEY_CLASSES_ROOT\.ext ; change @= pour default
+---
+# Sysmon: Registry Value Set (ID 13) Change Default File Association on HKEY_CLASSES_ROOT
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\shell\*\command' 
+---
+# Sysmon: Registry Value Set (ID 13) Change Default File Association on HKEY_CLASSES_ROOT
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\shell\*\ddeexec\' 
+---
+# Sysmon: Registry Value Set (ID 13) Change Default File Association on HKEY_CLASSES_ROOT
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\shell\*\ddeexec\' 
+---
+# Windows registry - Change Default File Association on HKEY_CURRENT_USER
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: 'HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\.'
+    filter:
+        regvalue: "No values stored in key."
+---
+# Windows registry - Change Default File Association on HKEY_CURRENT_USER
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: 'HKEY_CLASSES_ROOT\\.*'
+    filter:
+        regvalue: "No values stored in key."
+---
+# Windows registry - Change Default File Association on HKEY_CURRENT_USER
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: 'HKEY_USERS\\S-*\\.*'
+    filter:
+        regvalue: "No values stored in key."
+---
+# Windows registry - Change Default File Association on HKEY_CLASSES_ROOT
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\shell\\*\\command'
+        regvalue: '(default)'
+    filter:
+        regvalue: "No values stored in key."
+---
+# Windows registry - Change Default File Association on HKEY_CLASSES_ROOT
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\shell\\*\\ddeexec'
+        regvalue: '(default)'
+    filter:
+        regvalue: "No values stored in key."
+---
+action: global
+title: Registry Image File Execution Options Injection
+status: experimental
+description: Registry Image File Execution Options Injection
+references:
+    - https://attack.mitre.org/techniques/T1183/
+tags:
+    - attack.t1183
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Image File Execution Options Injection
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit\*'
+---
+# Sysmon: Registry Value Set (ID 13) Image File Execution Options Injection
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit\*'
+---
+# Sysmon: Registry New Value (ID 12) Image File Execution Options Injection
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\*'
+---
+# Sysmon: Registry Value Set (ID 13) Image File Execution Options Injection
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\*\GlobalFlag'
+---
+# Windows registry - Image File Execution Options Injection
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\'
+#        regvalue: '*GlobalFlag'
+---
+# Windows registry - Image File Execution Options Injection
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\SilentProcessExit\\'
+---
+action: global
+title: Registry AppCert DLLs
+status: experimental
+description: Registry AppCert DLLs
+references:
+    - https://attack.mitre.org/techniques/T1182/
+tags:
+    - attack.t1182
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) AppCert DLLs
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\System\CurrentControlSet\Control\Session Manager\AppCertDlls'
+---
+# Sysmon: Registry Value Set (ID 13) AppCert DLLs
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\System\CurrentControlSet\Control\Session Manager\AppCertDlls'
+---
+# Windows registry - AppCert DLLs
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Control\\Session Manager\\AppCertDlls'
+---
+# Sysmon: Registry New Value (ID 12) AppCert DLLs
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\System\CurrentControlSet\Control\Session Manager\KnownDLLs'
+---
+# Sysmon: Registry Value Set (ID 13) AppCert DLLs
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\System\CurrentControlSet\Control\Session Manager\KnownDLLs'
+---
+# Windows registry - AppCert DLLs
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Control\\Session Manager\\KnownDLLs'
+---
+action: global
+title: Registry AppInit DLLs
+status: experimental
+description: Registry AppCert DLLs
+references:
+    - https://attack.mitre.org/techniques/T1103/
+tags:
+    - attack.t1103
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) AppInit DLLs
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Microsoft\Windows NT\CurrentVersion\Windows\AppInit_DLLs'
+---
+# Sysmon: Registry Value Set (ID 13) AppInit DLLs
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Microsoft\Windows NT\CurrentVersion\Windows\AppInit_DLLs'
+---
+# Sysmon: Registry New Value (ID 12) AppInit DLLs
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Microsoft\Windows NT\CurrentVersion\Windows\LoadAppInit_DLLs'
+---
+# Sysmon: Registry Value Set (ID 13) AppInit DLLs
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Microsoft\Windows NT\CurrentVersion\Windows\LoadAppInit_DLLs'
+---
+# Windows registry - AppInit DLLs - Appinit_DLLs get path dll, Loadappinit if 0x1 then Appinit_DLLs are enabled
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Microsoft\\Windows NT\\CurrentVersion\\Windows'
+        regvalue: '*AppInit_DLLs'
+---
+action: global
+title: Registry Application Shimming
+status: experimental
+description: Registry Application Shimming
+references:
+    - https://attack.mitre.org/techniques/T1138/
+tags:
+    - attack.t1138
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Application Shimming
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\software\microsoft\windows nt\currentversion\appcompatflags\installedsdb'
+---
+# Sysmon: Registry Value Set (ID 13) Application Shimming
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\software\microsoft\windows nt\currentversion\appcompatflags\installedsdb'
+---
+# Sysmon: Registry New Value (ID 12) Application Shimming
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\software\microsoft\windows nt\currentversion\appcompatflags\custom'
+---
+# Sysmon: Registry Value Set (ID 13) Application Shimming
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\software\microsoft\windows nt\currentversion\appcompatflags\custom'
+---
+# Windows registry - Application Shimming - https://www.fireeye.com/blog/threat-research/2017/05/fin7-shim-databases-persistence.html
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\currentversion\\appcompatflags\\custom'
+---
+# Windows registry - Application Shimming - https://www.fireeye.com/blog/threat-research/2017/05/fin7-shim-databases-persistence.html
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\currentversion\\appcompatflags\\installedsdb'
+---
+action: global
+title: Registry Authentication Package
+status: experimental
+description: Registry Authentication Package
+references:
+    - https://attack.mitre.org/techniques/T1131/
+tags:
+    - attack.t1131
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Authentication Package
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SYSTEM\CurrentControlSet\Control\Lsa\Authentication Packages'
+---
+# Sysmon: Registry Value Set (ID 13) Authentication Package
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Control\Lsa\Authentication Packages'
+---
+# Windows registry - Authentication Package - binary to load
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\CurrentControlSet\\Control\\Lsa'
+        regvalue: '*Authentication Packages'
+---
+action: global
+title: Registry Component Object Model Hijacking
+status: experimental
+description: Registry Component Object Model Hijacking
+references:
+    - https://attack.mitre.org/techniques/T1122/
+tags:
+    - attack.t1122
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Component Object Model Hijacking
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Software\Classes\CLSID\{*}\InprocServer'
+---
+# Sysmon: Registry Value Set (ID 13) Component Object Model Hijacking
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Classes\CLSID\{*}\InprocServer'
+---
+# Sysmon: Registry New Value (ID 12) Component Object Model Hijacking
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Software\Classes\CLSID\{*}\LocalServer'
+---
+# Sysmon: Registry Value Set (ID 13) Component Object Model Hijacking
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Classes\CLSID\{*}\LocalServer'
+---
+# Windows registry - Component Object Model Hijacking - InprocServer with path on new/unknown file
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Software\\Classes\\CLSID\\{*}\InprocServer'
+        regvalue: '*(default)'
+---
+# Windows registry - Component Object Model Hijacking - InprocServer with path on new/unknown file
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Software\\Classes\\CLSID\\{*}\LocalServer'
+        regvalue: '*(default)'
+---
+action: global
+title: Registry Modify Existing Service
+status: experimental
+description: Registry Modify Existing Service
+references:
+    - https://attack.mitre.org/techniques/T1031/
+tags:
+    - attack.t1031
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry Value Set (ID 13) Modify Existing Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\ServiceDll'
+---
+# Sysmon: Registry Value Set (ID 13) Modify Existing Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\ServiceManifest'
+---
+# Sysmon: Registry Value Set (ID 13) Modify Existing Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\ImagePath'
+---
+# Sysmon: Registry Value Set (ID 13) Modify Existing Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\Start'
+---
+# Sysmon: Registry Value Set (ID 13) Modify Existing Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\HelperDllName'
+---
+# Sysmon: Registry Value Set (ID 13) Modify Existing Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\Library'
+---
+# Sysmon: Registry Value Set (ID 13) Modify Existing Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\Path'
+---
+# Sysmon: Registry Value Set (ID 13) Modify Existing Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\DllPath'
+---
+# Sysmon: Registry Value Set (ID 13) Modify Existing Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\LibraryPath'
+---
+# Sysmon: Registry Value Set (ID 13) Modify Existing Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\AppArgs'
+---
+# Sysmon: Registry Value Set (ID 13) Modify Existing Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\AppFullPath'
+---
+# Sysmon: Registry Value Set (ID 13) Modify Existing Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\NameSpace_Callout'
+---
+# Windows registry - Modify Existing Service
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Services\\'
+        regvalue: '*ServiceDll'
+---
+# Windows registry - Modify Existing Service
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Services\\'
+        regvalue: '*ServiceManifest'
+---
+# Windows registry - Modify Existing Service
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Services\\'
+        regvalue: '*ImagePath'
+---
+# Windows registry - Modify Existing Service
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Services\\'
+        regvalue: '*Start'
+---
+# Windows registry - Modify Existing Service
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Services\\'
+        regvalue: '*HelperDllName'
+---
+# Windows registry - Modify Existing Service
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Services\\'
+        regvalue: '*Library'
+---
+# Windows registry - Modify Existing Service
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Services\\'
+        regvalue: '*DllPath'
+---
+# Windows registry - Modify Existing Service
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Services\\'
+        regvalue: '*NameSpace_Callout'
+---
+# Windows registry - Modify Existing Service
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Services\\'
+        regvalue: '*AppFullPath'
+---
+# Windows registry - Modify Existing Service
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Services\\'
+        regvalue: '*AppArgs'
+---
+# Windows registry - Modify Existing Service
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Services\\'
+        regvalue: '*LibraryPath'
+---
+# Windows registry - Modify Existing Service
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Services\\'
+        regvalue: '*Path'
+---
+action: global
+title: Registry New Service
+status: experimental
+description: Registry New Service
+references:
+    - https://attack.mitre.org/techniques/T1050/
+tags:
+    - attack.t1050
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) New Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\ServiceDll'
+---
+# Sysmon: Registry New Value (ID 12) New Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\ServiceManifest'
+---
+# Sysmon: Registry New Value (ID 12) New Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\ImagePath'
+---
+# Sysmon: Registry New Value (ID 12) New Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\Start'
+---
+# Sysmon: Registry New Value (ID 12) New Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\HelperDllName'
+---
+# Sysmon: Registry New Value (ID 12) New Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\Library'
+---
+# Sysmon: Registry New Value (ID 12) New Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\Path'
+---
+# Sysmon: Registry New Value (ID 12) New Service
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\*\DllPath'
+---
+action: global
+title: Registry Netsh Helper DLL
+status: experimental
+description: Registry Netsh Helper DLL
+references:
+    - https://attack.mitre.org/techniques/T1128/
+tags:
+    - attack.t1128
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Netsh Helper DLL
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SOFTWARE\Microsoft\Netsh\'
+---
+# Sysmon: Registry Value Set (ID 13) Netsh Helper DLL
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SOFTWARE\Microsoft\Netsh\'
+---
+# Windows registry - Netsh Helper DLL
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\SOFTWARE\\Microsoft\\Netsh'
+---
+action: global
+title: Registry Office Application Startup
+status: experimental
+description: Registry Office Application Startup
+references:
+    - https://attack.mitre.org/techniques/T1137/
+tags:
+    - attack.t1137
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Office Application Startup
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Microsoft\Office test\'
+---
+# Sysmon: Registry Value Set (ID 13) Office Application Startup
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Microsoft\Office test\'
+---
+# Sysmon: Registry New Value (ID 12) Office Application Startup
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Microsoft\Office\*\Options\Open'
+---
+# Sysmon: Registry Value Set (ID 13) Office Application Startup
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Microsoft\Office\*\Options\Open'
+---
+# Sysmon: Registry New Value (ID 12) Office Application Startup
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Microsoft\Office\*\AddIns\*\FriendlyName'
+---
+# Sysmon: Registry Value Set (ID 13) Office Application Startup
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Microsoft\Office\*\AddIns\*\FriendlyName'
+---
+# Sysmon: Registry New Value (ID 12) Office Application Startup
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Microsoft\Office\*\AddIns\*\LoadBehaviour'
+---
+# Sysmon: Registry Value Set (ID 13) Office Application Startup
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Microsoft\Office\*\AddIns\*\LoadBehaviour'
+---
+# Sysmon: Registry New Value (ID 12) Office Application Startup
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Microsoft\Office\*\AddIns\*\Autoload'
+---
+# Sysmon: Registry Value Set (ID 13) Office Application Startup
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Microsoft\Office\*\AddIns\*\Autoload'
+---
+# Sysmon: Registry New Value (ID 12) Office Application Startup
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Microsoft\Office\*\AddIns\*\Path'
+---
+# Sysmon: Registry Value Set (ID 13) Office Application Startup
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Microsoft\Office\*\AddIns\*\Path'
+---
+# Windows registry - Office Application Startup
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Microsoft\\Office test\\'
+---
+# Windows registry - Office Application Startup
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Microsoft\\Office\\*\\Options'
+        regvalue: '*Open'
+---
+# Windows registry - Office Application Startup
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Microsoft\\Office\\*\\AddIns'
+        regvalue: '*FriendlyName'
+---
+# Windows registry - Office Application Startup
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Microsoft\\Office\\*\\AddIns'
+        regvalue: '*LoadBehaviour'
+---
+# Windows registry - Office Application Startup
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Microsoft\\Office\\*\\AddIns'
+        regvalue: '*Autoload'
+---
+# Windows registry - Office Application Startup
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Microsoft\\Office\\*\\AddIns'
+        regvalue: '*Path'
+---
+# Windows registry - Office Application Startup
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Microsoft\\Office\\*\\AddIns'
+        regvalue: '*Open'
+---
+action: global
+title: Registry Port Monitors
+status: experimental
+description: Registry Port Monitors
+references:
+    - https://attack.mitre.org/techniques/T1013/
+tags:
+    - attack.t1013
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Port Monitors
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SYSTEM\CurrentControlSet\Control\Print\Monitors'
+---
+# Sysmon: Registry Value Set (ID 13) Port Monitors
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Control\Print\Monitors'
+---
+# Windows registry - Port Monitors
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Control\\Print\\Monitors'
+---
+action: global
+title: Registry Logon Scripts
+status: experimental
+description: Registry Logon Scripts
+references:
+    - https://attack.mitre.org/techniques/T1037/
+tags:
+    - attack.t1037
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Logon Scripts
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Software\Policies\Microsoft\Windows\System\Scripts'
+---
+# Sysmon: Registry Value Set (ID 13) Logon Scripts
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Policies\Microsoft\Windows\System\Scripts'
+---
+# Windows registry - Logon Scripts
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Software\\Policies\\Microsoft\\Windows\\System\\Scripts'
+---
+# Sysmon: Registry New Value (ID 12) Logon Scripts
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Group Policy\Scripts'
+---
+# Sysmon: Registry Value Set (ID 13) Logon Scripts
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Group Policy\Scripts'
+---
+# Windows registry - Logon Scripts
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Group Policy\\Scripts'
+---
+# Sysmon: Registry New Value (ID 12) Logon Scripts
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Environment\UserInitMprLogonScript'
+---
+# Sysmon: Registry Value Set (ID 13) Logon Scripts
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Environment\UserInitMprLogonScript'
+---
+# Windows registry - Logon Scripts
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Environment'
+        regvalue: '*UserInitMprLogonScript'
+---
+action: global
+title: Registry Run Keys
+status: experimental
+description: Registry Run Keys
+references:
+    - https://attack.mitre.org/techniques/T1060/
+tags:
+    - attack.t1060
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Run Keys
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\CurrentVersion\Run'
+---
+# Sysmon: Registry Value Set (ID 13) Run Keys
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\CurrentVersion\Run'
+---
+# Sysmon: Registry New Value (ID 12) Run Keys
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\CurrentVersion\Windows\Run'
+---
+# Sysmon: Registry Value Set (ID 13) Run Keys
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\CurrentVersion\Windows\Run'
+---
+# Windows registry - Run Keys
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\Windows\\Run'
+---
+# Sysmon: Registry New Value (ID 12) Run Keys
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\CurrentVersion\Windows\load'
+---
+# Sysmon: Registry Value Set (ID 13) Run Keys
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\CurrentVersion\Windows\load'
+---
+# Windows registry - Run Keys
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\Windows\\Load'
+---
+# Windows registry - Run Keys
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\Run'
+---
+# Sysmon: Registry New Value (ID 12) Run Keys
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Software\Run'
+---
+# Sysmon: Registry Value Set (ID 13) Run Keys
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Run'
+---
+# Windows registry - Run Keys
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Software\\Run'
+---
+# Sysmon: Registry New Value (ID 12) Run Keys
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\CurrentVersion\Policies\Explorer\Run'
+---
+# Sysmon: Registry Value Set (ID 13) Run Keys
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\CurrentVersion\Policies\Explorer\Run'
+---
+# Windows registry - Run Keys
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\Policies\\Explorer\\Run'
+---
+# Sysmon: Registry New Value (ID 12) Run Keys
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\CurrentVersion\Explorer\Shell Folders'
+---
+# Sysmon: Registry Value Set (ID 13) Run Keys
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\CurrentVersion\Explorer\Shell Folders'
+---
+# Windows registry - Run Keys
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\Explorer\\Shell Folders'
+---
+# Sysmon: Registry New Value (ID 12) Run Keys
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\CurrentVersion\Explorer\User Shell Folders'
+---
+# Sysmon: Registry Value Set (ID 13) Run Keys
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\CurrentVersion\Explorer\User Shell Folders'
+---
+# Windows registry - Run Keys
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\Explorer\\User Shell Folders'
+---
+action: global
+title: Registry Screensaver
+status: experimental
+description: Registry Screensaver
+references:
+    - https://attack.mitre.org/techniques/T1180/
+tags:
+    - attack.t1180
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Screensaver
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Control Panel\Desktop\SCRNSAVE.exe'
+---
+# Sysmon: Registry Value Set (ID 13) Screensaver
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Control Panel\Desktop\SCRNSAVE.exe'
+---
+# Windows registry - Screensaver
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Control Panel\\Desktop'
+        regvalue: '*SCRNSAVE.exe'
+---
+action: global
+title: Registry Security Support Provider
+status: experimental
+description: Registry Security Support Provider
+references:
+    - https://attack.mitre.org/techniques/T1101/
+tags:
+    - attack.t1101
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Security Support Provider
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SYSTEM\CurrentControlSet\Control\Lsa\Security Packages'
+---
+# Sysmon: Registry Value Set (ID 13) Security Support Provider
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Control\Lsa\OSConfig\Security Packages'
+---
+# Sysmon: Registry New Value (ID 12) Security Support Provider
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SYSTEM\CurrentControlSet\Control\Lsa\OSConfig\Security Packages'
+---
+# Sysmon: Registry Value Set (ID 13) Security Support Provider
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Control\Lsa\Security Packages'
+---
+# Windows registry - Security Support Provider
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Control\\Lsa'
+        regvalue: '*Security Packages'
+---
+action: global
+title: Registry SIP and Trust Provider Hijacking
+status: experimental
+description: Registry SIP and Trust Provider Hijacking
+references:
+    - https://attack.mitre.org/techniques/T1198/
+tags:
+    - attack.t1198
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) SIP and Trust Provider Hijacking
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Microsoft\Cryptography\OID\'
+---
+# Sysmon: Registry Value Set (ID 13) SIP and Trust Provider Hijacking
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Microsoft\Cryptography\OID\'
+---
+# Sysmon: Registry New Value (ID 12) SIP and Trust Provider Hijacking
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Microsoft\Cryptography\OID\'
+---
+# Sysmon: Registry Value Set (ID 13) SIP and Trust Provider Hijacking
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Microsoft\Cryptography\Providers\Trust'
+---
+# Windows registry - SIP and Trust Provider Hijacking
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\Microsoft\Cryptography\Providers\Trust'
+---
+# Windows registry - SIP and Trust Provider Hijacking
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/winreg_default'
+        key_path: '*\\Microsoft\\Cryptography\\OID\\'
+---
+action: global
+title: Registry Time Providers
+status: experimental
+description: Registry Time Providers
+references:
+    - https://attack.mitre.org/techniques/T1209/
+tags:
+    - attack.t1209
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Time Providers
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\System\CurrentControlSet\Services\W32Time\TimeProviders\'
+---
+# Sysmon: Registry Value Set (ID 13) Time Providers
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\System\CurrentControlSet\Services\W32Time\TimeProviders\'
+---
+# Windows registry - Time Providers
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\System\\CurrentControlSet\\Services\\W32Time\\TimeProviders\\'
+        regvalue: '*DllName'
+---
+action: global
+title: Registry Winlogon Helper DLL
+status: experimental
+description: Registry Winlogon Helper DLL
+references:
+    - https://attack.mitre.org/techniques/T1004/
+tags:
+    - attack.t1004
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Winlogon Helper DLL
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Windows NT\CurrentVersion\Winlogon\Shell'
+---
+# Sysmon: Registry Value Set (ID 13) Winlogon Helper DLL
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Windows NT\CurrentVersion\Winlogon\Shell'
+---
+# Sysmon: Registry New Value (ID 12) Winlogon Helper DLL
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Windows NT\CurrentVersion\Winlogon\System'
+---
+# Sysmon: Registry Value Set (ID 13) Winlogon Helper DLL
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Windows NT\CurrentVersion\Winlogon\System'
+---
+# Sysmon: Registry New Value (ID 12) Winlogon Helper DLL
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Windows NT\CurrentVersion\Winlogon\Notify'
+---
+# Sysmon: Registry Value Set (ID 13) Winlogon Helper DLL
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Windows NT\CurrentVersion\Winlogon\Notify'
+---
+# Sysmon: Registry New Value (ID 12) Winlogon Helper DLL
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Windows NT\CurrentVersion\Winlogon\Userinit'
+---
+# Sysmon: Registry Value Set (ID 13) Winlogon Helper DLL
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Windows NT\CurrentVersion\Winlogon\Userinit'
+---
+# Windows registry - Winlogon Helper DLL
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Windows NT\\CurrentVersion\\Winlogon'
+        regvalue: '*Shell'
+---
+# Windows registry - Winlogon Helper DLL
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Windows NT\\CurrentVersion\\Winlogon'
+        regvalue: '*Userinit'
+---
+# Windows registry - Winlogon Helper DLL
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Windows NT\\CurrentVersion\\Winlogon'
+        regvalue: '*Notify'
+---
+# Windows registry - Winlogon Helper DLL
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Windows NT\\CurrentVersion\\Winlogon'
+        regvalue: '*System'
+---
+action: global
+title: Registry Change IE configuration
+status: experimental
+description: Registry Change IE configuration
+references:
+    - https://
+tags:
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Change IE configuration - verify noise...
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Software\Microsoft\Internet Explorer\Main'
+---
+# Sysmon: Registry Value Set (ID 13) Change IE configuration - verify noise...
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Internet Explorer\Main'
+---
+# Windows registry - Change IE configuration
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Software\\Microsoft\\Internet Explorer\\Main'
+        regvalue: '*Start Page'
+---
+# Windows registry - Change IE configuration
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Software\\Microsoft\\Internet Explorer\\Main'
+        regvalue: '*Default_Page_URL'
+---
+# Windows registry - Change IE configuration
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Software\\Microsoft\\Internet Explorer\\Main'
+        regvalue: '*Local Page'
+---
+# Windows registry - Change IE configuration
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Software\\Microsoft\\Internet Explorer\\Main'
+        regvalue: '*Search Page'
+---
+# Windows registry - Change IE configuration
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Software\\Microsoft\\Internet Explorer\\Main'
+        regvalue: '*url'
+---
+# Windows registry - Time Providers
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\System\\CurrentControlSet\\Services\\W32Time\\TimeProviders\\'
+        regvalue: '*DllName'
+---
+action: global
+title: Registry Change network configuration PROXY
+status: experimental
+description: Registry Change network configuration PROXY
+references:
+    - https://
+tags:
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry Value Set (ID 13) Change network configuration PROXY
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Windows\CurrentVersion\Internet Setting\ProxyServer'
+---
+# Windows registry - Change network configuration PROXY
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Setting'
+        regvalue: '*ProxyServer'
+---
+action: global
+title: Registry Change network configuration WPAD
+status: experimental
+description: Registry Change network configuration WPAD
+references:
+    - https://
+tags:
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry Value Set (ID 13) Change network configuration WPAD
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Windows\CurrentVersion\Internet Setting\AutoConfigURL'
+---
+# Windows registry - Change network configuration WPAD
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Setting'
+        regvalue: '*AutoConfigURL'
+---
+action: global
+title: Registry Change network configuration DNS
+status: experimental
+description: Registry Change network configuration DNS
+references:
+    - https://
+tags:
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry Value Set (ID 13) Change network configuration DNS
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\tcpip\Parameters\NameServer'
+---
+# Sysmon: Registry Value Set (ID 13) Change network configuration DNS
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\tcpip\Parameters\DhcpNameServer'
+---
+# Sysmon: Registry Value Set (ID 13) Change network configuration DNS
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\tcpip\Parameters\Interfaces\*\NameServer'
+---
+# Sysmon: Registry Value Set (ID 13) Change network configuration DNS
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\tcpip\Parameters\Interfaces\*\DhcpNameServer'
+---
+# Windows registry - Change network configuration DNS
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Services\\tcpip\\Parameters'
+        regvalue: '*NameServer'
+---
+action: global
+title: Registry Change network configuration DHCP
+status: experimental
+description: Registry Change network configuration DHCP
+references:
+    - https://
+tags:
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry Value Set (ID 13) Change network configuration DHCP
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\tcpip\Parameters\Interfaces\*\DhcpServer'
+---
+# Sysmon: Registry Value Set (ID 13) Change network configuration DHCP
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\tcpip\Parameters\Interfaces\*\DhcpDomain'
+---
+# Windows registry - Change network configuration DHCP
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Services\\tcpip\\Parameters'
+        regvalue: '*DhcpServer'
+---
+# Windows registry - Change network configuration DHCP
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Services\\tcpip\\Parameters'
+        regvalue: '*DhcpDomain'
+---
+action: global
+title: Registry Change network configuration GATEWAY
+status: experimental
+description: Registry Change network configuration GATEWAY
+references:
+    - https://
+tags:
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry Value Set (ID 13) Change network configuration GATEWAY
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\tcpip\Parameters\Interfaces\*\DefaultGateway'
+---
+# Sysmon: Registry Value Set (ID 13) Change network configuration GATEWAY
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SYSTEM\CurrentControlSet\Services\tcpip\Parameters\Interfaces\*\DhcpDefaultGateway'
+---
+# Windows registry - Change network configuration GATEWAY
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SYSTEM\\CurrentControlSet\\Services\\tcpip\\Parameters'
+        regvalue: '*DefaultGateway'
+---
+action: global
+title: Registry Change IE configuration
+status: experimental
+description: Registry Change IE configuration
+references:
+    - https://
+tags:
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry Value Set (ID 13) Change IE configuration
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Internet Explorer\Main\Local Page'
+---
+# Sysmon: Registry Value Set (ID 13) Change IE configuration
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Internet Explorer\Main\Default_Page_URL'
+---
+# Sysmon: Registry Value Set (ID 13) Change IE configuration
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Internet Explorer\Main\Search Page'
+---
+# Sysmon: Registry Value Set (ID 13) Change IE configuration
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Internet Explorer\Main\Start Page'
+---
+# Sysmon: Registry Value Set (ID 13) Change IE configuration
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Internet Explorer\Main\Secondary Start Pages'
+---
+# Sysmon: Registry New value (ID 12) Change IE configuration
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Software\Microsoft\Internet Explorer\Main\Default Feeds\'
+---
+# Sysmon: Registry Value Set (ID 13) Change IE configuration
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Internet Explorer\Main\Default Feeds\'
+---
+# Sysmon: Registry Value Set (ID 13) Change IE configuration
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Internet Explorer\Security\DisableSecuritySettingsCheck'
+---
+# Sysmon: Registry New value (ID 12) Change IE configuration
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SearchScopes\*\URL'
+---
+# Sysmon: Registry Value Set (ID 13) Change IE configuration
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SearchScopes\*\URL'
+---
+# Windows registry - Change IE configuration
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Software\\Microsoft\\Internet Explorer\\Main'
+        regvalue: '*Start Page'
+---
+# Windows registry - Change IE configuration
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Software\\Microsoft\\Internet Explorer\\Main'
+        regvalue: '*Default_Page_URL'
+---
+# Windows registry - Change IE configuration
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Software\\Microsoft\\Internet Explorer\\Main'
+        regvalue: '*Local Page'
+---
+# Windows registry - Change IE configuration
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Software\\Microsoft\\Internet Explorer\\Main'
+        regvalue: '*Search Page'
+---
+# Windows registry - Change IE configuration
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Software\\Microsoft\\Internet Explorer\\Main'
+        regvalue: '*url'
+---
+# Windows registry - Change IE configuration
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Software\\Microsoft\\Internet Explorer\\Security'
+        regvalue: '*DisableSecuritySettingsCheck'
+---
+# Windows registry - Change IE configuration
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SearchScopes\\'
+        regvalue: '*url'
+---
+action: global
+title: Registry Change IE toolbar or extension
+status: experimental
+description: Registry Change IE toolbar or extension
+references:
+    - https://
+tags:
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Change IE toolbar or extension
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Software\Microsoft\Internet Explorer\Extensions\'
+---
+# Sysmon: Registry Value Set (ID 13) Change IE toolbar or extension
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Internet Explorer\Extensions\'
+---
+# Sysmon: Registry New Value (ID 12) Change IE toolbar or extension
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Software\Microsoft\Internet Explorer\Toolbar\'
+---
+# Sysmon: Registry Value Set (ID 13) Change IE toolbar or extension
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Software\Microsoft\Internet Explorer\Toolbar\'
+---
+# Windows registry - Change IE toolbar or extension
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Software\\Microsoft\\Internet Explorer\\Toolbar\\'
+---
+# Windows registry - Change IE toolbar or extension
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Software\\Microsoft\\Internet Explorer\\Toolbar\\Extensions\\'
+---
+action: global
+title: Registry Change IE addons or plugin
+status: experimental
+description: Registry Change IE addons or plugin
+references:
+    - https://
+tags:
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Change IE addons or plugin
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects'
+---
+# Sysmon: Registry Value Set (ID 13) Change IE addons or plugin
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects'
+---
+# Windows registry - Change IE addons or plugin
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Browser Helper Objects'
+---
+action: global
+title: Registry Change conf IE zone internet
+status: experimental
+description: Registry Change conf IE zone internet
+references:
+    - https://
+tags:
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry Value Set (ID 13) Change IE conf IE zone internet
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Internet Settings\Zones\3'
+---
+# Windows registry - Change IE conf IE zone internet
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Internet Settings\\Zones\\3'
+---
+action: global
+title: Registry Change conf hidden file
+status: experimental
+description: Registry Change conf hidden file
+references:
+    - https://
+tags:
+    - attack.Defense_Evasion
+    - attack.t1089
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry Value Set (ID 13) Change conf hidden file
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\CurrentVersion\Explorer\Advanced\HideFileExt'
+---
+# Sysmon: Registry Value Set (ID 13) Change conf hidden file
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\CurrentVersion\Explorer\Advanced\ShowSuperHidden'
+---
+# Sysmon: Registry Value Set (ID 13) Change conf hidden file
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\CurrentVersion\Explorer\Advanced\Hidden'
+---
+# Windows registry - Change conf hidden file
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\Explorer\\Advanced'
+        regvalue: '*Hidden'
+---
+# Windows registry - Change conf hidden file
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\Explorer\\Advanced'
+        regvalue: '*HideFileExt'
+---
+action: global
+title: Registry Path Interception
+status: experimental
+description: Registry Path Interception
+references:
+    - https://attack.mitre.org/techniques/T1039/
+tags:
+    - attack.Defense_Evasion
+    - attack.t1039
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Path Interception 
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\CurrentVersion\App Paths\'
+---
+# Sysmon: Registry Value Set (ID 13) Path Interception
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\CurrentVersion\App Paths\'
+---
+# Windows registry - Path Interception
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\App Paths\\'
+---
+action: global
+title: Registry Change macro warning config
+status: experimental
+description: Registry Change macro warning config
+references:
+    - https://attack.mitre.org/techniques/T1089/
+tags:
+    - attack.Defense_Evasion
+    - attack.t1089
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Change macro warning config
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Security\VBAWarnings'
+---
+# Sysmon: Registry Value Set (ID 13) Change macro warning config
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Security\VBAWarnings'
+---
+# Windows registry - Change macro warning config
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Security'
+        regvalue: '*VBAWarnings'
+---
+action: global
+title: Registry Change Driver
+status: experimental
+description: Registry Change Driver
+references:
+    - https://attack.mitre.org/techniques/T1109/
+tags:
+    - attack.persistence
+    - attack.t1109
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) New Driver
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\CurrentVersion\Drivers32'
+---
+# Sysmon: Registry Value Set (ID 13) Change Driver
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\CurrentVersion\Drivers32'
+---
+# Windows registry - Change Driver
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\Drivers32'
+---
+action: global
+title: Registry Run at boot before logon
+status: experimental
+description: Registry Run at boot before logon
+references:
+    - https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml
+tags:
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Run at boot before logon
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Control\Session Manager\BootExecute'
+---
+# Sysmon: Registry Value Set (ID 13) Run at boot before logon
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Control\Session Manager\BootExecute'
+---
+# Windows registry - Run at boot before logon
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/windows_boot_execute'
+---
+action: global
+title: Registry Run on crash
+status: experimental
+description: Registry Run on crash
+references:
+    - https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml
+tags:
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Run on crash
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\CurrentVersion\AeDebug'
+---
+# Sysmon: Registry Value Set (ID 13) Run on crash
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\CurrentVersion\AeDebug'
+---
+# Windows registry - Run on crash
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\AeDebug'
+---
+action: global
+title: Registry Run on rdp logon
+status: experimental
+description: Registry Run on rdp logon
+references:
+    - https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml
+tags:
+    - attack.persistence
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry Value Set (ID 13) Run on rdp logon
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Terminal Server\WinStations\RDP-Tcp\InitialProgram'
+---
+# Windows registry - Run on rdp logon
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Terminal Server\\WinStations\\RDP-Tcp'
+        regvalue: '*InitialProgram'
+---
+action: global
+title: Registry Change config UAC
+status: experimental
+description: Registry Change config UAC
+references:
+    - https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml
+tags:
+    - attack.t1089
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry Value Set (ID 13) Change config UAC
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\CurrentVersion\Policies\System\LocalAccountTokenFilterPolicy'
+---
+# Sysmon: Registry Value Set (ID 13) Change config UAC
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\CurrentVersion\Policies\System\EnableLUA'
+---
+# Windows registry - Change config UAC
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\Policies\\System'
+        regvalue: '*LocalAccountTokenFilterPolicy*1'
+---
+# Windows registry - Change config UAC
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\Policies\\System'
+        regvalue: '*EnableLUA*0'
+---
+action: global
+title: Registry Change conf Security Center
+status: experimental
+description: Registry Change conf Security Center
+references:
+    - https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml
+tags:
+    - attack.t1089
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry Value Set (ID 13) Change conf Security Center
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SOFTWARE\Microsoft\Security Center\*Override'
+---
+# Sysmon: Registry Value Set (ID 13) Change conf Security Center
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SOFTWARE\Microsoft\Security Center\*Disable'
+---
+# Windows registry - Change conf Security Center
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SOFTWARE\\Microsoft\\Security Center'
+        regvalue: '*Override'
+---
+# Windows registry - Change conf Security Center
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SOFTWARE\\Microsoft\\Security Center'
+        regvalue: '*Disable'
+---
+action: global
+title: Registry Change Profile Firewall
+status: experimental
+description: Registry Change Profile Firewall
+references:
+    - https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml
+tags:
+    - attack.t1089
+    - attack.defense_evasion
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry Value Set (ID 13) Change Profile Firewall
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\FirewallPolicy\*\DoNotAllowExceptions'
+---
+# Sysmon: Registry Value Set (ID 13) Change Profile Firewall
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\FirewallPolicy\*\EnableFirewall'
+---
+# Sysmon: Registry Value Set (ID 13) Change Profile Firewall
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\AuthorizedApplications\List'
+---
+# Sysmon: Registry Value Set (ID 13) Change Profile Firewall
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\GloballyOpenPorts\List'
+---
+# Windows registry - Change Profile Firewall
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\FirewallPolicy\\'
+        regvalue: '*EnableFirewall'
+---
+# Windows registry - Change Profile Firewall
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\FirewallPolicy\\'
+        regvalue: '*DoNotAllowExceptions'
+---
+# Windows registry - Change Profile Firewall
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\GloballyOpenPorts\\List'
+---
+# Windows registry - Change Profile Firewall
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\AuthorizedApplications\\List'
+---
+action: global
+title: Registry Change WDigest storage credential
+status: experimental
+description: Registry Change WDigest storage credential
+references:
+    - https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml
+tags:
+    - attack.t1089
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Change WDigest storage credential
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\SecurityProviders\WDigest\UseLogonCredential'
+---
+# Sysmon: Registry Value Set (ID 13) Change WDigest storage credential
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\SecurityProviders\WDigest\UseLogonCredential'
+---
+# Windows registry - Change WDigest storage credential
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\SecurityProviders\\WDigest'
+        regvalue: '*UseLogonCredential*1'
+---
+action: global
+title: Registry Disable Credential Provider
+status: experimental
+description: Registry Disable Credential Provider
+references:
+    - https://fr.slideshare.net/securityxploded/exposing-the-secrets-of-windows-credential-providerer
+tags:
+    - attack.t1089
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Disable Credential Provider
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Authentication\Credential\*\Disabled'
+---
+# Sysmon: Registry Value Set (ID 13) Disable Credential Provider
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Authentication\Credential\*\Disabled'
+---
+# Windows registry - Disable Credential Provider
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\Authentication\\Credential\\'
+        regvalue: '*Disabled*1'
+---
+action: global
+title: Registry Disabled GPO
+status: experimental
+description: Registry Disabled GPO
+references:
+    - https://blogs.technet.microsoft.com/mikehall/2013/01/31/group-policy-client-side-extensions/
+tags:
+    - attack.t1089
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: medium
+---
+# Sysmon: Registry New Value (ID 12) Disabled GPO
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '\CurrentVersion\Winlogon\GPExtensions\*\NoMachinePolicy'
+---
+# Sysmon: Registry Value Set (ID 13) Disabled GPO
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '\CurrentVersion\Winlogon\GPExtensions\*\NoMachinePolicy'
+---
+# Windows registry - Disabled GPO
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\\CurrentVersion\\Winlogon\\GPExtensions\\'
+        regvalue: '*NoMachinePolicy*1'
+---

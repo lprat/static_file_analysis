@@ -1,0 +1,41 @@
+action: global
+title: Office opened
+status: experimental
+description: Office opened and you can lookup if macro actived if "ff ff ff 7f" at the end
+references:
+    - http://az4n6.blogspot.com/2016/02/more-on-trust-records-macros-and.html
+tags:
+    - attack.execution
+author: Lionel PRAT
+date: 2019/01/23
+detection:
+    condition: selection
+level: low
+---
+# Sysmon: Registry Value Set (ID 13) TrustRecords
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 13
+        TargetObject: '*\Security\Trusted Documents\TrustRecords\'
+---
+# Sysmon: Registry New Value (ID 12) TrustRecords
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 12
+        TargetObject: '*\Security\Trusted Documents\TrustRecords\'
+# Windows registry - TrustRecords
+logsource:
+    product: windows
+    service: registry
+    definition: 'plaso rule'
+detection:
+    selection:
+        parser: 'winreg/*'
+        key_path: '*\Security\Trusted Documents\TrustRecords\'
+---
