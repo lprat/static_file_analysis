@@ -94,6 +94,7 @@ rule Sidebar_gadget_suspect {
         $dc12 = "wmic" nocase
         $dc13 = "sc.exe" nocase
         $dc14 = "sc" nocase
+        $dc15 = /reg(.exe)? [QADCSRLUEIF]{1}/i
 		$rdc = /sc (co|en|fa|pa|q|st)/
 		$script1 = "<script>"
 	    $script2 = "<script "
