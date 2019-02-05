@@ -287,7 +287,7 @@ rule OFFICE_file_char {
 		weight = 7
 		var_match = "office_file_bool"
 	condition:
-	    uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileType matches /CL_TYPE_ZIP|CL_TYPE_MSOLE|CL_TYPE_OLE|CL_TYPE_OOXML|CL_TYPE_MSWORD|CL_TYPE_MSXL/ and SummaryInfo_CharCount_int < 10
+	    (uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileType matches /CL_TYPE_ZIP|CL_TYPE_MSOLE|CL_TYPE_OLE|CL_TYPE_OOXML|CL_TYPE_MSWORD|CL_TYPE_MSXL/) and SummaryInfo_CharCount_int > 0 and SummaryInfo_CharCount_int < 10
 }
 
 rule OFFICE_file_page {
@@ -298,7 +298,7 @@ rule OFFICE_file_page {
 		weight = 4
 		var_match = "office_file_bool"
 	condition:
-	    uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileType matches /CL_TYPE_ZIP|CL_TYPE_MSOLE|CL_TYPE_OLE|CL_TYPE_OOXML|CL_TYPE_MSWORD|CL_TYPE_MSXL/ and SummaryInfo_pagecount_int == 1
+	    (uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileType matches /CL_TYPE_ZIP|CL_TYPE_MSOLE|CL_TYPE_OLE|CL_TYPE_OOXML|CL_TYPE_MSWORD|CL_TYPE_MSXL/) and SummaryInfo_pagecount_int == 1
 }
 
 rule OFFICE_file {
@@ -309,5 +309,5 @@ rule OFFICE_file {
 		weight = 1
 		var_match = "office_file_bool"
 	condition:
-	    uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileType matches /CL_TYPE_ZIP|CL_TYPE_MSOLE|CL_TYPE_OLE|CL_TYPE_OOXML|CL_TYPE_MSWORD|CL_TYPE_MSXL/
+	    uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileType matches /CL_TYPE_MSOLE|CL_TYPE_OLE|CL_TYPE_OOXML|CL_TYPE_MSWORD|CL_TYPE_MSXL/
 }
