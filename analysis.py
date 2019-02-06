@@ -354,7 +354,7 @@ def remove_double(nested_dict):
         elif type(v) is dict: # v is a dict
             remove_double(v) # recursive call
 
-def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra={}):
+def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra={}, verbose=False):
     #find size file 
     size_file = os.path.getsize(filename)
     #extract info
@@ -374,6 +374,8 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
     externals_var = {'FileParentType': cl_parent, 'FileType': "CL_TYPE_" + cl_type, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8'), 'PathFile': filename}
     if cdbname:
         externals_var['CDBNAME']=cdbname
+    if verbose:
+        print "Debug info -- External var:"+str(externals_var)
     if externals_var_extra:
         externals_var.update(externals_var_extra)
     externals_var.update(var_dynamic)
@@ -421,7 +423,9 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
                 var_dynamic[str(match.meta['var_match'])] = True
         elif 'var_match' in match.meta:
             var_dynamic[str(match.meta['var_match'])] = True
-    result_file = { u'FileParentType': cl_parent, u'FileType': u"CL_TYPE_" + unicode(cl_type, "utf-8"), u'FileSize': int(size_file), u'FileMD5': md5_file, u'PathFile': [unicode(filename, "utf-8")],  u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'ContainedObjects': []}
+    if not isinstance(cl_type, unicode):
+        cl_type=unicode(cl_type, "utf-8")
+    result_file = { u'FileParentType': cl_parent, u'FileType': u"CL_TYPE_" + cl_type, u'FileSize': int(size_file), u'FileMD5': md5_file, u'PathFile': [unicode(filename, "utf-8")],  u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'ContainedObjects': []}
     if cdbname:
         result_file[u'CDBNAME']=cdbname
     return score_max, var_dynamic, extract_var_global, result_file
@@ -522,6 +526,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             externals_var=dict_extract_path(result_extract,())
         else:
             externals_var = {'RootFileType': "CL_TYPE_" + type_file, 'FileType': "CL_TYPE_" + type_file, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8'), 'PathFile': filename_path}
+        if verbose:
+            print 'Debug info -- Variable external of Root file:'+str(externals_var)
         #add var_dynamic in var ext
         externals_var.update(var_dynamic)
         #add extinfo in var_dyn
@@ -640,18 +646,24 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                    externals_var_extra={}
                    #activemime ret
                    ret_analyz=""
+                   json_not_find=True
+                   vba_name=""
                    if json_find:
                        #find type in json
                        find_type = getpath(result_extract, md5_file)
                        if find_type:
-                           find_type = find_type[0] + (u'FileType',)
+                           json_not_find=False
+                           find_type = find_type[0][:-1] + (u'FileType',)
                            type_file_tmp = readdict(result_extract,find_type)
                            if type_file_tmp:
-                               type_file = type_file_tmp
+                               type_file = type_file_tmp.replace('CL_TYPE_','')
                            #extract extra info of clamav
-                           externals_var_extra=dict_extract_path(result_extract,find_type[0][0:len(find_type[0])-1])
-                       #TODO extract CDBNAME
-                   else:
+                           find_type=find_type[:-1]
+                           externals_var_extra=dict_extract_path(result_extract,find_type) #fixed
+                           if verbose:
+                               print "Debug info -- Externals Var from clamav for current file:" + str(externals_var_extra)
+                   if json_not_find:
+                       print "SEARCH TYPE NOT JSON" #TODO remove
                        matchre_bool=True
                        r=re.compile(filex+"(.*\n){0,5}LibClamAV debug:\s+Recognized\s+(?P<type>.+)\s+file", re.MULTILINE)
                        if md5match:
@@ -664,12 +676,21 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                        if matchre_bool:
                            r=re.compile(filex+"(.*\n){0,5}LibClamAV debug:\s+Recognized\s+(?P<type>\S+)", re.MULTILINE)
                            if md5match:
-                               r=re.compile(matchm.group(0)+"(.*\n){0,5}LibClamAV debug:\s+Recognized\s+(?P<type>.+)\s+file", re.MULTILINE)
+                               r=re.compile(matchm.group(0)+"(.*\n){0,5}LibClamAV debug:\s+Recognized\s+(?P<type>\S+)", re.MULTILINE)
                            for m in r.finditer(serr):
                                ret=m.groupdict() 
                                if ret['type']:
                                    matchre_bool=False
                                    type_file = ret['type']
+                       if matchre_bool:
+                           r=re.compile("LibClamAV debug:\s+Recognized\s+(?P<type>.+)\s+file(\n.*){1,2}"+filex, re.MULTILINE) #LibClamAV debug: cache_check: 2488e7486334106921f5108d5ddc2c8e is negative
+                           if md5match:
+                               r=re.compile("LibClamAV debug:\s+Recognized\s+(?P<type>.+)\s+file(\n.*){1,2}"+matchm.group(0), re.MULTILINE) #LibClamAV debug: cache_check: 2488e7486334106921f5108d5ddc2c8e is negative
+                           for m in r.finditer(serr):
+                               ret=m.groupdict() 
+                               if ret['type']:
+                                   matchre_bool=False
+                                   type_file = ret['type'].replace(" ", "_")
                        if matchre_bool:
                            r=re.compile(filex+"(.*\n){0,5}LibClamAV debug:\s+Matched signature for file type\s+(?P<type>\S+)", re.MULTILINE)
                            if md5match:
@@ -678,7 +699,20 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                                ret=m.groupdict() 
                                if ret['type']:
                                    matchre_bool=False
-                                   type_file = ret['type']
+                                   type_file = ret['type']      
+                       if matchre_bool:
+                           r=re.compile("LibClamAV debug:\s+.*\s+VBA\s+.*\s+\'(?P<vba_tmp>\S+)\' dumped to "+filex, re.MULTILINE) ##LibClamAV debug: VBADir: VBA project 'fc906baef0859f17a3ceece775090ce3_0' dumped to /tmp/tmpzkiSfm/clamav-ffef6aaf2a6929ae43e245aa65131c16.tmp
+                           for m in r.finditer(serr):
+                               ret=m.groupdict() 
+                               type_file = 'VBA'
+                               if ret['vba_tmp']:
+                                   matchre_bool=False
+                                   vba_tmp = re.sub('_[0-9]+$', '', ret['vba_tmp'])
+                                   r2=re.compile("LibClamAV debug:\s+vba_readdir:\s+project name:\s+(?P<vba_name>[^\(]+)\("+vba_tmp, re.MULTILINE) #LibClamAV debug: vba_readdir: project name: userform1 (23e1f13082cd07ba98226f5b5a17ff31)
+                                   for m2 in r2.finditer(serr):
+									   ret2=m2.groupdict()
+									   if ret2['vba_name']:
+										   vba_name = ret2['vba_name'].strip()
                    #Extract CDBNAME
                    origname_file = ""
                    r=re.compile("LibClamAV debug:\s+CDBNAME:[^:]+:[^:]+:(?P<name>[^:]+):.*(\n.*){0,10}"+filex, re.MULTILINE)
@@ -695,6 +729,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                            ret=m.groupdict()
                            if ret['name']:
                                origname_file = ret['name']
+                   if vba_name and not origname_file:
+					   origname_file = str(vba_name)
                    swf_add_info = {}
                    if 'SWF' in type_file and 'SWF: File attributes:' in serr:
                        #extract SWF file attributes
@@ -741,7 +777,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                                    list_PType += "->" + type_parent
                            temp_json[dirx]['cl_parent'] = list_PType
                        #scan yara and make json
-                       score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra)
+                       score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra, verbose)
                        temp_json[dirx]['files'].append(md5_file)
                        if matchx:
                            all_md5[md5_file] = 0
@@ -750,7 +786,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                    elif tempdir_cour == dirx:
                        #new file in same level
                        if not md5_file in temp_json[dirx]['files']:
-                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra)
+                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra, verbose)
                            temp_json[dirx]['files'].append(md5_file)
                            if matchx:
                                all_md5[md5_file] = 0
@@ -764,7 +800,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                        cl_parent = temp_json[dirx]["cl_parent"]
                        tempdir_cour = dirx
                        if not md5_file in temp_json[dirx]['files']:
-                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra)
+                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra, verbose)
                            temp_json[dirx]['files'].append(md5_file)
                            if matchx:
                                all_md5[md5_file] = 0
@@ -838,13 +874,16 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                                     type_parent = readdict(result_extract,fpmd5)
                                     if type_parent:
                                         list_PType += "->" + type_parent
-                            find_typex = find_type[0] + (u'FileType',)
+                            find_typex = find_type[0][:-1] + (u'FileType',) # FIxed todo verify ok
                             type_file_tmp = readdict(result_extract,find_typex)
                             if type_file_tmp:
                                 type_file = type_file_tmp
                             #extract extra info of clamav
-                            externals_var_extra=dict_extract_path(result_extract,find_type[0][0:len(find_type[0])-1])
-                        score_max, var_dynamic, extract_var_global, ret = scan_json(os.path.join(root, filename), list_PType, "", type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra)
+                            find_type=find_type[:-1]
+                            externals_var_extra=dict_extract_path(result_extract,find_type) #fixed
+                            if verbose:
+                               print "Debug info -- Externals Var from clamav for current file:" + str(externals_var_extra)
+                        score_max, var_dynamic, extract_var_global, ret = scan_json(os.path.join(root, filename), list_PType, "", type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra, verbose)
                         for pmd5 in find_type:
                             reta = adddict(result_extract,u'FileParentType',ret[u'FileParentType'],pmd5[0:len(pmd5)-1],fpresent)
                             reta = adddict(result_extract,u'PathFile',ret[u'PathFile'],pmd5[0:len(pmd5)-1],fpresent)
