@@ -9,6 +9,7 @@ rule ClickOnce_file {
 		weight = 4
 		reference = "https://www.sixdub.net/?p=555"
 		tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.execution"
+		var_match = "application_file_bool"
 	strings:
 	    $xml0 = "<?xml" nocase
 	    $xml1 = "xmlns:" nocase

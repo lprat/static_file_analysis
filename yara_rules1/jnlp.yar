@@ -6,6 +6,7 @@ rule Jnlp_file {
 		weight = 6
 		reference = "https://blog.trendmicro.com/trendlabs-security-intelligence/new-headaches-how-the-pawn-storm-zero-day-evaded-javas-click-to-play-protection/"
 		tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194"
+		var_match = "jnlp_file_bool"
 	strings:
 	    $jnlp0 = "/jnlp" nocase
 	    $jnlp1 = "<jnlp" nocase
