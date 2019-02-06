@@ -230,7 +230,7 @@ rule win_api_internet {
 	    tag = "attack.exfiltration,attack.c2c"
 	strings:
 		$api0 = "ConnectNamedPipe" nocase ascii wide
-		$api1 = "Connect" nocase ascii wide
+		$api1 = /[^A-Z0-9]Connect[^A-Z0-9]/ nocase ascii wide
 		$api2 = "InternetOpen" nocase ascii wide
 		$api3 = "WSAStartup" nocase ascii wide
 		$api4 = "WinHttpOpen" nocase ascii wide
@@ -267,7 +267,7 @@ rule win_api_bind {
 	    tag = "attack.c2c"
 	strings:
 		$api0 = "Accept" nocase ascii wide
-		$api1 = "bind" nocase ascii wide
+		$api1 = /[^A-Z0-9]bind[^A-Z0-9]/ nocase ascii wide //fix false positive just check "bind"
 	condition:
 	    check_winapi_bool and all of ($api*)
 }

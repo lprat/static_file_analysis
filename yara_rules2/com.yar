@@ -200,7 +200,7 @@ rule COM_obj_OLEStream {
 		tag = "attack.execution"
 	strings:
 		$clsid0 = "00000303-0000-0000-c000-000000000046" nocase ascii wide
-		$clsid1 = "file" nocase ascii wide
+		//$clsid1 = "file" nocase ascii wide //more flase positive
 	condition:
 		check_clsid_bool and any of ($clsid*)
 }
@@ -3611,7 +3611,7 @@ rule COM_obj_File_Moniker {
 		tag = "attack.execution"
 	strings:
 		$clsid0 = "00000303-0000-0000-C000-000000000046" nocase ascii wide
-		$clsid1 = "file" nocase ascii wide
+		//$clsid1 = "file" nocase ascii wide //more false positive
 	condition:
 		check_clsid_bool and any of ($clsid*)
 }
@@ -4120,7 +4120,7 @@ rule COM_obj_Script_Moniker {
 		tag = "attack.execution"
 	strings:
 		$clsid0 = "06290BD3-48AA-11D2-8432-006008C3FBFC" nocase ascii wide
-		$clsid1 = "script" nocase ascii wide
+		//$clsid1 = "script" nocase ascii wide //more false positive
 	condition:
 		check_clsid_bool and any of ($clsid*)
 }
@@ -5090,7 +5090,7 @@ rule COM_obj_New_Moniker {
 		tag = "attack.execution"
 	strings:
 		$clsid0 = "ECABAFC6-7F19-11D2-978E-0000F8757E2A" nocase ascii wide
-		$clsid1 = "new" nocase ascii wide
+		//$clsid1 = "new" nocase ascii wide //more false positive
 	condition:
 		check_clsid_bool and any of ($clsid*)
 }
@@ -5149,7 +5149,7 @@ rule COM_obj_OLE_pobj7 {
 		tag = "attack.execution"
 	strings:
 		$clsid0 = "F20DA720-C02F-11CE-927B-0800095AE340" nocase ascii wide
-		$clsid1 = "Package" nocase ascii wide
+		//$clsid1 = "Package" nocase ascii wide // more false positive
 	condition:
 		check_clsid_bool and any of ($clsid*)
 }
@@ -9550,7 +9550,7 @@ rule ActivX_obj_311 {
         tag = "attack.execution"
     strings:
         $clsid0 = "4753da60-5b71-11cf-b035-00aa006e0975" nocase ascii wide
-        $clsid1 = "ADs" nocase ascii wide
+        $clsid1 = /[^A-Z0-9]ADs[^A-Z0-9]/ nocase ascii wide //fix false positive "ADs"
     condition:
         check_clsid_bool and any of ($clsid*)
 }
