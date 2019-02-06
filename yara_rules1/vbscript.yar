@@ -9,7 +9,7 @@ rule File_contains_VB {
 		$vb1 = /(^|\s+|\n)set\s+[^ ]+\s*\=\s*[^\(]+\(/ nocase
 		$vb2 = /(^|\s+|\n)end\s+sub(\s+|\n|$)/ nocase
 	condition:
-		any of ($vb*) and FileParentType matches /->/
+		(any of ($vb*) or FileType matches /CL_TYPE_VBA/) and FileParentType matches /->/
 }
 
 rule vbscript {
@@ -17,13 +17,13 @@ rule vbscript {
 		description = "Potential vbscript file"
 		author = "Lionel PRAT"
         version = "0.1"
-		weight = 0
-		check_level2 = "check_vbscript_bool"
+		weight = 1
+		check_level2 = "check_vbscript_bool,check_command_bool,check_clsid_bool,check_winapi_bool,check_registry_bool"
 		var_match = "vb_file_bool"
 	strings:
 		$vb0 = /(^|\s+|\n)sub\s+[^\(]+\(.*\)/ nocase
 		$vb1 = /(^|\s+|\n)set\s+[^ ]+\s*\=\s*[^\(]+\(/ nocase
 		$vb2 = /(^|\s+|\n)end\s+sub(\s+|\n|$)/ nocase
 	condition:
-	    any of ($vb*)
+	    (any of ($vb*) or FileType matches /CL_TYPE_VBA/)
 }

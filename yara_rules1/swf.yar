@@ -55,8 +55,8 @@ rule SWF_display {
 	meta:
 		author = "Lionel PRAT"
 		version = "0.1"
-		weight = 4
-		description = "Flash file use flash.display package"
+		weight = 5
+		description = "Flash file use flash.display package for load code in remote or section binary(loadBytes/load)"
 		reference = "https://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/package-detail.html"
 	strings:
 		$magic = {46 57 53} //FWS

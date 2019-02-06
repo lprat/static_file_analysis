@@ -225,12 +225,12 @@ rule ppaction_Office {
 
 rule Suspect_DDE_OFFICE {
 	meta:
-		description = "Suspect call in macro: RegCreateKeyExA - RegSetValueExA - CallWindowProcA - RtlMoveMemory - VirtualAlloc "
+		description = "Office with DDEAUTO (exploit for run command)"
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 6
 		reference = "https://sensepost.com/blog/2017/macro-less-code-exec-in-msword/"
-		check_level2 = "check_entropy_bool,check_command_bool,check_clsid_bool"
+		check_level2 = "check_command_bool,check_clsid_bool,check_registry_bool"
 		tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.t1223,attack.execution"
 	strings:
 		$dde = ">DDEAUTO " nocase
@@ -288,6 +288,21 @@ rule OFFICE_file_char {
 		var_match = "office_file_bool"
 	condition:
 	    (uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileType matches /CL_TYPE_ZIP|CL_TYPE_MSOLE|CL_TYPE_OLE|CL_TYPE_OOXML|CL_TYPE_MSWORD|CL_TYPE_MSXL/) and SummaryInfo_CharCount_int > 0 and SummaryInfo_CharCount_int < 10
+}
+
+rule OFFICE_canary {
+	meta:
+		description = "Office with potential TOken canary"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 5
+		reference = "http://canarytokens.com/"
+		tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.t1223,attack.execution"
+	strings:
+		$canary0 = /Relationship.*\s+Target=(\")?(http|ftp)(s)?\:\/\/.*\s+TargetMode=(\")?External/ nocase wide ascii
+		$canary1 = /INCLUDEPICTURE\s+\"(http|ftp)(s)?\:\/\// nocase wide ascii
+	condition:
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and any of ($canary*)
 }
 
 rule OFFICE_file_page {
