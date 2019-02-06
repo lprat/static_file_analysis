@@ -1,4 +1,4 @@
-rule File_contains_VB {
+rule File_contains_REG {
 	meta:
 		author = "Lionel PRAT"
 		version = "0.1"

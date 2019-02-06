@@ -1,9 +1,9 @@
-rule File_contains_VB {
+rule File_contains_HLP {
 	meta:
 		author = "Lionel PRAT"
 		version = "0.1"
 		weight = 5
-		description = "Suspect vbscript file embed from another File (PARENT)"
+		description = "Suspect HLP file embed from another File (PARENT)"
 	strings:
 	    $hlpmagic = { 3f 5f 03 00 }
 	condition:
