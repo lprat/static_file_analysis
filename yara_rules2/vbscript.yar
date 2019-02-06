@@ -18,7 +18,7 @@ rule vbscript_obfusc {
 		$obf8 = /([^ ]+\^[^ ]+){2,}/ nocase
 		$obf9 = /[bcdfghjklmnpqrstvwxz]{4,}/ nocase
 		$obf10 = /[aeuoiy]{4,}/ nocase
-		$obf11 = /([A-Za-z0-9+\/]{4})*([A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)/ nocase
+		$obf11 = /([A-Za-z0-9+\/]{4})*([A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)/ nocase // base 64
 		$obf12 = "ChrW(" nocase
 		$obf13 = "ChrB(" nocase
 		$obf14 = "abs(" nocase

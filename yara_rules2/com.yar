@@ -5938,7 +5938,7 @@ rule ActivX_obj_53 {
         tag = "attack.execution"
     strings:
         $clsid0 = "ce39d6f3-dab7-41b3-9f7d-bd1cc4e92399" nocase ascii wide
-        $clsid1 = "service" nocase ascii wide
+        $clsid1 = /[^A-Z0-9]service[^A-Z0-9]/ nocase ascii wide
     condition:
         check_clsid_bool and any of ($clsid*)
 }
@@ -9543,7 +9543,7 @@ rule ActivX_obj_310 {
 
 rule ActivX_obj_311 {
     meta:
-        description = "ActiveX obj ADs Provider Object"
+        description = "ActiveX obj ADs Provider Object (potential false positive on ADS)"
         author = "Lionel PRAT"
         version = "0.1"
         weight = 3
