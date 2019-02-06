@@ -406,6 +406,7 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
             var_dynamic[str(match.meta['var_match'])] = True
     #Check YARA rules level 2
     externals_var.update(check_level2)
+    externals_var.update(var_dynamic)
     ret_yara = yara_RC2.match(filename, externals=externals_var, timeout=120)
     for match in ret_yara:
         if match.meta['weight'] > 0:
@@ -551,6 +552,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             elif 'var_match' in match.meta:
                 var_dynamic[str(match.meta['var_match'])] = True
         #Check YARA rules level 2
+        externals_var.update(var_dynamic)
         externals_var.update(check_level2)
         ret_yara = yara_RC2.match(filename_path, externals=externals_var, timeout=120) #Second yara scan on Parent file -- Level 2
         for match in ret_yara:
