@@ -663,7 +663,6 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                            if verbose:
                                print "Debug info -- Externals Var from clamav for current file:" + str(externals_var_extra)
                    if json_not_find:
-                       print "SEARCH TYPE NOT JSON" #TODO remove
                        matchre_bool=True
                        r=re.compile(filex+"(.*\n){0,5}LibClamAV debug:\s+Recognized\s+(?P<type>.+)\s+file", re.MULTILINE)
                        if md5match:
