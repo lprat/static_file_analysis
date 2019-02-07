@@ -190,7 +190,7 @@ rule SWF_embed {
 		$str0 = "shockwave-flash" nocase wide ascii
 		//file after
 		$binary0 = {FF 15 ?? ?? ?? ?? ?? 00 00 00 00 00} // 00 ff 15 9e 0c 00 00 01 00 00  00 00 00 => 9e 0c == size of data embed (0xc9e) || 01 == data file numero 1
-		//$binary1 = {00 ?? 15 ?? 00 00 00 00 00} // 00 ca 15 03 00 00  00 00 00 => 9e 0c == size of data embed (0xc9e) || 01 == data file numero 1 // more false positive
+		$binary1 = /\x00.\x15.\x00\x00\x00\x00\x00.{1,30}\x00.\x15.\x00\x00\x00\x00\x00/  // 00 ca 15 03 00 00  00 00 00 => 9e 0c == size of data embed (0xc9e) || 01 == data file numero 1 // more false positive
 	condition:
 		(FileType matches /CL_TYPE_SWF/ or ($magic in (0..1024) and any of ($str*))) and any of ($binary*)
 }
