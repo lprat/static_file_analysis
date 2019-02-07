@@ -1351,6 +1351,7 @@ You can use extern variables build with clamav context and send them to yara wit
 - FileMD5: MD5 of current file
 - CDBNAME: Original name of current file (exemple in MACRO file, or CHM file...)
 - serr: Debug flux of clamav
+- now_7_int: timstamp of now-7j
 - All variables make in json report of clamav
 - All informations extracted by pattern match
 
