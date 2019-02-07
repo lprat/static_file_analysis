@@ -374,10 +374,10 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
     externals_var = {'FileParentType': cl_parent, 'FileType': "CL_TYPE_" + cl_type, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8'), 'PathFile': filename}
     if cdbname:
         externals_var['CDBNAME']=cdbname
-    if verbose:
-        print "Debug info -- External var:"+str(externals_var)
     if externals_var_extra:
         externals_var.update(externals_var_extra)
+    if verbose:
+        print "Debug info -- External var:"+str(externals_var)
     externals_var.update(var_dynamic)
     #add extinfo in var_dyn
     externals_var.update(extract_var_local)
@@ -660,8 +660,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                            #extract extra info of clamav
                            find_type=find_type[:-1]
                            externals_var_extra=dict_extract_path(result_extract,find_type) #fixed
-                           if verbose:
-                               print "Debug info -- Externals Var from clamav for current file:" + str(externals_var_extra)
+                           #if verbose:
+                           #    print "Debug info -- Externals Var from clamav for current file:" + str(externals_var_extra)
                    if json_not_find:
                        matchre_bool=True
                        r=re.compile(filex+"(.*\n){0,5}LibClamAV debug:\s+Recognized\s+(?P<type>.+)\s+file", re.MULTILINE)
@@ -709,9 +709,9 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                                    vba_tmp = re.sub('_[0-9]+$', '', ret['vba_tmp'])
                                    r2=re.compile("LibClamAV debug:\s+vba_readdir:\s+project name:\s+(?P<vba_name>[^\(]+)\("+vba_tmp, re.MULTILINE) #LibClamAV debug: vba_readdir: project name: userform1 (23e1f13082cd07ba98226f5b5a17ff31)
                                    for m2 in r2.finditer(serr):
-									   ret2=m2.groupdict()
-									   if ret2['vba_name']:
-										   vba_name = ret2['vba_name'].strip()
+                                       ret2=m2.groupdict()
+                                       if ret2['vba_name']:
+                                           vba_name = ret2['vba_name'].strip()
                    #Extract CDBNAME
                    origname_file = ""
                    r=re.compile("LibClamAV debug:\s+CDBNAME:[^:]+:[^:]+:(?P<name>[^:]+):.*(\n.*){0,10}"+filex, re.MULTILINE)
@@ -729,7 +729,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                            if ret['name']:
                                origname_file = ret['name']
                    if vba_name and not origname_file:
-					   origname_file = str(vba_name)
+                       origname_file = str(vba_name)
                    swf_add_info = {}
                    if 'SWF' in type_file and 'SWF: File attributes:' in serr:
                        #extract SWF file attributes
