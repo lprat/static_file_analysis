@@ -264,7 +264,7 @@ rule Encrypted_OFFICE {
             reference = "https://isc.sans.edu/forums/diary/Malspam+pushing+ransomware+using+two+layers+of+password+protection+to+avoid+detection/23573/"
 			tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.t1223,attack.execution,attack.defense_evasion"
         condition:
-            ( FileParentType matches /->CL_TYPE_MS/ or FileType matches /CL_TYPE_MS/ ) and ( Streams matches /encrypt/) 
+            Streams matches /encrypt/
 }
 
 rule OFFICE_file_int {
@@ -287,7 +287,27 @@ rule OFFICE_file_char {
 		weight = 7
 		var_match = "office_file_bool"
 	condition:
-	    (uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileType matches /CL_TYPE_ZIP|CL_TYPE_MSOLE|CL_TYPE_OLE|CL_TYPE_OOXML|CL_TYPE_MSWORD|CL_TYPE_MSXL/) and SummaryInfo_CharCount_int > 0 and SummaryInfo_CharCount_int < 10
+	    SummaryInfo_CharCount_int > 0 and SummaryInfo_CharCount_int < 10
+}
+
+rule OFFICE_author {
+	meta:
+		description = "OFFICE DOCUMENT with author suspect"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 5
+	condition:
+	    CoreProperties_Author_Value matches /[bcdfghjklmnpqrstvwxz]{4,}/i or CoreProperties_Author_Value matches /[aeuoiy]{4,}/i or CoreProperties_LastAuthor_Value matches /[bcdfghjklmnpqrstvwxz]{4,}/i or CoreProperties_LastAuthor_Value matches /[aeuoiy]{4,}/i
+}
+
+rule OFFICE_word {
+	meta:
+		description = "OFFICE DOCUMENT with 0 word"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 5
+	condition:
+	    ExtendedProperties_Words_Value matches /[^0-9]0[^0-9]/ or ExtendedProperties_Characters_Value matches /[^0-9]0[^0-9]/
 }
 
 rule OFFICE_canary {
