@@ -1,4 +1,5 @@
 //https://ss64.com/vb/
+//Deobfusc by emulation with https://github.com/decalage2/ViperMonkey
 rule vbscript_obfusc {
 	meta:
 		description = "Vbscript obfuscated"
