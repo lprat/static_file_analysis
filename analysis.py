@@ -524,8 +524,9 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
         #verify yara rules
         if json_find:
             externals_var=dict_extract_path(result_extract,())
+            externals_var['CDBNAME']=os.path.basename(filename)
         else:
-            externals_var = {'RootFileType': "CL_TYPE_" + type_file, 'FileType': "CL_TYPE_" + type_file, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8'), 'PathFile': filename_path}
+            externals_var = {'RootFileType': "CL_TYPE_" + type_file, 'CDBNAME': os.path.basename(filename), 'FileType': "CL_TYPE_" + type_file, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8'), 'PathFile': filename_path}
         if verbose:
             print 'Debug info -- Variable external of Root file:'+str(externals_var)
         #add var_dynamic in var ext
@@ -579,7 +580,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             reta = adddict(result_extract,u'Yara',detect_yara_rule,())
             reta = adddict(result_extract,u'ExtractInfo',detect_yara_strings,())
         else:
-            result_extract = { u'RootFileType': u"CL_TYPE_" + unicode(type_file, "utf-8"), u'FileType': u"CL_TYPE_" + unicode(type_file, "utf-8"), u'FileSize': int(size_file), u'FileMD5': md5_file, u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'ContainedObjects': []}
+            result_extract = { u'RootFileType': u"CL_TYPE_" + unicode(type_file, "utf-8"), u'FileType': u"CL_TYPE_" + unicode(type_file, "utf-8"), u'FileSize': int(size_file), u'FileMD5': md5_file, u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'CDBNAME': unicode(os.path.basename(filename), "utf-8"), u'ContainedObjects': []}
         #reanalyse log clamav for create JSON information
         level_cour = 0
         tempdir_cour = ""
@@ -763,7 +764,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                        #new dir -> new level OR first file!
                        level_cour += 1
                        tempdir_cour = dirx
-                       temp_json[dirx] = {"level": level_cour, "cl_parent": cl_parent, "files": []}
+                       temp_json[dirx] = {"level": level_cour, "cl_parent": cl_parent, "files": [], 'origname_file': ""}
                        find_md5 = getpath(result_extract, cl_parentmd5)
                        list_PType = ""
                        if find_md5:
@@ -775,7 +776,15 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                                if type_parent:
                                    list_PType += "->" + type_parent
                            temp_json[dirx]['cl_parent'] = list_PType
-                       #scan yara and make json
+                           #scan yara and make json
+                           if re.search("CL_TYPE_GZip$", temp_json[dirx]["cl_parent"]):
+                               fpmd5 = find_md5[0][:-1] + (u'CDBNAME',)
+                               try:
+                                  temp_json[dirx]['origname_file'] = re.sub('\.[A-Z0-9a-z_\-]+$', '', readdict(result_extract,fpmd5))
+                               except:
+                                  temp_json[dirx]['origname_file'] = readdict(result_extract,fpmd5)
+                       if temp_json[dirx]['origname_file']:
+                           origname_file = temp_json[dirx]['origname_file']
                        score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra, verbose)
                        temp_json[dirx]['files'].append(md5_file)
                        if matchx:
@@ -785,6 +794,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                    elif tempdir_cour == dirx:
                        #new file in same level
                        if not md5_file in temp_json[dirx]['files']:
+                           if temp_json[dirx]['origname_file']:
+                               origname_file = temp_json[dirx]['origname_file']
                            score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra, verbose)
                            temp_json[dirx]['files'].append(md5_file)
                            if matchx:
@@ -799,6 +810,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                        cl_parent = temp_json[dirx]["cl_parent"]
                        tempdir_cour = dirx
                        if not md5_file in temp_json[dirx]['files']:
+                           if temp_json[dirx]['origname_file']:
+                               origname_file = temp_json[dirx]['origname_file']
                            score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra, verbose)
                            temp_json[dirx]['files'].append(md5_file)
                            if matchx:
