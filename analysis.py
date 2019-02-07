@@ -431,7 +431,7 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
     return score_max, var_dynamic, extract_var_global, result_file
     
 def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patterndb, coef, verbose):
-    #add time in external variable yara for special ch\teck
+    #add time in external variable yara for special check
     now=datetime.now()
     dd=datetime(int(now.strftime('%Y')),int(now.strftime('%m')),int(now.strftime('%d')))+timedelta(days=-7)
     tnow7=dd.strftime("%s000")
