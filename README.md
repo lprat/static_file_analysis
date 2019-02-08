@@ -5,6 +5,7 @@ This tool written in python langage makes the link between clam and yara. It can
 
 ## Features
 - Clamscan extracts embedded files and makes json report
+- Clamscan check password on zip encrypted (ref: https://blog.didierstevens.com/2017/02/15/quickpost-clamav-and-zip-file-decryption/)
 - Analyse json report and make json trees to consolidate informations
 - Extract patterns (pattern.db) with the ability to use the yara rules
 - Scan embedded files and root file with yara rules (+context informations in externs variables: type, parent type, pattern extract, ...)
@@ -26,7 +27,7 @@ This tool written in python langage makes the link between clam and yara. It can
 ## Usage
 ~~~
 Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com
-Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/
+Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/ -b password.pwdb 
 
 
 	 -h/--help : how to use
@@ -36,6 +37,8 @@ Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p 
 	 -y/--yara_rules_path= : path of rules yara level 1
 
          -a/--yara_rules_path2= : path of rules yara level 2
+
+	 -b/--password= : path of password clamav (.pwdb see: https://blog.didierstevens.com/2017/02/15/quickpost-clamav-and-zip-file-decryption/)
 
 	 -p/--pattern= : path of pattern filename for data miner
 
@@ -53,7 +56,7 @@ Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p 
 
 	 -v/--verbose= : verbose mode
 
-	 example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -g
+	 example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -g
 
 lionel@local:~/static_analysis$ python analysis.py -c clamav-devel/clamscan/clamscan -g -f tests/pdf/jaff.pdf -y yara_rules/  -j /tmp/log.json -p pattern.db
 Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com
@@ -1350,6 +1353,8 @@ You can use extern variables build with clamav context and send them to yara wit
 - FileSize: Size of current fuke
 - FileMD5: MD5 of current file
 - CDBNAME: Original name of current file (exemple in MACRO file, or CHM file...)
+- zip_crypt_bool: Zip file with password (crypted)
+- EMBED_FILES: if zip file with password, variable contains filenames in zip file
 - serr: Debug flux of clamav
 - now_7_int: timstamp of now-7j
 - All variables make in json report of clamav
