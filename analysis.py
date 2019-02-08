@@ -92,12 +92,13 @@ def mso_file_extract(data):
 ############ END OF FUNCTION ORIGIN: https://github.com/decalage2/oletools/blob/master/oletools/olevba.py
 #########################################################################################################
 def usage():
-    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/\n\n"
+    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/ -b password.pwdb\n\n"
     print "\t -h/--help : for help to use\n"
     print "\t -f/--filename= : path of filename to analysis\n"
     print "\t -y/--yara_rules_path= : path of rules yara level 1\n"
     print "\t -a/--yara_rules_path2= : path of rules yara level 2\n"
     print "\t -p/--pattern= : path of pattern filename for data miner\n"
+    print "\t -b/--password= : path of password clamav (.pwdb see: https://blog.didierstevens.com/2017/02/15/quickpost-clamav-and-zip-file-decryption/)\n"
     print "\t -c/--clamscan_path= : path of binary clamscan [>=0.99.3]\n"
     print "\t -m/--coef_path= : path of coef config file\n"
     print "\t -d/--directory_tmp= : path of directory to extract emmbedded file(s)\n"
@@ -106,7 +107,7 @@ def usage():
     print "\t -s/--save_graph= : path filename where save graph (PNG)\n"
     print "\t -r/--remove= : remove tempory files\n"
     print "\t -v/--verbose= : verbose mode\n"
-    print "\t example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -g\n"
+    print "\t example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -g\n"
 
 #source: https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
 def which(program):
@@ -428,9 +429,13 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
     result_file = { u'FileParentType': cl_parent, u'FileType': u"CL_TYPE_" + cl_type, u'FileSize': int(size_file), u'FileMD5': md5_file, u'PathFile': [unicode(filename, "utf-8")],  u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'ContainedObjects': []}
     if cdbname:
         result_file[u'CDBNAME']=cdbname
+    if 'zip_crypt_bool' in externals_var_extra:
+        result_file[u'zip_crypt']=True
+        if 'EMBED_FILES' in externals_var_extra:
+            result_file[u'EMBED_FILES']=externals_var_extra['EMBED_FILES']
     return score_max, var_dynamic, extract_var_global, result_file
     
-def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patterndb, coef, verbose):
+def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patterndb, coef, usepass, verbose):
     #add time in external variable yara for special check
     now=datetime.now()
     dd=datetime(int(now.strftime('%Y')),int(now.strftime('%m')),int(now.strftime('%d')))+timedelta(days=-7)
@@ -438,10 +443,14 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
     result_extract = {}
     coefx = 1 
     print "Extract emmbedded file(s) with clamav..."
-    #create empty file for no check sig on file
-    emptyrule_path = tempfile.gettempdir() + '/emptyrule.yar'
-    if not os.path.isfile(emptyrule_path):
-        open(emptyrule_path, 'a').close()
+    #create file for no check sig on file but check password if file crypted
+    #Ref: https://blog.didierstevens.com/2017/02/15/quickpost-clamav-and-zip-file-decryption/
+    emptyrule_path = tempfile.gettempdir() + '/empty.yar'
+    if usepass:
+        emptyrule_path=usepass
+    else:
+        if not os.path.isfile(emptyrule_path):
+            f=open(emptyrule_path, 'a').close
     (working_dir, filename) = os.path.split(filename_path)
     new_env = dict(os.environ)
     args = [clamav_path, '--gen-json', '--debug', '--leave-temps', '--normalize=no', '--tempdir=' + directory_tmp, '-d', emptyrule_path, filename]
@@ -527,6 +536,21 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             externals_var['CDBNAME']=os.path.basename(filename)
         else:
             externals_var = {'RootFileType': "CL_TYPE_" + type_file, 'CDBNAME': os.path.basename(filename), 'FileType': "CL_TYPE_" + type_file, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8'), 'PathFile': filename_path}
+        #Check Zip crypted
+        zip_crypt = False
+        crypt_names = None
+        if "ZIP" in type_file:
+            r=re.compile("cache_check: "+md5_file+" is negative\s*(?P<crypt>(\n.*)+(decrypt - skipping encrypted file, no valid passwords|decrypt - password .*)\s*(\n.*)+)debug: cache_add:\s+"+md5_file+"\s+\(level 0\)", re.MULTILINE)
+            #r=re.compile("cache_check: "+md5_file+" is negative\s*(\n.*)+LibClamAV debug:\s+CDBNAME:[^:]+:[^:]+:(?:<name>[^:]+):.*(\n.*)+decrypt - skipping encrypted file, no valid passwords\s*(\n.*)+debug: cache_add:\s+"+md5_file+"\s+\(level 0\)", re.MULTILINE)
+            for m in r.finditer(serr):
+                zip_crypt = True
+                externals_var['zip_crypt_bool']=True
+                ret=m.groupdict()
+                if 'crypt' in ret and ret['crypt']:
+                    #extract name
+                    crypt_names = re.findall('cli_unzip: ch - fname: ([^\n]+)\n', ret['crypt'], re.MULTILINE)
+                    if crypt_names:
+                        externals_var['EMBED_FILES']=str(crypt_names)
         if verbose:
             print 'Debug info -- Variable external of Root file:'+str(externals_var)
         #add var_dynamic in var ext
@@ -579,8 +603,17 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             reta = adddict(result_extract,u'RiskScore',detect_yara_score,())
             reta = adddict(result_extract,u'Yara',detect_yara_rule,())
             reta = adddict(result_extract,u'ExtractInfo',detect_yara_strings,())
+            reta = adddict(result_extract,u'CDBNAME',unicode(os.path.basename(filename), "utf-8"),())
+            if zip_crypt:
+                reta = adddict(result_extract,u'zip_crypt',True,())
+                if crypt_names:
+                    reta = adddict(result_extract,u'EMBED_FILES', crypt_names,())
         else:
             result_extract = { u'RootFileType': u"CL_TYPE_" + unicode(type_file, "utf-8"), u'FileType': u"CL_TYPE_" + unicode(type_file, "utf-8"), u'FileSize': int(size_file), u'FileMD5': md5_file, u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'CDBNAME': unicode(os.path.basename(filename), "utf-8"), u'ContainedObjects': []}
+            if zip_crypt:
+                result_extract[u'zip_crypt'] = True 
+                if crypt_names:
+                    result_extract[u'EMBED_FILES'] = crypt_names
         #reanalyse log clamav for create JSON information
         level_cour = 0
         tempdir_cour = ""
@@ -732,6 +765,19 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                    if vba_name and not origname_file:
                        origname_file = str(vba_name)
                    swf_add_info = {}
+                   zip_crypt = False
+                   crypt_names = None
+                   if "ZIP" in type_file:
+                       r=re.compile("cache_check: "+md5_file+" is negative\s*(?P<crypt>(\n.*)+(decrypt - skipping encrypted file, no valid passwords|decrypt - password .*)\s*(\n.*)+)debug: cache_add:\s+"+md5_file+"\s+\(level 0\)", re.MULTILINE)
+                       for m in r.finditer(serr):
+                           zip_crypt = True
+                           externals_var_extra['zip_crypt_bool']=True
+                           ret=m.groupdict()
+                           if 'crypt' in ret and ret['crypt']:
+                               #extract name
+                               crypt_names = re.findall('cli_unzip: ch - fname: ([^\n]+)\n', ret['crypt'], re.MULTILINE)
+                               if crypt_names:
+                                   externals_var_extra['EMBED_FILES']=str(crypt_names)
                    if 'SWF' in type_file and 'SWF: File attributes:' in serr:
                        #extract SWF file attributes
                        r=re.compile("SWF: File attributes:(?:.*\n){1}(LibClamAV debug:\s+\*\s+[^\n]+\n){1,10}", re.MULTILINE)
@@ -758,7 +804,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                        if os.path.isfile(filex+'_activemime'):
                            #run analyz clamav
                            print "\tAnalyz interne activemime on " + str(md5_file) + "..."
-                           ret_analyz=clamscan(clamav_path, directory_tmp, filex+'_activemime', yara_RC, yara_RC2, patterndb, {}, verbose)
+                           ret_analyz=clamscan(clamav_path, directory_tmp, filex+'_activemime', yara_RC, yara_RC2, patterndb, {}, usepass, verbose)
                            print "\tEnd of analyz interne activemime!"
                    if not dirx in temp_json:
                        #new dir -> new level OR first file!
@@ -842,8 +888,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                                        reta = adddict(result_extract,u'ExtractInfo',ret[u'ExtractInfo'],pmd5[0:len(pmd5)-1],fpresent)
                                        if swf_add_info:
                                            reta = adddict(result_extract,u'SWF_attributes',ret[u'SWF_attributes'],pmd5[0:len(pmd5)-1],fpresent)
-                                       if origname_file:             
-                                           reta = adddict(result_extract,u'CDBNAME',ret[u'CDBNAME'],pmd5[0:len(pmd5)-1],fpresent)
+                                       #if origname_file:             
+                                       #    reta = adddict(result_extract,u'CDBNAME',ret[u'CDBNAME'],pmd5[0:len(pmd5)-1],fpresent)
                                        if ret_analyz:
                                            #print "RET ANALYZ -- ADD1"
                                            pp = pprint.PrettyPrinter(indent=4)
@@ -1033,8 +1079,9 @@ def main(argv):
     verbose = False
     removetmp = False
     make_graphe = False
+    usepass = ""
     try:
-        opts, args = getopt.getopt(argv, "hf:gc:d:y:a:s:j:p:m:vr", ["help", "filename=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "yara_rules_path2=", "save_graph=", "json_save=", "pattern=", "coef_path=", "verbose", "remove"])
+        opts, args = getopt.getopt(argv, "hf:gc:d:y:a:b:s:j:p:m:vr", ["help", "filename=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "yara_rules_path2=", "password=", "save_graph=", "json_save=", "pattern=", "coef_path=", "verbose", "remove"])
     except getopt.GetoptError:
         usage()
         sys.exit(-1)
@@ -1058,6 +1105,13 @@ def main(argv):
             else:
                 print "Error: unuable to create directory: " + working_dirgr + ".\n"
                 sys.exit(-1)
+        elif opt in ("-b", "--password"):
+            #password clamav file
+            if not os.path.isfile(arg):
+                print "Error: File: " + arg + " not exist.\n"
+                usage()
+                sys.exit(-1)
+            usepass=str(arg)
         elif opt in ("-p", "--pattern"):
             #pattern load
             if not os.path.isfile(arg):
@@ -1185,7 +1239,7 @@ def main(argv):
     #run clamscan on file with yara rule empty and option: --gen-json --debug -d empty_rule.yara --leave-temps --tempdir=$DIR_TEMP/
     yara_RC = yara_compile(yarapath, directory_tmp)
     yara_RC2 = yara_compile(yarapath2, directory_tmp)
-    ret = clamscan(clamav_path, directory_tmp, filename,yara_RC, yara_RC2, patterndb, coef, verbose)
+    ret = clamscan(clamav_path, directory_tmp, filename,yara_RC, yara_RC2, patterndb, coef, usepass, verbose)
     if json_file:
         with open(json_file, 'w') as fp:
             json.dump(ret, fp, sort_keys=True, indent=4)
