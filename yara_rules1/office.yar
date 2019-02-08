@@ -255,6 +255,24 @@ rule Suspect_SOAPWSDL_OFFICE {
 	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and all of ($a*)
 }
 
+rule Encrypted_OFFICE_conf {
+        meta:
+			description = "OFFICE DOCUMENT encrypted conf"
+            author = "Lionel PRAT"
+			version = "0.1"
+			weight = 7
+            reference = "http://lists.clamav.net/pipermail/clamav-users/2017-November/005358.html"
+			tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.t1223,attack.execution,attack.defense_evasion"
+		strings:
+			$bad0 = "<encryption" nocase
+			$bad1 = "<keyData" nocase
+			$bad2 = "cipherAlgorithm=" nocase
+			$bad3 = "hashAlgorithm=" nocase
+			$bad4 = "encryptedHmacKey=" nocase
+        condition:
+             ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and 2 of ($bad*)
+}
+
 rule Encrypted_OFFICE {
         meta:
 			description = "Suspect encrypted OFFICE DOCUMENTS"
@@ -344,5 +362,5 @@ rule OFFICE_file {
 		weight = 1
 		var_match = "office_file_bool"
 	condition:
-	    uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileType matches /CL_TYPE_MSOLE|CL_TYPE_OLE|CL_TYPE_OOXML|CL_TYPE_MSWORD|CL_TYPE_MSXL/
+	    (uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileType matches /CL_TYPE_MSOLE|CL_TYPE_OLE|CL_TYPE_OOXML|CL_TYPE_MSWORD|CL_TYPE_MSXL/) and (not CDBNAME matches /\.zip$/)
 }
