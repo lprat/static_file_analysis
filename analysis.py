@@ -19,6 +19,7 @@ import subprocess
 import sys, getopt
 import collections
 import zlib
+import unidecode
 
 ## file[path], direcory_extract[path], graph[bool]
 #verify clamscan present, or verify ENV CLAMSCAN_PATH
@@ -92,7 +93,7 @@ def mso_file_extract(data):
 ############ END OF FUNCTION ORIGIN: https://github.com/decalage2/oletools/blob/master/oletools/olevba.py
 #########################################################################################################
 def usage():
-    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/ -b password.pwdb\n\n"
+    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/ -b password.pwdb -i /usr/bin/tesseract -l fra\n"
     print "\t -h/--help : for help to use\n"
     print "\t -f/--filename= : path of filename to analysis\n"
     print "\t -y/--yara_rules_path= : path of rules yara level 1\n"
@@ -103,11 +104,13 @@ def usage():
     print "\t -m/--coef_path= : path of coef config file\n"
     print "\t -d/--directory_tmp= : path of directory to extract emmbedded file(s)\n"
     print "\t -j/--json_save= : path filename where save json result (JSON)\n"
+    print "\t -i/--image= : path of \'tesseract\' for analysis on potential social engenering by image\n"
+    print "\t -l/--lang_image= : \'tesseract\' lang ocr extratc (eng, fra, ...) \n"
     print "\t -g/--graph : generate graphe of analyz\n"
     print "\t -s/--save_graph= : path filename where save graph (PNG)\n"
     print "\t -r/--remove= : remove tempory files\n"
     print "\t -v/--verbose= : verbose mode\n"
-    print "\t example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -g\n"
+    print "\t example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -i /usr/bin/tesseract -l fra -g\n"
 
 #source: https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
 def which(program):
@@ -355,7 +358,7 @@ def remove_double(nested_dict):
         elif type(v) is dict: # v is a dict
             remove_double(v) # recursive call
 
-def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra={}, verbose=False):
+def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, tesseract, lang, externals_var_extra={}, verbose=False):
     #find size file 
     size_file = os.path.getsize(filename)
     #extract info
@@ -373,6 +376,15 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
                 extract_var_global["extract_global_"+kx] = extract_var_global[kx] + "||--||" + vx
     #yara check
     externals_var = {'FileParentType': cl_parent, 'FileType': "CL_TYPE_" + cl_type, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8'), 'PathFile': filename}
+    #check image content by ocr
+    if tesseract and os.path.isfile(tesseract) and cl_type in ['PNG', 'JPEG', 'GIF', 'TIFF', 'BMP']:
+        temp = tempfile.NamedTemporaryFile()
+        args_ocr = [tesseract, filename, temp.name, '-l', lang]
+        proc_ocr = subprocess.Popen(args_ocr, env=new_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_dir)
+        output_ocr, serr_ocr = proc_ocr.communicate()
+        with open(temp.name+".txt", 'r') as content_file:
+            externals_var['image2text'] = unidecode.unidecode(unicode(content_file.read(), "utf-8"))
+        temp.close
     if cdbname:
         externals_var['CDBNAME']=cdbname
     if externals_var_extra:
@@ -435,7 +447,7 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
             result_file[u'EMBED_FILES']=externals_var_extra['EMBED_FILES']
     return score_max, var_dynamic, extract_var_global, result_file
     
-def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patterndb, coef, usepass, verbose):
+def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patterndb, coef, usepass, tesseract, lang, verbose):
     #add time in external variable yara for special check
     now=datetime.now()
     dd=datetime(int(now.strftime('%Y')),int(now.strftime('%m')),int(now.strftime('%d')))+timedelta(days=-7)
@@ -551,6 +563,15 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                     crypt_names = re.findall('cli_unzip: ch - fname: ([^\n]+)\n', ret['crypt'], re.MULTILINE)
                     if crypt_names:
                         externals_var['EMBED_FILES']=str(crypt_names)
+        #check image content by ocr
+        if tesseract and os.path.isfile(tesseract) and type_file in ['PNG', 'JPEG', 'GIF', 'TIFF', 'BMP']:
+            temp = tempfile.NamedTemporaryFile()
+            args_ocr = [tesseract, filename_path, temp.name, '-l', lang]
+            proc_ocr = subprocess.Popen(args_ocr, env=new_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_dir)
+            output_ocr, serr_ocr = proc_ocr.communicate()
+            with open(temp.name+".txt", 'r') as content_file:
+                externals_var['image2text'] = unidecode.unidecode(unicode(content_file.read(), "utf-8"))
+            temp.close
         if verbose:
             print 'Debug info -- Variable external of Root file:'+str(externals_var)
         #add var_dynamic in var ext
@@ -804,7 +825,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                        if os.path.isfile(filex+'_activemime'):
                            #run analyz clamav
                            print "\tAnalyz interne activemime on " + str(md5_file) + "..."
-                           ret_analyz=clamscan(clamav_path, directory_tmp, filex+'_activemime', yara_RC, yara_RC2, patterndb, {}, usepass, verbose)
+                           ret_analyz=clamscan(clamav_path, directory_tmp, filex+'_activemime', yara_RC, yara_RC2, patterndb, {}, usepass, tesseract, lang, verbose)
                            print "\tEnd of analyz interne activemime!"
                    if not dirx in temp_json:
                        #new dir -> new level OR first file!
@@ -831,7 +852,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                                   temp_json[dirx]['origname_file'] = readdict(result_extract,fpmd5)
                        if temp_json[dirx]['origname_file']:
                            origname_file = temp_json[dirx]['origname_file']
-                       score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra, verbose)
+                       score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, tesseract, lang, externals_var_extra, verbose)
                        temp_json[dirx]['files'].append(md5_file)
                        if matchx:
                            all_md5[md5_file] = 0
@@ -842,7 +863,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                        if not md5_file in temp_json[dirx]['files']:
                            if temp_json[dirx]['origname_file']:
                                origname_file = temp_json[dirx]['origname_file']
-                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra, verbose)
+                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, tesseract, lang, externals_var_extra, verbose)
                            temp_json[dirx]['files'].append(md5_file)
                            if matchx:
                                all_md5[md5_file] = 0
@@ -858,7 +879,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                        if not md5_file in temp_json[dirx]['files']:
                            if temp_json[dirx]['origname_file']:
                                origname_file = temp_json[dirx]['origname_file']
-                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra, verbose)
+                           score_max, var_dynamic, extract_var_global, ret = scan_json(filex, temp_json[dirx]["cl_parent"], origname_file, type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, tesseract, lang, externals_var_extra, verbose)
                            temp_json[dirx]['files'].append(md5_file)
                            if matchx:
                                all_md5[md5_file] = 0
@@ -941,7 +962,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                             externals_var_extra=dict_extract_path(result_extract,find_type) #fixed
                             if verbose:
                                print "Debug info -- Externals Var from clamav for current file:" + str(externals_var_extra)
-                        score_max, var_dynamic, extract_var_global, ret = scan_json(os.path.join(root, filename), list_PType, "", type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, externals_var_extra, verbose)
+                        score_max, var_dynamic, extract_var_global, ret = scan_json(os.path.join(root, filename), list_PType, "", type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, tesseract, lang, externals_var_extra, verbose)
                         for pmd5 in find_type:
                             reta = adddict(result_extract,u'FileParentType',ret[u'FileParentType'],pmd5[0:len(pmd5)-1],fpresent)
                             reta = adddict(result_extract,u'PathFile',ret[u'PathFile'],pmd5[0:len(pmd5)-1],fpresent)
@@ -1080,8 +1101,10 @@ def main(argv):
     removetmp = False
     make_graphe = False
     usepass = ""
+    tesseract=""
+    lang="eng"
     try:
-        opts, args = getopt.getopt(argv, "hf:gc:d:y:a:b:s:j:p:m:vr", ["help", "filename=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "yara_rules_path2=", "password=", "save_graph=", "json_save=", "pattern=", "coef_path=", "verbose", "remove"])
+        opts, args = getopt.getopt(argv, "hf:gc:d:y:a:b:i:l:s:j:p:m:vr", ["help", "filename=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "yara_rules_path2=", "password=", 'image=', 'lang_image=', "save_graph=", "json_save=", "pattern=", "coef_path=", "verbose", "remove"])
     except getopt.GetoptError:
         usage()
         sys.exit(-1)
@@ -1173,6 +1196,20 @@ def main(argv):
                 print "Error: File: " + arg + " not exist.\n"
                 usage()
                 sys.exit(-1)
+        elif opt in ("-i", "--image"):
+             tesseract = arg
+             #verify file exist
+             if not os.path.isfile(tesseract):
+                 print "Error: File: " + arg + " not exist.\n"
+                 usage()
+                 sys.exit(-1)
+        elif opt in ("-l", "--lang_image"):
+             lang = arg
+             #verify lang exist
+             if not lang in ['Arabic','Armenian','Bengali','Canadian_Aboriginal','Cherokee','Cyrillic','Devanagari','Ethiopic','Fraktur','Georgian','Greek','Gujarati','Gurmukhi','HanS','HanS_vert','HanT','HanT_vert','Hangul','Hangul_vert','Hebrew','Japanese','Japanese_vert','Kannada','Khmer','Lao','Latin','Malayalam','Myanmar','Oriya','Sinhala','Syriac','Tamil','Telugu','Thaana','Thai','Tibetan','Vietnamese','afr','amh','ara','asm','aze','aze_cyrl','bel','ben','bod','bos','bre','bul','cat','ceb','ces','chi_sim','chi_sim_vert','chi_tra','chi_tra_vert','chr','cos','cym','dan','deu','div','dzo','ell','eng','enm','epo','est','eus','fao','fas','fil','fin','fra','frk','frm','fry','gla','gle','glg','grc','guj','hat','heb','hin','hrv','hun','hye','iku','ind','isl','ita','ita_old','jav','jpn','jpn_vert','kan','kat','kat_old','kaz','khm','kir','kmr','kor','kor_vert','lao','lat','lav','lit','ltz','mal','mar','mkd','mlt','mon','mri','msa','mya','nep','nld','nor','oci','ori','osd','pan','pol','por','pus','que','ron','rus','san','sin','slk','slv','snd','spa','spa_old','sqi','srp','srp_latn','sun','swa','swe','syr','tam','tat','tel','tgk','tha','tir','ton','tur','uig','ukr','urd','uzb','uzb_cyrl','vie','yid','yor']:
+                 print "Error: Lang tesseract: " + arg + " not exist (check \"tesseract --list-langs).\n"
+                 usage()
+                 sys.exit(-1)
         elif opt in ("-y", "--yara_rules_path"):
             #verify file exist
             if os.path.isfile(arg):
@@ -1239,7 +1276,7 @@ def main(argv):
     #run clamscan on file with yara rule empty and option: --gen-json --debug -d empty_rule.yara --leave-temps --tempdir=$DIR_TEMP/
     yara_RC = yara_compile(yarapath, directory_tmp)
     yara_RC2 = yara_compile(yarapath2, directory_tmp)
-    ret = clamscan(clamav_path, directory_tmp, filename,yara_RC, yara_RC2, patterndb, coef, usepass, verbose)
+    ret = clamscan(clamav_path, directory_tmp, filename,yara_RC, yara_RC2, patterndb, coef, usepass, tesseract, lang, verbose)
     if json_file:
         with open(json_file, 'w') as fp:
             json.dump(ret, fp, sort_keys=True, indent=4)
