@@ -1303,8 +1303,8 @@ Phase one finish!
 ## Requirements
 
 - clamav
-- python: yara, pydot, hashlib, zlib, json
-
+- python: yara, pydot, hashlib, zlib, json, pyparsing
+- For Image OCR: tesseract-ocr-all (deb)
 ## Install
 
 ~~~
@@ -1355,6 +1355,7 @@ You can use extern variables build with clamav context and send them to yara wit
 - CDBNAME: Original name of current file (exemple in MACRO file, or CHM file...)
 - zip_crypt_bool: Zip file with password (crypted)
 - EMBED_FILES: if zip file with password, variable contains filenames in zip file
+- image2text: if image file you can extract text with ocr (tesseract => !! attention Leptonica have CVE-2018..., on debian, tesseract compiled with hardening option security)
 - serr: Debug flux of clamav
 - now_7_int: timstamp of now-7j
 - All variables make in json report of clamav
