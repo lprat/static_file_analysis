@@ -117,3 +117,44 @@ rule INI_desktop {
 	condition:
 	    check_ini_bool and any of ($part*)
 }
+
+
+rule INF_autorun {
+	meta:
+		description = "Windows autorun.inf File"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 5
+		reference = "https://fr.wikipedia.org/wiki/Autorun.inf"
+	strings:
+	    $auto = "AutoRun" nocase wide ascii
+	    $part1 = "open" nocase wide ascii
+	    $part2 = "icon" nocase wide ascii
+	    $part3 = "useautorun" nocase wide ascii
+	    $part4 = "shell" nocase wide ascii
+	condition:
+	    check_ini_bool and $auto and any of ($part*)
+}
+
+rule INF_autorund {
+	meta:
+		description = "Windows autorun.inf File with driver device install"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 5
+		reference = "https://docs.microsoft.com/en-us/windows-hardware/drivers/install/inf-ddinstall-section"
+	strings:
+	    $div0 = "DeviceInstall" nocase wide ascii
+	    $div1 = "DDInstall" nocase wide ascii
+	    $div2 = "ClassInstall" nocase wide ascii
+	    $div3 = "DeviceInstall" nocase wide ascii
+	    $div4 = "DeviceInstall" nocase wide ascii
+	    $part1 = "CopyFiles" nocase wide ascii
+	    $part2 = "DriverVer" nocase wide ascii
+	    $part3 = "AddReg" nocase wide ascii
+	    $part4 = "RegisterDlls" nocase wide ascii
+	    $part5 = "HardwareId" nocase wide ascii
+	    $part6 = "AddService" nocase wide ascii
+	condition:
+	    check_ini_bool and any of ($div*) and any of ($part*)
+}

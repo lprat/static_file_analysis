@@ -3,7 +3,7 @@
 
 rule INI_file {
 	meta:
-		description = "Windows INI File (.ini)"
+		description = "Windows INI/INF File (.ini/.inf)"
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 1
@@ -15,5 +15,5 @@ rule INI_file {
 	    $inimagic1 = /^[^=]+=[^=]+(;.*)*$/ nocase wide ascii
 	    $regmagic = "Windows Registry Editor Version" nocase
 	condition:
-	    ((2 of ($inimagic*) and (not $regmagic)) or PathFile matches /.*\.ini$/i or CDBNAME matches /.*\.ini$/i) and FileType matches /CL_TYPE_ASCII|CL_TYPE_UTF/
+	    ((2 of ($inimagic*) and (not $regmagic)) or PathFile matches /.*\.ini$|.*\.inf$/i or CDBNAME matches /.*\.ini$|.*\.inf$/i) and FileType matches /CL_TYPE_ASCII|CL_TYPE_UTF/
 }
