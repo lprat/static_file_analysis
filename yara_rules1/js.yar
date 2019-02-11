@@ -14,11 +14,12 @@ rule File_contains_JS {
         $js1 = "return" nocase
         $js2 = "var " nocase
         $k0 = "if " nocase
-        $k1 = "do " nocase
-        $k2 = "while " nocase
-        $k3 = "for " nocase
-        $var = /(^|\s+)var\s+\S+=[^;]+;/ nocase
-        $func = /(^|\s+)function\s+\S+\([^\)]+\)\s+{/ nocase
+        $k1 = "else " nocase
+        $k2 = "do " nocase
+        $k3 = "while " nocase
+        $k4 = "for " nocase
+        $var = /(^|\s+)var\s+\S+\s*=[^;]+;/ nocase
+        $func = /(^|\s+)function\s+\S+\([^\)]+\)\s*{/ nocase
 	condition:
 		((2 of ($js*) and 2 of ($k*) and $func and $var) or PathFile matches /.*\.js$/i or CDBNAME matches /.*\.js$/i) and FileParentType matches /->/
 }
@@ -37,11 +38,12 @@ rule JS_content {
         $js1 = "return" nocase
         $js2 = "var " nocase
         $k0 = "if " nocase
-        $k1 = "do " nocase
-        $k2 = "while " nocase
-        $k3 = "for " nocase
-        $var = /(^|\s+)var\s+\S+=[^;]+;/ nocase
-        $func = /(^|\s+)function\s+\S+\([^\)]+\)\s+{/ nocase
+        $k1 = "else " nocase
+        $k2 = "do " nocase
+        $k3 = "while " nocase
+        $k4 = "for " nocase
+        $var = /(^|\s+)var\s+\S+\s*=[^;]+;/ nocase
+        $func = /(^|\s+)function\s+\S+\([^\)]+\)\s*{/ nocase
     condition:
         (2 of ($js*) and 2 of ($k*) and $func and $var) or PathFile matches /.*\.js$/i or CDBNAME matches /.*\.js$/i
 }
