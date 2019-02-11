@@ -60,8 +60,24 @@ rule win_api_antidebug {
 		$api6 = "GetTickCount" nocase ascii wide //based time
 		$api7 = "CountClipboardFormats" nocase ascii wide //clipboard empty?
 		$api8 = "GetForeGroundWindow" nocase ascii wide
+		$api9 = "ZwQueryInformation" nocase ascii wide
+		$api10 = "QueryPerformanceCounter" nocase ascii wide
 	condition:
 	    check_winapi_bool and any of ($api*)
+}
+
+rule win_api_clsid {
+	meta:
+		description = "Call windows API for create OLE/COM Obj (clsid)"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 5
+	    tag = "attack.execution"
+	strings:
+		$api0 = "CoCreateInstance" nocase ascii wide
+		$api1 = "OleInitialize" nocase ascii wide
+	condition:
+	    check_winapi_bool and all of ($api*)
 }
 
 rule win_api_unpack {
@@ -298,6 +314,7 @@ rule win_api_servicec {
 		$api0 = "StartService" nocase ascii wide
 		$api1 = "ChangeServiceConfig" nocase ascii wide
 		$api2 = "ControlService" nocase ascii wide
+		$api3 = "OpenSCManager" nocase ascii wide
 	condition:
 	    check_winapi_bool and any of ($api*)
 }
@@ -429,6 +446,23 @@ rule win_api_iowrite {
 	    check_winapi_bool and any of ($api*)
 }
 
+rule win_api_comserv {
+	meta:
+		description = "Export windows API potential implements a COM server"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 5
+	    tag = "attack.exfiltration"
+	strings:
+		$api0 = "DllCanUnloadNow" nocase ascii wide
+		$api1 = "DllGetClassObject" nocase ascii wide
+		$api2 = "DllInstall" nocase ascii wide
+		$api3 = "DllRegisterServer" nocase ascii wide
+		$api4 = "DllUnregisterServer" nocase ascii wide
+	condition:
+	    check_winapi_bool and any of ($api*)
+}
+
 rule win_api_ioread {
 	meta:
 		description = "Call windows API potential for activity on I/O read"
@@ -447,7 +481,7 @@ rule win_api_ioread {
 
 rule win_api_iofind {
 	meta:
-		description = "Call windows API potential for activity on I/O find"
+		description = "Call windows API potential for activity on I/O find (enum filesystem)"
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 3
@@ -559,7 +593,7 @@ rule win_api_dllimp {
 
 rule win_api_iodevice {
 	meta:
-		description = "Call windows API potential for activity IO Device"
+		description = "Call windows API potential for activity IO Device (pass information between user space and kernel space)"
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 3
@@ -625,6 +659,8 @@ rule win_api_crypt {
 	    tag = "attack.defense_evasion"
 	strings:
 		$api0 = "CryptAcquireContext" nocase ascii wide
+		$api1 = "EncryptMessage" nocase ascii wide
+		$api2 = "DecryptMessage" nocase ascii wide
 	condition:
 	    check_winapi_bool and any of ($api*)
 }
