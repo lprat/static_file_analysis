@@ -551,7 +551,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
         #Check Zip crypted
         zip_crypt = False
         crypt_names = None
-        if "ZIP" in type_file:
+        if "CL_TYPE_ZIP" in externals_var['FileType']:
             r=re.compile("cache_check: "+md5_file+" is negative\s*(?P<crypt>(\n.*)+(decrypt - skipping encrypted file, no valid passwords|decrypt - password .*)\s*(\n.*)+)debug: cache_add:\s+"+md5_file+"\s+\(level 0\)", re.MULTILINE)
             #r=re.compile("cache_check: "+md5_file+" is negative\s*(\n.*)+LibClamAV debug:\s+CDBNAME:[^:]+:[^:]+:(?:<name>[^:]+):.*(\n.*)+decrypt - skipping encrypted file, no valid passwords\s*(\n.*)+debug: cache_add:\s+"+md5_file+"\s+\(level 0\)", re.MULTILINE)
             for m in r.finditer(serr):
@@ -564,7 +564,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                     if crypt_names:
                         externals_var['EMBED_FILES']=str(crypt_names)
         #check image content by ocr
-        if tesseract and os.path.isfile(tesseract) and type_file in ['PNG', 'JPEG', 'GIF', 'TIFF', 'BMP']:
+        if tesseract and os.path.isfile(tesseract) and externals_var['FileType'] in ['CL_TYPE_PNG', 'CL_TYPE_JPEG', 'CL_TYPE_GIF', 'CL_TYPE_TIFF', 'CL_TYPE_BMP']:
             temp = tempfile.NamedTemporaryFile()
             args_ocr = [tesseract, filename_path, temp.name, '-l', lang]
             proc_ocr = subprocess.Popen(args_ocr, env=new_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_dir)
@@ -958,17 +958,17 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                             if type_file_tmp:
                                 type_file = type_file_tmp
                             #extract extra info of clamav
-                            find_type=find_type[:-1]
-                            externals_var_extra=dict_extract_path(result_extract,find_type) #fixed
-                            if verbose:
-                               print "Debug info -- Externals Var from clamav for current file:" + str(externals_var_extra)
-                        score_max, var_dynamic, extract_var_global, ret = scan_json(os.path.join(root, filename), list_PType, "", type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, tesseract, lang, externals_var_extra, verbose)
-                        for pmd5 in find_type:
-                            reta = adddict(result_extract,u'FileParentType',ret[u'FileParentType'],pmd5[0:len(pmd5)-1],fpresent)
-                            reta = adddict(result_extract,u'PathFile',ret[u'PathFile'],pmd5[0:len(pmd5)-1],fpresent)
-                            reta = adddict(result_extract,u'RiskScore',ret[u'RiskScore'],pmd5[0:len(pmd5)-1],fpresent)
-                            reta = adddict(result_extract,u'Yara',ret[u'Yara'],pmd5[0:len(pmd5)-1],fpresent)
-                            reta = adddict(result_extract,u'ExtractInfo',ret[u'ExtractInfo'],pmd5[0:len(pmd5)-1],fpresent)
+                            find_typex=find_type[0][:-1]
+                            externals_var_extra=dict_extract_path(result_extract,find_typex) #fixed
+                            #if verbose:
+                            #   print "Debug info -- Externals Var from clamav for current file:" + str(externals_var_extra)
+                            score_max, var_dynamic, extract_var_global, ret = scan_json(os.path.join(root, filename), list_PType, "", type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, tesseract, lang, externals_var_extra, verbose)
+                            for pmd5 in find_type:
+                                reta = adddict(result_extract,u'FileParentType',ret[u'FileParentType'],pmd5[0:len(pmd5)-1],fpresent)
+                                reta = adddict(result_extract,u'PathFile',ret[u'PathFile'],pmd5[0:len(pmd5)-1],fpresent)
+                                reta = adddict(result_extract,u'RiskScore',ret[u'RiskScore'],pmd5[0:len(pmd5)-1],fpresent)
+                                reta = adddict(result_extract,u'Yara',ret[u'Yara'],pmd5[0:len(pmd5)-1],fpresent)
+                                reta = adddict(result_extract,u'ExtractInfo',ret[u'ExtractInfo'],pmd5[0:len(pmd5)-1],fpresent)
         #actualiz score max
         result_extract[u'GlobalRiskScore'] = score_max
         result_extract[u'GlobalRiskScoreCoef'] = coefx
