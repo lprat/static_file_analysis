@@ -380,6 +380,8 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
     if tesseract and os.path.isfile(tesseract) and cl_type in ['PNG', 'JPEG', 'GIF', 'TIFF', 'BMP']:
         temp = tempfile.NamedTemporaryFile()
         args_ocr = [tesseract, filename, temp.name, '-l', lang]
+        new_env = dict(os.environ)
+        (working_dir, filenamex) = os.path.split(filename)
         proc_ocr = subprocess.Popen(args_ocr, env=new_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_dir)
         output_ocr, serr_ocr = proc_ocr.communicate()
         with open(temp.name+".txt", 'r') as content_file:
