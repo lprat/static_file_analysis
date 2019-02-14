@@ -410,6 +410,8 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
             for check2val in check2vals:
                 check_level2[str(check2val)] = True
         if match.meta['weight'] > 0:
+            if verbose and match.strings:
+                print 'YARA '+match.rule+' match DEBUG:'+str(match.strings)
             if 'tag' in match.meta:
                 detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight'], 'tags': match.meta['tag']}})
             else:
@@ -430,6 +432,8 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
     ret_yara = yara_RC2.match(filename, externals=externals_var, timeout=120)
     for match in ret_yara:
         if match.meta['weight'] > 0:
+            if verbose and match.strings:
+                print 'YARA '+match.rule+' match DEBUG:'+str(match.strings)
             if 'tag' in match.meta:
                 detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight'], 'tags': match.meta['tag']}})
             else:
@@ -608,6 +612,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                 for check2val in check2vals:
                     check_level2[str(check2val)] = True
             if match.meta['weight'] > 0:
+                if verbose and match.strings:
+                    print 'YARA '+match.rule+' match DEBUG:'+str(match.strings)
                 if 'tag' in match.meta:
                     detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight'], 'tags': match.meta['tag']}})
                     atags = match.meta['tag'].split(',')
@@ -632,6 +638,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
         ret_yara = yara_RC2.match(filename_path, externals=externals_var, timeout=120) #Second yara scan on Parent file -- Level 2
         for match in ret_yara:
             if match.meta['weight'] > 0:
+                if verbose and match.strings:
+                    print 'YARA '+match.rule+' match DEBUG:'+str(match.strings)
                 if 'tag' in match.meta:
                     detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight'], 'tags': match.meta['tag']}})
                     atags = match.meta['tag'].split(',')
