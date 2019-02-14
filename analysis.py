@@ -485,10 +485,18 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
         shutil.rmtree(directory_tmp)
         sys.exit(-1)
     #run command OK
+    #LibClamAV debug: cli_updatelimits: scansize exceeded (initial: 104857600, consumed: 0, needed: 873684452)
+    #LibClamAV debug: cli_updatelimits: filesize exceeded (allowed: 26214400, needed: 873684452)
+    if re.search("cli_updatelimits: filesize exceeded", serr):
+        print serr
+        print "Error: clamscan could not process the file because file size is exceeded size allowed.\n"
+        shutil.rmtree(directory_tmp)
+        sys.exit(-1)
     else:
         #find json file -- > json written to: tmp5//clamav-07c46ccfca138bfce61564c552931476.tmp
         root_type = "UNKNOWN" 
         score_max = 0
+        global_tags = []
         var_dynamic = {}
         extract_var_global = {}
         m = re.search('json written to:\s+(.+)\n', serr)
@@ -602,6 +610,10 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             if match.meta['weight'] > 0:
                 if 'tag' in match.meta:
                     detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight'], 'tags': match.meta['tag']}})
+                    atags = match.meta['tag'].split(',')
+                    for tag in atags:
+                        if tag.lower().startswith("attack.") and tag.lower() not in global_tags:
+                            global_tags.append(tag.lower())
                 else:
                     detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
                 if match.meta['weight'] > detect_yara_score:
@@ -622,6 +634,10 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             if match.meta['weight'] > 0:
                 if 'tag' in match.meta:
                     detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight'], 'tags': match.meta['tag']}})
+                    atags = match.meta['tag'].split(',')
+                    for tag in atags:
+                        if tag.lower().startswith("attack.") and tag.lower() not in global_tags:
+                            global_tags.append(tag.lower())
                 else:
                     detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
                 if match.meta['weight'] > detect_yara_score:
@@ -920,6 +936,13 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                                        reta = adddict(result_extract,u'PathFile',ret[u'PathFile'],pmd5[0:len(pmd5)-1],fpresent)
                                        reta = adddict(result_extract,u'RiskScore',ret[u'RiskScore'],pmd5[0:len(pmd5)-1],fpresent)
                                        reta = adddict(result_extract,u'Yara',ret[u'Yara'],pmd5[0:len(pmd5)-1],fpresent)
+                                       for f_r_y in ret[u'Yara']: #found rules yara []
+                                           for r_y_k, r_y_v in f_r_y.items(): #rule yara name
+                                               if 'tags' in r_y_v:
+                                                   atags = r_y_v['tags'].split(',')
+                                                   for tag in atags:
+                                                       if tag.lower().startswith("attack.") and tag.lower() not in global_tags:
+                                                           global_tags.append(tag.lower())
                                        reta = adddict(result_extract,u'ExtractInfo',ret[u'ExtractInfo'],pmd5[0:len(pmd5)-1],fpresent)
                                        if swf_add_info:
                                            reta = adddict(result_extract,u'SWF_attributes',ret[u'SWF_attributes'],pmd5[0:len(pmd5)-1],fpresent)
@@ -982,9 +1005,17 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                                 reta = adddict(result_extract,u'PathFile',ret[u'PathFile'],pmd5[0:len(pmd5)-1],fpresent)
                                 reta = adddict(result_extract,u'RiskScore',ret[u'RiskScore'],pmd5[0:len(pmd5)-1],fpresent)
                                 reta = adddict(result_extract,u'Yara',ret[u'Yara'],pmd5[0:len(pmd5)-1],fpresent)
+                                for f_r_y in ret[u'Yara']: #found rules yara []
+                                           for r_y_k, r_y_v in f_r_y.items(): #rule yara name
+                                               if 'tags' in r_y_v:
+                                                   atags = r_y_v['tags'].split(',')
+                                                   for tag in atags:
+                                                       if tag.lower().startswith("attack.") and tag.lower() not in global_tags:
+                                                           global_tags.append(tag.lower())
                                 reta = adddict(result_extract,u'ExtractInfo',ret[u'ExtractInfo'],pmd5[0:len(pmd5)-1],fpresent)
         #actualiz score max
         result_extract[u'GlobalRiskScore'] = score_max
+        result_extract[u'GlobalTags'] = ', '.join(sorted(global_tags))
         result_extract[u'GlobalRiskScoreCoef'] = coefx
         #add info tmp dir
         result_extract[u'TempDirExtract'] =  directory_tmp
@@ -1058,8 +1089,11 @@ def create_graph(filename, result_extract, verbose, path_write_png='/tmp/analysi
         color="red"
     dot_content += 'R_0 [shape=record, label="{{' + os.path.basename(filename) + '|' + str(result_extract[u'GlobalRiskScore']) + '|' + 'Coef:' + str(result_extract[u'GlobalRiskScoreCoef']) + '}|' + result_extract[u'RootFileType'].encode('utf8') + '}", color=' + color + '];\n'
     if result_extract[u'Yara']:
-            dot_content += 'R_0_info [label="' + str(result_extract[u'Yara']).replace('}, {', '},\n{').replace('"', '').replace("'", '').encode('utf8') + '", color=blue];\n' 
-            dot_content += 'R_0 -- R_0_info [style=dotted];\n'
+        dot_content += 'R_0_info [label="' + str(result_extract[u'Yara']).replace('}, {', '},\n{').replace('"', '').replace("'", '').encode('utf8') + '", color=blue];\n' 
+        dot_content += 'R_0 -- R_0_info [style=dotted];\n'
+    if result_extract[u'GlobalTags']:
+        dot_content += 'R_0_tags [label="' + result_extract[u'GlobalTags'].replace('}, {', '},\n{').replace('"', '').replace("'", '').replace(", ", ',\n').encode('utf8') + '", color=red];\n' 
+        dot_content += 'R_0 -- R_0_tags [style=dotted];\n'
     dot_content += json2dot(result_extract, dangerous_score, 'R_0', 'R_0')
     dot_content += '}'
     if verbose:
