@@ -21,6 +21,7 @@ This tool written in python langage makes the link between clam and yara. It can
 - Compute risk score
   - Put max score on top of tree
   - Add global score with coefficient mechanism (coef.conf) to max score
+- Extract IOC on yara rules match
 - Create PNG graph for fast analysis
 - Output result tree json in a file
 
@@ -1336,7 +1337,9 @@ docker-compose -f docker-compose_api.yml run sfa
 
 - coef.conf : file configuration for evaluating coefficient score
 - pattern.db : file configuration with extracting pattern
-- yara_rules/ : directory which contains yara rules
+- yara_rules1/ : directory which contains yara rules level 1
+- yara_rules2/ : directory which contains yara rules level 2
+- password.pwdb : file contains password database to try open zip with password
 
 ## Make your own yara rules
 
@@ -1345,6 +1348,7 @@ To create yara rules with this tool, you must use meta field:
 - weight: the score of the rule
 - var_match: optionnal, you can add extern var if rule match for subsequent check (variable global - on all files)
 - check_level2: optionnal, you can add extern var used to choice level 2 check (value: "check_command_bool,check_registry_bool") (variable local - only on current files)
+- ids: extract ioc from YARA rules match "strings" (https://yara.readthedocs.io/en/v3.8.1/yarapython.html#yara.Match) and output in json result on 'ioc' and 'globalIOC'. You choice category IOC, example: ids = "win_api" then create ioc{'win_api': ['first string found by yara match', 'second string found by yara match', ...]}
 
 You can use extern variables build with clamav context and send them to yara with python script (analysis.py):
 - PathFile: filename and path

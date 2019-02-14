@@ -23,9 +23,10 @@ import unidecode
 
 ## file[path], direcory_extract[path], graph[bool]
 #verify clamscan present, or verify ENV CLAMSCAN_PATH
-#verify option else display menu
-#TODO: verify other md5 present in json result and find in directory
 
+######GLOBAL VAR######
+ioc_global = {}
+######################
 #########################################################################################################
 ##### USE MSO FILE EXTRACT because clamav don't uncompress activemime
 ########### FUNCTION ORIGIN: https://github.com/decalage2/oletools/blob/master/oletools/olevba.py
@@ -412,10 +413,19 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
         if match.meta['weight'] > 0:
             if verbose and match.strings:
                 print 'YARA '+match.rule+' match DEBUG:'+str(match.strings)
+            found_rule={match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}}
             if 'tag' in match.meta:
-                detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight'], 'tags': match.meta['tag']}})
-            else:
-                   detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
+                found_rule[match.rule]['tags']=match.meta['tag']
+            if 'ids' in match.meta and match.meta['ids'] and match.strings:
+                if not match.meta['ids'].lower() in ioc_global:
+                    ioc_global[match.meta['ids'].lower()] = []
+                found_rule[match.rule]['ioc']=[]
+                for iocx in match.strings:
+                    if not iocx[2] in found_rule[match.rule]['ioc']:
+                        found_rule[match.rule]['ioc'].append(iocx[2])
+                    if not iocx[2] in ioc_global[match.meta['ids'].lower()]:
+                        ioc_global[match.meta['ids'].lower()].append(iocx[2])
+            detect_yara_rule.append(found_rule)
             if match.meta['weight'] > detect_yara_score:
                 detect_yara_score = match.meta['weight']
                 if detect_yara_score > score_max:
@@ -434,10 +444,19 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
         if match.meta['weight'] > 0:
             if verbose and match.strings:
                 print 'YARA '+match.rule+' match DEBUG:'+str(match.strings)
+            found_rule={match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}}
             if 'tag' in match.meta:
-                detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight'], 'tags': match.meta['tag']}})
-            else:
-                detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
+                found_rule[match.rule]['tags']=match.meta['tag']
+            if 'ids' in match.meta and match.meta['ids'] and match.strings:
+                if not match.meta['ids'].lower() in ioc_global:
+                    ioc_global[match.meta['ids'].lower()] = []
+                found_rule[match.rule]['ioc']=[]
+                for iocx in match.strings:
+                    if not iocx[2] in found_rule[match.rule]['ioc']:
+                        found_rule[match.rule]['ioc'].append(iocx[2])
+                    if not iocx[2] in ioc_global[match.meta['ids'].lower()]:
+                        ioc_global[match.meta['ids'].lower()].append(iocx[2])
+            detect_yara_rule.append(found_rule)
             if match.meta['weight'] > detect_yara_score:
                 detect_yara_score = match.meta['weight']
                 if detect_yara_score > score_max:
@@ -614,14 +633,23 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             if match.meta['weight'] > 0:
                 if verbose and match.strings:
                     print 'YARA '+match.rule+' match DEBUG:'+str(match.strings)
+                found_rule={match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}}
                 if 'tag' in match.meta:
-                    detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight'], 'tags': match.meta['tag']}})
+                    found_rule[match.rule]['tags']=match.meta['tag']
                     atags = match.meta['tag'].split(',')
                     for tag in atags:
                         if tag.lower().startswith("attack.") and tag.lower() not in global_tags:
                             global_tags.append(tag.lower())
-                else:
-                    detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
+                if 'ids' in match.meta and match.meta['ids'] and match.strings:
+                    if not match.meta['ids'].lower() in ioc_global:
+                        ioc_global[match.meta['ids'].lower()] = []
+                    found_rule[match.rule]['ioc']=[]
+                    for iocx in match.strings:
+                        if not iocx[2] in found_rule[match.rule]['ioc']:
+                            found_rule[match.rule]['ioc'].append(iocx[2])
+                        if not iocx[2] in ioc_global[match.meta['ids'].lower()]:
+                            ioc_global[match.meta['ids'].lower()].append(iocx[2])
+                detect_yara_rule.append(found_rule)
                 if match.meta['weight'] > detect_yara_score:
                     detect_yara_score = match.meta['weight']
                     if detect_yara_score > score_max:
@@ -640,14 +668,23 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             if match.meta['weight'] > 0:
                 if verbose and match.strings:
                     print 'YARA '+match.rule+' match DEBUG:'+str(match.strings)
+                found_rule={match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}}
                 if 'tag' in match.meta:
-                    detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight'], 'tags': match.meta['tag']}})
+                    found_rule[match.rule]['tags']=match.meta['tag']
                     atags = match.meta['tag'].split(',')
                     for tag in atags:
                         if tag.lower().startswith("attack.") and tag.lower() not in global_tags:
                             global_tags.append(tag.lower())
-                else:
-                    detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
+                if 'ids' in match.meta and match.meta['ids'] and match.strings:
+                    if not match.meta['ids'].lower() in ioc_global:
+                        ioc_global[match.meta['ids'].lower()] = []
+                    found_rule[match.rule]['ioc']=[]
+                    for iocx in match.strings:
+                        if not iocx[2] in found_rule[match.rule]['ioc']:
+                            found_rule[match.rule]['ioc'].append(iocx[2])
+                        if not iocx[2] in ioc_global[match.meta['ids'].lower()]:
+                            ioc_global[match.meta['ids'].lower()].append(iocx[2])
+                detect_yara_rule.append(found_rule)
                 if match.meta['weight'] > detect_yara_score:
                     detect_yara_score = match.meta['weight']
                     if detect_yara_score > score_max:
@@ -1025,6 +1062,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
         result_extract[u'GlobalRiskScore'] = score_max
         result_extract[u'GlobalTags'] = ', '.join(sorted(global_tags))
         result_extract[u'GlobalRiskScoreCoef'] = coefx
+        result_extract[u'GlobalIOC'] = ioc_global
         #add info tmp dir
         result_extract[u'TempDirExtract'] =  directory_tmp
         #calcul globalriskscore with coef
@@ -1071,6 +1109,10 @@ def json2dot(nested_dict, dangerous_score, name_cour, name_parent):
         else:
             dot_content += name_cour + ' [shape=record, label="{{' + nested_dict[u'FileMD5'].encode('utf8') + '|' + str(nested_dict[u'RiskScore']) + '}|' + nested_dict[u'FileType'].encode('utf8') + '}", color=' + color + '];\n'    
         if nested_dict[u'Yara']:
+            for found_rule in nested_dict[u'Yara']:
+                for k,v in found_rule.items():
+                    if 'ioc' in v:
+                        v.pop('ioc',None)
             dot_content += name_cour + '_info [label="' + str(nested_dict[u'Yara']).replace('}, {', '},\n{').replace('"', '').replace("'", '').encode('utf8') + '", color=blue];\n'    
         # create link
         if color == 'red':
@@ -1097,6 +1139,10 @@ def create_graph(filename, result_extract, verbose, path_write_png='/tmp/analysi
         color="red"
     dot_content += 'R_0 [shape=record, label="{{' + os.path.basename(filename) + '|' + str(result_extract[u'GlobalRiskScore']) + '|' + 'Coef:' + str(result_extract[u'GlobalRiskScoreCoef']) + '}|' + result_extract[u'RootFileType'].encode('utf8') + '}", color=' + color + '];\n'
     if result_extract[u'Yara']:
+        for found_rule in result_extract[u'Yara']:
+            for k,v in found_rule.items():
+                if 'ioc' in v:
+                    v.pop('ioc',None)
         dot_content += 'R_0_info [label="' + str(result_extract[u'Yara']).replace('}, {', '},\n{').replace('"', '').replace("'", '').encode('utf8') + '", color=blue];\n' 
         dot_content += 'R_0 -- R_0_info [style=dotted];\n'
     if result_extract[u'GlobalTags']:
