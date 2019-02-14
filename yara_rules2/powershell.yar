@@ -251,3 +251,36 @@ rule powershell_netw {
 	condition:
 	    check_command_bool and any of ($dc*) and any of ($pws*)
 }
+
+rule powershell_amsi {
+	meta:
+		description = "Powershell AmsiUtils (Bypass AMSI)"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 8
+		tag = "attack.execution,attack.t1086,attack.defense_evasion"
+	strings:
+	    $pws0 = "powershell" nocase ascii wide
+		$pws1 = "IEX" nocase ascii wide
+		$pws2 = ".Invoke" nocase ascii wide
+		$pws3 = "new-object" nocase ascii wide
+		$dc1 = "AmsiUtils" nocase ascii wide
+	condition:
+	    check_command_bool and any of ($dc*) and any of ($pws*)
+}
+
+rule Base64_PS1_Shellcode {
+   meta:
+      description = "Detects Base64 encoded PS1 Shellcode"
+      author = "Nick Carr, David Ledbetter"
+      reference = "https://twitter.com/ItsReallyNick/status/1062601684566843392"
+      date = "2018-11-14"
+      weight = 6
+      tag = "attack.execution,attack.t1086,attack.defense_evasion"
+   strings:
+      $substring = "AAAAYInlM"
+      $pattern1 = "/OiCAAAAYInlM"
+      $pattern2 = "/OiJAAAAYInlM"
+   condition:
+      check_command_bool and $substring and 1 of ($p*)
+}
