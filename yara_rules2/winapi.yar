@@ -5,6 +5,7 @@ rule win_api_keylogger {
         version = "0.1"
 		weight = 5
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf;https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-1/"
+		ids = "win_api"
 	    tag = "attack.collection,attack.credential_access,attack.t1056"
 	strings:
 		$api1 = "ShowWindow" nocase ascii wide
@@ -28,6 +29,7 @@ rule win_api_screen {
         version = "0.1"
 		weight = 5
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.collection,attack.t1113"
 	strings:
 		$api0 = "GetDC" nocase ascii wide
@@ -49,6 +51,7 @@ rule win_api_antidebug {
         version = "0.1"
 		weight = 5
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.defense_evasion"
 	strings:
 		$api0 = "IsDebuggerPresent" nocase ascii wide
@@ -72,6 +75,7 @@ rule win_api_clsid {
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 5
+		ids = "win_api"
 	    tag = "attack.execution"
 	strings:
 		$api0 = "CoCreateInstance" nocase ascii wide
@@ -86,6 +90,7 @@ rule win_api_unpack {
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 5
+		ids = "win_api"
 	    tag = "attack.defense_evasion"
 	strings:
 		$api1 = "VirtualAlloc" nocase ascii wide
@@ -101,6 +106,7 @@ rule win_api_injection {
         version = "0.1"
 		weight = 5
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.defense_evasion,attack.privilege_escalation,attack.t1055,attack.t1181"
 	strings:
 		$api0 = "OpenProcess" nocase ascii wide
@@ -142,6 +148,7 @@ rule win_api_gml {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-1/#gref"
+		ids = "win_api"
 	    tag = "attack.defense_evasion"
 	strings:
 		$api0 = "GetModuleFilename" nocase ascii wide
@@ -156,6 +163,7 @@ rule win_api_cert {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-1/#gref"
+		ids = "win_api"
 	    tag = "attack.collection"
 	strings:
 		$api0 = "CertOpenSystemStore" nocase ascii wide
@@ -170,6 +178,7 @@ rule win_api_nint {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-1/#gref"
+		ids = "win_api"
 	    tag = "attack.collection"
 	strings:
 		$api0 = "GetAdaptersInfo" nocase ascii wide
@@ -184,6 +193,7 @@ rule win_api_resolv {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-1/#gref"
+		ids = "win_api"
 	    tag = "attack.exfiltration,attack.c2c"
 	strings:
 		$api0 = "Gethostbyname" nocase ascii wide
@@ -198,6 +208,7 @@ rule win_api_addr {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-1/#gref"
+		ids = "win_api"
 	    tag = "attack.exfiltration,attack.c2c"
 	strings:
 		$api0 = "inet_addr" nocase ascii wide
@@ -212,6 +223,7 @@ rule win_api_promiscous {
         version = "0.1"
 		weight = 5
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.execution,attack.c2c,attack.t1102"
 	strings:
 		$api0 = "WSAIoctl" nocase ascii wide
@@ -227,6 +239,7 @@ rule win_api_download {
         version = "0.1"
 		weight = 5
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.execution,attack.c2c,attack.t1102"
 	strings:
 		$api0 = "URLDownloadToFile" nocase ascii wide
@@ -243,6 +256,7 @@ rule win_api_internet {
         version = "0.1"
 		weight = 5
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-1/#gref"
+		ids = "win_api"
 	    tag = "attack.exfiltration,attack.c2c"
 	strings:
 		$api0 = "ConnectNamedPipe" nocase ascii wide
@@ -264,6 +278,7 @@ rule win_api_upload {
         version = "0.1"
 		weight = 5
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.exfiltration"
 	strings:
 		$api0 = "InternetWriteFile" nocase ascii wide
@@ -280,6 +295,7 @@ rule win_api_bind {
         version = "0.1"
 		weight = 5
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.c2c"
 	strings:
 		$api0 = "Accept" nocase ascii wide
@@ -295,6 +311,7 @@ rule win_api_service {
         version = "0.1"
 		weight = 5
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.execution, attack.persistence,attack.t1050"
 	strings:
 		$api0 = "CreateService" nocase ascii wide
@@ -309,6 +326,7 @@ rule win_api_servicec {
         version = "0.1"
 		weight = 5
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.execution, attack.persistence,attack.t1031"
 	strings:
 		$api0 = "StartService" nocase ascii wide
@@ -326,6 +344,7 @@ rule win_api_drop {
         version = "0.1"
 		weight = 5
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.execution,attack.collection,attack.exfiltration,attack.defense_evasion"
 	strings:
 		$api0 = "FindResource" nocase ascii wide
@@ -343,6 +362,7 @@ rule win_api_regw {
         version = "0.1"
 		weight = 4
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-2/#article"
+		ids = "win_api"
 	    tag = "attack.execution,attack.c2c,attack.t1183,attack.t1209,attack.t1182,attack.t1103"
 	strings:
 		$api0 = "RegCreateKeyEx" nocase ascii wide
@@ -362,6 +382,7 @@ rule win_api_regr {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-2/#article"
+		ids = "win_api"
 	    tag = "attack.execution,attack.c2c,attack.t1183,attack.t1209,attack.t1182,attack.t1103"
 	strings:
 		$api0 = "RegOpenKey" nocase ascii wide
@@ -378,6 +399,7 @@ rule win_api_hotkey {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-2/#article"
+		ids = "win_api"
 	    tag = "attack.execution,attack.persistence"
 	strings:
 		$api0 = "RegisterHotKey" nocase ascii wide
@@ -392,6 +414,7 @@ rule win_api_iocreate {
         version = "0.1"
 		weight = 3
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.exfiltration"
 	strings:
 		$api0 = "Createfile" nocase ascii wide
@@ -407,6 +430,7 @@ rule win_api_iocreatep {
         version = "0.1"
 		weight = 4
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.exfiltration"
 	strings:
 		$api0 = "CreateFileMapping" nocase ascii wide
@@ -422,6 +446,7 @@ rule win_api_ioopen {
         version = "0.1"
 		weight = 3
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.collection"
 	strings:
 		$api0 = "OpenFile" nocase ascii wide
@@ -437,6 +462,7 @@ rule win_api_iowrite {
         version = "0.1"
 		weight = 3
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.exfiltration"
 	strings:
 		$api0 = "WriteFile" nocase ascii wide
@@ -452,6 +478,7 @@ rule win_api_comserv {
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 5
+		ids = "win_api"
 	    tag = "attack.exfiltration"
 	strings:
 		$api0 = "DllCanUnloadNow" nocase ascii wide
@@ -470,6 +497,7 @@ rule win_api_ioread {
         version = "0.1"
 		weight = 3
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.collection"
 	strings:
 		$api0 = "ReadFile" nocase ascii wide
@@ -486,6 +514,7 @@ rule win_api_iofind {
         version = "0.1"
 		weight = 3
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.collection"
 	strings:
 		$api0 = "FindFirstFile," nocase ascii wide
@@ -501,6 +530,7 @@ rule win_api_ioacces {
         version = "0.1"
 		weight = 3
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.defense_evasion"
 	strings:
 		$api0 = "SetFileAttributes," nocase ascii wide
@@ -516,6 +546,7 @@ rule win_api_loadlib {
         version = "0.1"
 		weight = 3
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.defense_evasion"
 	strings:
 		$api1 = "FreeLibrary" nocase ascii wide
@@ -535,6 +566,7 @@ rule win_api_getinfo {
         version = "0.1"
 		weight = 3
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf,https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-1/#gref"
+		ids = "win_api"
 	    tag = "attack.defense_evasion"
 	strings:
 		$api0 = "GetSystemDirectory" nocase ascii wide
@@ -555,6 +587,7 @@ rule win_api_logon {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-2/#article"
+		ids = "win_api"
 	    tag = "attack.credential_access"
 	strings:
 		$api0 = "LsaEnumerateLogonSessions" nocase ascii wide
@@ -569,6 +602,7 @@ rule win_api_mutex {
         version = "0.1"
 		weight = 3
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.execution"
 	strings:
 		$api0 = "CreateMutex" nocase ascii wide
@@ -584,6 +618,7 @@ rule win_api_dllimp {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-1/#gref"
+		ids = "win_api"
 	    tag = "attack.execution"
 	strings:
 		$api0 = "GetProcAddress" nocase ascii wide
@@ -598,6 +633,7 @@ rule win_api_iodevice {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-1/#gref"
+		ids = "win_api"
 	    tag = "attack.execution,attack.collection"
 	strings:
 		$api0 = "DeviceIoControl" nocase ascii wide
@@ -612,6 +648,7 @@ rule win_api_temp {
         version = "0.1"
 		weight = 2
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-1/#gref"
+		ids = "win_api"
 	    tag = "attack.execution"
 	strings:
 		$api0 = "GetTempPath" nocase ascii wide
@@ -627,6 +664,7 @@ rule win_api_dep {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-1/#gref,https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-2/#article"
+		ids = "win_api"
 	    tag = "attack.execution,attack.defense_evasion"
 	strings:
 		$api0 = "EnableExecuteProtectionSupport" nocase ascii wide
@@ -642,6 +680,7 @@ rule win_api_admin {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-2/#article"
+		ids = "win_api"
 	    tag = "attack.defense_evasion"
 	strings:
 		$api0 = "IsNTAdmin" nocase ascii wide
@@ -656,6 +695,7 @@ rule win_api_crypt {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-1/#gref"
+		ids = "win_api"
 	    tag = "attack.defense_evasion"
 	strings:
 		$api0 = "CryptAcquireContext" nocase ascii wide
@@ -672,6 +712,7 @@ rule win_api_callprocess {
         version = "0.1"
 		weight = 4
 		reference = "http://www-users.math.umn.edu/~math-sa-sara0050/space16/slides/space2016121708-06.pdf"
+		ids = "win_api"
 	    tag = "attack.execution,attack.persistence,attack.t1053,attack.privilege_escalation"
 	strings:
 		$api0 = "WinExec" nocase ascii wide
@@ -689,6 +730,7 @@ rule win_api_shedule {
         version = "0.1"
 		weight = 4
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-2/#article"
+		ids = "win_api"
 	    tag = "attack.execution"
 	strings:
 		$api0 = "NetScheduleJobAdd" nocase ascii wide
@@ -703,6 +745,7 @@ rule win_api_share {
         version = "0.1"
 		weight = 4
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-2/#article"
+		ids = "win_api"
 	    tag = "attack.discovery"
 	strings:
 		$api0 = "NetShareEnum" nocase ascii wide
@@ -717,6 +760,7 @@ rule win_api_hidden {
         version = "0.1"
 		weight = 4
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-2/#article"
+		ids = "win_api"
 	    tag = "attack.discovery"
 	strings:
 		$api = "NtQueryDirectoryFile" nocase ascii wide 
@@ -732,6 +776,7 @@ rule win_api_mem {
         version = "0.1"
 		weight = 4
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-2/#article"
+		ids = "win_api"
 	    tag = "attack.collection"
 	strings:
 		$api0 = "ReadProcessMemory" nocase ascii wide
@@ -747,6 +792,7 @@ rule win_api_filetime {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-2/#article"
+		ids = "win_api"
 	    tag = "attack.defense_evasion"
 	strings:
 		$api0 = "SetFileTime" nocase ascii wide
@@ -761,6 +807,7 @@ rule win_api_sam {
         version = "0.1"
 		weight = 4
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-2/#article"
+		ids = "win_api"
 	    tag = "attack.collection,attack.credential_access"
 	strings:
 		$api0 = "SamIConnect" nocase ascii wide
@@ -777,6 +824,7 @@ rule win_api_hook {
         version = "0.1"
 		weight = 4
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-2/#article"
+		ids = "win_api"
 	    tag = "attack.execution,attack.collection"
 	strings:
 		$api0 = "SetWindowsHookEx" nocase ascii wide
@@ -791,6 +839,7 @@ rule win_api_wfp {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-2/#article"
+		ids = "win_api"
 	    tag = "attack.defense_evasion"
 	strings:
 		$api0 = "SfcTerminateWatcherThread" nocase ascii wide
@@ -805,6 +854,7 @@ rule win_api_p_as_s {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-2/#article"
+		ids = "win_api"
 	    tag = "attack.defense_evasion,attack.execution"
 	strings:
 		$api0 = "StartServiceCtrlDispatcher" nocase ascii wide
@@ -820,6 +870,7 @@ rule win_api_u2a {
         version = "0.1"
 		weight = 3
 		reference = "https://resources.infosecinstitute.com/windows-functions-in-malware-analysis-cheat-sheet-part-2/#article"
+		ids = "win_api"
 	    tag = "attack.defense_evasion"
 	strings:
 		$api0 = "WideCharToMultiByte" nocase ascii wide
@@ -834,6 +885,7 @@ rule win_api_ole {
         version = "0.1"
 		weight = 3
 		reference = "https://blog.malwarebytes.com/threat-analysis/2017/10/analyzing-malware-by-api-calls/"
+		ids = "win_api"
 	    tag = "attack.defense_evasion,attack.execution"
 	strings:
 		$api0 = "CreateStreamOnHGlobal" nocase ascii wide

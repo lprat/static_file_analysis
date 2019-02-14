@@ -5,6 +5,8 @@ rule command_certutil {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
+		ids = "win_exec"
 	    tag = "attack.defense_evasion,attack.t1140"
 	strings:
 		$cmd = "certutil" nocase ascii wide
@@ -20,6 +22,7 @@ rule command_cmd {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.t1059"
 	strings:
 		$cmd0 = "cmd " nocase ascii wide
@@ -41,6 +44,7 @@ rule command_bitsadmin {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.t1197,attack.persistence,attack.defense_evasion"
 	strings:
 		$cmd = "bitsadmin" nocase ascii wide
@@ -55,6 +59,7 @@ rule command_regsvr32 {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.t1117,attack.defense_evasion"
 	strings:
 		$cmd = "regsvr32" nocase ascii wide
@@ -69,6 +74,7 @@ rule command_rundll32 {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.t1085,attack.defense_evasion"
 	strings:
 		$cmd = "rundll32" nocase ascii wide
@@ -83,6 +89,7 @@ rule command_Regsvcs {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.t1121,attack.defense_evasion"
 	strings:
 		$cmd0 = "Regsvcs" nocase ascii wide
@@ -98,6 +105,7 @@ rule command_InstallUtil {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.t1118,attack.defense_evasion"
 	strings:
 		$cmd = "InstallUtil" nocase ascii wide
@@ -112,6 +120,7 @@ rule command_schtasks {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.tT1053,attack.persistence,attack.defense_evasion"
 	strings:
 		$cmd = "schtasks" nocase ascii wide
@@ -126,6 +135,7 @@ rule command_cscript {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.tT1064"
 	strings:
 		$cmd = "cscript" nocase ascii wide
@@ -140,6 +150,7 @@ rule command_reg {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.persistence"
 	strings:
 		$cmd0 = /reg(.exe)? [QADCSRLUEIF]{1}/i nocase ascii wide
@@ -155,6 +166,7 @@ rule command_sc {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.t1035,attack.persistence"
 	strings:
 		$cmd0 = /sc (co|en|fa|pa|q|st)/i nocase ascii wide
@@ -170,6 +182,7 @@ rule command_Mshta {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.tT1170,attack.defense_evasion"
 	strings:
 		$cmd = "Mshta" nocase ascii wide
@@ -184,6 +197,7 @@ rule command_msxsl {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.tT1220,attack.defense_evasion"
 	strings:
 		$cmd = "msxsl" nocase ascii wide
@@ -198,6 +212,7 @@ rule command_hh {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.tT1223,attack.defense_evasion"
 	strings:
 		$cmd0 = "hh.exe" nocase ascii wide
@@ -213,6 +228,7 @@ rule command_Bin_Ex_Proxy {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.tT1218,attack.defense_evasion"
 	strings:
 		$cmd0 = "mavinject" nocase ascii wide
@@ -228,6 +244,7 @@ rule command_CMSTP {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.tT1191,attack.defense_evasion"
 	strings:
 		$cmd = "CMSTP" nocase ascii wide
@@ -242,6 +259,7 @@ rule command_Script_Ex_Proxy {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.tT1216,attack.defense_evasion"
 	strings:
 		$cmd0 = "Pubprn" nocase ascii wide
@@ -257,6 +275,7 @@ rule command_dev_utl {
         version = "0.1"
 		weight = 7
 		reference = "MITRE ATTACK"
+		ids = "win_exec"
 	    tag = "attack.execution,attack.tT1216,attack.defense_evasion"
 	strings:
 		$cmd0 = "MSBuild" nocase ascii wide
@@ -280,6 +299,7 @@ rule cmdnt_adduser {
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 5
+		ids = "win_exec"
 	    tag = "attack.persistence,attack.credential_access"
 	strings:
 	    $cmd0 = "AddUsers " nocase ascii wide
@@ -300,6 +320,7 @@ rule cmdnt_assoc {
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 4
+		ids = "win_exec"
 	    tag = "attack.persistence"
 	strings:
 	    $cmd = /ASSOC(.exe)? \.\S+=\S+/ nocase
@@ -313,6 +334,7 @@ rule cmdnt_bcdedit {
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 4
+		ids = "win_exec"
 	    tag = "attack.persistence"
 	strings:
 	    $cmd = "bcdedit" nocase ascii wide
@@ -326,6 +348,7 @@ rule cmdnt_dnscmd {
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 4
+		ids = "win_exec"
 	    tag = "attack.defense_evasion"
 	strings:
 	    $cmd = "dnscmd" nocase ascii wide
@@ -339,6 +362,7 @@ rule cmdnt_ad {
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 4
+		ids = "win_exec"
 	    tag = "attack.discovery"
 	strings:
 	    $cmd0 = "dsget" nocase ascii wide
@@ -353,6 +377,7 @@ rule cmdnt_netsh {
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 4
+		ids = "win_exec"
 	    tag = "attack.discovery"
 	strings:
 	    $cmd = "netsh" nocase ascii wide
@@ -366,6 +391,7 @@ rule cmdnt_psexec {
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 4
+		ids = "win_exec"
 	    tag = "attack.execution"
 	strings:
 	    $cmd = "psexec" nocase ascii wide
@@ -379,6 +405,7 @@ rule cmdnt_SCHTASKS {
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 4
+		ids = "win_exec"
 	    tag = "attack.execution"
 	strings:
 	    $cmd = "SCHTASKS" nocase ascii wide
@@ -392,6 +419,7 @@ rule cmdnt_VSSADMIN {
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 4
+		ids = "win_exec"
 	    tag = "attack.defense_evasion"
 	strings:
 	    $cmd = "VSSADMIN" nocase ascii wide
@@ -405,6 +433,7 @@ rule cmdnt_winrm {
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 4
+		ids = "win_exec"
 	    tag = "attack.defense_evasion,attack.discovery"
 	strings:
 	    $cmd0 = "winrs" nocase ascii wide

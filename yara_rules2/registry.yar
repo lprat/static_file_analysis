@@ -8,7 +8,8 @@ rule Registry_change_ie_zone{
         version = "0.1"
 		weight = 7
 		reference = "https://support.microsoft.com/en-us/help/182569/internet-explorer-security-zones-registry-entries-for-advanced-users"
-		tag = "attack.persistence"
+		ids = "win_reg"
+	    tag = "attack.persistence"
 	strings:
 	    $persi = "\\Internet Settings\\Zones\\3" nocase ascii wide
 	condition:
@@ -97,7 +98,8 @@ rule Registry_change_ie_addons{
         version = "0.1"
 		weight = 6
 		reference = "https://blog.malwarebytes.com/threats/browser-hijack-objects-bhos/"
-		tag = "attack.persistence"
+		ids = "win_reg"
+	    tag = "attack.persistence"
 	strings:
 	    $persi = "\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Browser Helper Objects" nocase ascii wide
 	condition:
@@ -111,7 +113,8 @@ rule Registry_change_ie_toolbar_extension {
         version = "0.1"
 		weight = 7
 		reference = "https://www.exterminate-it.com/malpedia/remove-mywebsearch"
-		tag = "attack.persistence"
+		ids = "win_reg"
+	    tag = "attack.persistence"
 	strings:
 	    $persi0 = "\\Software\\Microsoft\\Internet Explorer\\Toolbar" nocase ascii wide
 	    $persi1 = "\\Software\\Microsoft\\Internet Explorer\\Extensions" nocase ascii wide
@@ -126,7 +129,8 @@ rule Registry_change_ie {
         version = "0.1"
 		weight = 7
 		reference = ""
-		tag = "attack.persistence"
+		ids = "win_reg"
+	    tag = "attack.persistence"
 	strings:
 	    $persi0 = "\\Software\\Microsoft\\Internet Explorer\\Main" nocase ascii wide
 	    $persi1 = "\\Software\\Microsoft\\Internet Explorer\\Security" nocase ascii wide
@@ -148,7 +152,8 @@ rule Registry_change_network_wpad {
         version = "0.1"
 		weight = 8
 		reference = ""
-		tag = "attack.persistence"
+		ids = "win_reg"
+	    tag = "attack.persistence"
 	strings:
 	    $persi = "\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" nocase ascii wide
 	    $param = "AutoConfigURL" nocase ascii wide
@@ -163,7 +168,8 @@ rule Registry_change_network_dns {
         version = "0.1"
 		weight = 8
 		reference = ""
-		tag = "attack.persistence"
+		ids = "win_reg"
+	    tag = "attack.persistence"
 	strings:
 	    $persi0 = "\\SYSTEM\\CurrentControlSet\\Services\\tcpip6\\Parameters" nocase ascii wide
 	    $persi1 = "\\SYSTEM\\CurrentControlSet\\Services\\tcpip\\Parameters" nocase ascii wide
@@ -180,7 +186,8 @@ rule Registry_change_network_dhcp {
         version = "0.1"
 		weight = 8
 		reference = ""
-		tag = "attack.persistence"
+		ids = "win_reg"
+	    tag = "attack.persistence"
 	strings:
 	    $persi0 = "\\SYSTEM\\CurrentControlSet\\Services\\tcpip6\\Parameters" nocase ascii wide
 	    $persi1 = "\\SYSTEM\\CurrentControlSet\\Services\\tcpip\\Parameters" nocase ascii wide
@@ -197,7 +204,8 @@ rule Registry_change_network_gateway {
         version = "0.1"
 		weight = 8
 		reference = ""
-		tag = "attack.persistence"
+		ids = "win_reg"
+	    tag = "attack.persistence"
 	strings:
 	    $persi0 = "\\SYSTEM\\CurrentControlSet\\Services\\tcpip6\\Parameters" nocase ascii wide
 	    $persi1 = "\\SYSTEM\\CurrentControlSet\\Services\\tcpip\\Parameters" nocase ascii wide
@@ -214,7 +222,8 @@ rule Registry_change_network_proxy {
         version = "0.1"
 		weight = 8
 		reference = ""
-		tag = "attack.persistence"
+		ids = "win_reg"
+	    tag = "attack.persistence"
 	strings:
 	    $persi0 = "\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Setting" nocase ascii wide
 	    $persi1 = "\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Setting" nocase ascii wide
@@ -230,7 +239,8 @@ rule Registry_persistence_t1004 {
         version = "0.1"
 		weight = 8
 		reference = "https://attack.mitre.org/techniques/T1004/"
-		tag = "attack.persistence,attack.t1004"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1004"
 	strings:
 	    $persi = "\\Windows NT\\CurrentVersion\\Winlogon" nocase ascii wide
 	    $param0 = "Userinit" nocase ascii wide
@@ -248,7 +258,8 @@ rule Registry_persistence_t1209 {
         version = "0.1"
 		weight = 6
 		reference = "https://attack.mitre.org/techniques/T1209/"
-		tag = "attack.persistence,attack.t1209"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1209"
 	strings:
 	    $persi = "\\System\\CurrentControlSet\\Services\\W32Time\\TimeProviders\\" nocase ascii wide
 	    $param = "DllName" nocase ascii wide
@@ -263,7 +274,8 @@ rule Registry_persistence_t1198 {
         version = "0.1"
 		weight = 8
 		reference = "https://attack.mitre.org/techniques/T1198/"
-		tag = "attack.persistence,attack.t1198"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1198"
 	strings:
 	    $persi0 = "\\Microsoft\\Cryptography\\OID\\" nocase ascii wide
 	    $persi1 = "\\Microsoft\\Cryptography\\Providers\\Trust" nocase ascii wide
@@ -278,7 +290,8 @@ rule Registry_persistence_t1101 {
         version = "0.1"
 		weight = 8
 		reference = "https://attack.mitre.org/techniques/T1101/"
-		tag = "attack.persistence,attack.t1101"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1101"
 	strings:
 	    $persi0 = "\\SYSTEM\\CurrentControlSet\\Control\\Lsa" nocase ascii wide
 	    $persi1 = "\\SYSTEM\\CurrentControlSet\\Control\\Lsa\\OSConfig" nocase ascii wide
@@ -294,7 +307,8 @@ rule Registry_persistence_t1180 {
         version = "0.1"
 		weight = 6
 		reference = "https://attack.mitre.org/techniques/T1180/"
-		tag = "attack.persistence,attack.t1180"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1180"
 	strings:
 	    $first = "\\Control Panel\\Desktop" nocase ascii wide
 	    $param0 = "SCRNSAVE.exe"
@@ -312,7 +326,8 @@ rule Registry_persistence_t1037 {
         version = "0.1"
 		weight = 8
 		reference = "https://attack.mitre.org/techniques/T1037/"
-		tag = "attack.persistence,attack.t1037"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1037"
 	strings:
 	    $persi0 = "\\Software\\Policies\\Microsoft\\Windows\\System\\Scripts" nocase ascii wide
 	    $persi1 = "\\Group Policy\\Scripts" nocase ascii wide
@@ -328,7 +343,8 @@ rule Registry_persistence_t1060 {
         version = "0.1"
 		weight = 8
 		reference = "https://attack.mitre.org/techniques/T1060/"
-		tag = "attack.persistence,attack.t1060"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1060"
 	strings:
 	    $persi0 = "\\CurrentVersion\\Run" nocase ascii wide
 	    $persi1 = "\\CurrentVersion\\Policies\\Explorer\\Run" nocase ascii wide
@@ -348,7 +364,8 @@ rule Registry_persistence_t1013 {
         version = "0.1"
 		weight = 8
 		reference = "https://attack.mitre.org/techniques/T1013/"
-		tag = "attack.persistence,attack.t1013"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1013"
 	strings:
 	    $persi = "\\SYSTEM\\CurrentControlSet\\Control\\Print\\Monitors" nocase ascii wide
 	condition:
@@ -362,7 +379,8 @@ rule Registry_persistence_t1137 {
         version = "0.1"
 		weight = 8
 		reference = "https://attack.mitre.org/techniques/T1137/"
-		tag = "attack.persistence,attack.t1137"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1137"
 	strings:
 	    $persi0 = "\\Software\\Microsoft\\Office test\\Special\\Perf" nocase ascii wide
 	    $persi1 = /\\Software\\Microsoft\\Office\\[0-9\.]+\\[A-Z]+\\Options/i
@@ -385,7 +403,8 @@ rule Registry_persistence_t1128 {
         version = "0.1"
 		weight = 8
 		reference = "https://attack.mitre.org/techniques/T1128/"
-		tag = "attack.persistence,attack.t1128"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1128"
 	strings:
 	    $persi = "\\SOFTWARE\\Microsoft\\Netsh" nocase ascii wide
 	condition:
@@ -399,7 +418,8 @@ rule Registry_persistence_t1031_or_t1050 {
         version = "0.1"
 		weight = 8
 		reference = "https://attack.mitre.org/techniques/T1031/"
-		tag = "attack.persistence,attack.t1031,attack.t1050"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1031,attack.t1050"
 	strings:
 	    $first = "\\SYSTEM\\CurrentControlSet\\Services\\" nocase ascii wide
 	    $param1 = "ServiceDll" nocase ascii wide
@@ -427,7 +447,8 @@ rule Registry_persistence_t1122 {
 		weight = 8
 		reference = "https://attack.mitre.org/techniques/T1122/"
 		//other reference: https://docs.microsoft.com/fr-fr/windows/desktop/shell/reg-shell-exts
-		tag = "attack.persistence,attack.t1122"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1122"
 	strings:
 	    $base = "\\Software\\Classes\\CLSID\\{" nocase ascii wide
 	    $persi1 = "InprocServer" nocase ascii wide
@@ -444,7 +465,8 @@ rule Registry_persistence_t1131 {
         version = "0.1"
 		weight = 8
 		reference = "https://attack.mitre.org/techniques/T1131/"
-		tag = "attack.persistence,attack.t1131"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1131"
 	strings:
 	    $persi0 = "\\SYSTEM\\CurrentControlSet\\Control\\Lsa" nocase ascii wide
 	    $persi1 = "Authentication Packages" nocase ascii wide
@@ -459,7 +481,8 @@ rule Registry_persistence_t1138 {
         version = "0.1"
 		weight = 7
 		reference = "https://attack.mitre.org/techniques/T1138/"
-		tag = "attack.persistence,attack.t1138"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1138"
 	strings:
 	    $persi0 = "software\\microsoft\\windows nt\\currentversion\\appcompatflags\\installedsdb" nocase ascii wide
 	    $persi1 = "software\\microsoft\\windows nt\\currentversion\\appcompatflags\\custom" nocase ascii wide
@@ -474,7 +497,8 @@ rule Registry_persistence_t1103 {
         version = "0.1"
 		weight = 8
 		reference = "https://attack.mitre.org/techniques/T1103/"
-		tag = "attack.persistence,attack.t1182"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1182"
 	strings:
 	    $persi0 = "\\Microsoft\\Windows NT\\CurrentVersion\\Windows" nocase ascii wide
 	    $persi1 = "AppInit_DLLs" nocase ascii wide
@@ -490,7 +514,8 @@ rule Registry_persistence_t1182 {
         version = "0.1"
 		weight = 7
 		reference = "https://attack.mitre.org/techniques/T1182/"
-		tag = "attack.persistence,attack.t1182"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1182"
 	strings:
 	    $persi0 = "\\System\\CurrentControlSet\\Control\\Session Manager\\AppCertDlls" nocase ascii wide
 	    $persi1 = "\\System\\CurrentControlSet\\Control\\Session Manager\\KnownDLLs" nocase ascii wide
@@ -505,7 +530,8 @@ rule Registry_persistence_t1015 {
         version = "0.1"
 		weight = 5
 		reference = "https://attack.mitre.org/techniques/T1015/"
-		tag = "attack.persistence,attack.t1015"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1015"
 	strings:
 	    $persi = "\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\" nocase ascii wide
 	condition:
@@ -519,7 +545,8 @@ rule Registry_persistence_t1183 {
         version = "0.1"
 		weight = 8
 		reference = "https://attack.mitre.org/techniques/T1183/"
-		tag = "attack.persistence,attack.t1183"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1183"
 	strings:
 	    $persi = "\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\SilentProcessExit\\" nocase ascii wide
 	condition:
@@ -533,7 +560,8 @@ rule Registry_persistence_t1042 {
         version = "0.1"
 		weight = 7
 		reference = "https://attack.mitre.org/techniques/T1042/"
-		tag = "attack.persistence,attack.t1042"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1042"
 	strings:
 	    $persi1 = "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts" nocase ascii wide
 	    $persi2 = "HKEY_CLASSES_ROOT\\." nocase ascii wide
@@ -551,7 +579,8 @@ rule Registry_persistence_t1039 {
         version = "0.1"
 		weight = 7
 		reference = "https://attack.mitre.org/techniques/T1039/"
-		tag = "attack.persistence,attack.t1039"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1039"
 	strings:
 	    $persi = "\\CurrentVersion\\App Paths\\" nocase ascii wide
 	condition:
@@ -565,7 +594,8 @@ rule Registry_hidden_file {
         version = "0.1"
 		weight = 6
 		reference = "https://attack.mitre.org/techniques/T1089/"
-		tag = "attack.Defense_Evasion,attack.t1089"
+		ids = "win_reg"
+	    tag = "attack.Defense_Evasion,attack.t1089"
 	strings:
 	    $persi = "\\CurrentVersion\\Explorer\\Advanced" nocase ascii wide
 	    $param1 = "HideFileExt" nocase ascii wide
@@ -582,7 +612,8 @@ rule Registry_macrowarning {
         version = "0.1"
 		weight = 7
 		reference = "https://attack.mitre.org/techniques/T1089/"
-		tag = "attack.Defense_Evasion,attack.t1089"
+		ids = "win_reg"
+	    tag = "attack.Defense_Evasion,attack.t1089"
 	strings:
 	    $persi = "\\Security" nocase ascii wide
 	    $param = "VBAWarnings" nocase ascii wide //if == 1 then bad!
@@ -597,7 +628,8 @@ rule Registry_persistence_t1109 {
         version = "0.1"
 		weight = 7
 		reference = "https://attack.mitre.org/techniques/T1109/"
-		tag = "attack.persistence,attack.t1109"
+		ids = "win_reg"
+	    tag = "attack.persistence,attack.t1109"
 	strings:
 	    $persi = "\\CurrentVersion\\Drivers32" nocase ascii wide
 	condition:
@@ -611,7 +643,8 @@ rule Registry_persistence_bootexecute {
         version = "0.1"
 		weight = 7
 		reference = "https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml"
-		tag = "attack.persistence"
+		ids = "win_reg"
+	    tag = "attack.persistence"
 	strings:
 	    $persi = "\\Control\\Session Manager\\" nocase ascii wide
 	    $param = "BootExecute" nocase ascii wide
@@ -626,7 +659,8 @@ rule Registry_persistence_oncrash {
         version = "0.1"
 		weight = 7
 		reference = "https://www.symantec.com/security_response/writeup.jsp?docid=2007-050712-5453-99&tabid=2"
-		tag = "attack.persistence"
+		ids = "win_reg"
+	    tag = "attack.persistence"
 	strings:
 	    $persi = "\\CurrentVersion\\AeDebug" nocase ascii wide
  	condition:
@@ -640,7 +674,8 @@ rule Registry_persistence_runonrdplogon {
         version = "0.1"
 		weight = 7
 		reference = "https://www.symantec.com/security_response/writeup.jsp?docid=2007-050712-5453-99&tabid=2"
-		tag = "attack.persistence"
+		ids = "win_reg"
+	    tag = "attack.persistence"
 	strings:
 	    $persi = "\\Terminal Server\\WinStations\\RDP-Tcp" nocase ascii wide
 	    $param = "InitialProgram" nocase ascii wide
@@ -655,7 +690,8 @@ rule Registry_UAC {
         version = "0.1"
 		weight = 7
 		reference = "https://attack.mitre.org/techniques/T1089/" // https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml
-		tag = "attack.Defense_Evasion,attack.t1089"
+		ids = "win_reg"
+	    tag = "attack.Defense_Evasion,attack.t1089"
 	strings:
 	    $persi = "\\CurrentVersion\\Policies\\System" nocase ascii wide
 	    $param1 = "EnableLUA" nocase ascii wide // 0 == Disabled UAC
@@ -671,7 +707,8 @@ rule Registry_Change_ConfSecCenter {
         version = "0.1"
 		weight = 7
 		reference = "https://attack.mitre.org/techniques/T1089/" // https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml
-		tag = "attack.Defense_Evasion,attack.t1089"
+		ids = "win_reg"
+	    tag = "attack.Defense_Evasion,attack.t1089"
 	strings:
 	    $persi = "\\SOFTWARE\\Microsoft\\Security Center" nocase ascii wide
 	    $param1 = "AntiSpywareOverride" nocase ascii wide
@@ -694,7 +731,8 @@ rule Registry_Change_ProfilFW {
         version = "0.1"
 		weight = 7
 		reference = "https://attack.mitre.org/techniques/T1089/" // https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml
-		tag = "attack.Defense_Evasion,attack.t1089"
+		ids = "win_reg"
+	    tag = "attack.Defense_Evasion,attack.t1089"
 	strings:
 	    $persi = "\\FirewallPolicy\\" nocase ascii wide
 	    $param1 = "EnableFirewall" nocase ascii wide
@@ -712,7 +750,8 @@ rule Registry_change_WDigest_store {
         version = "0.1"
 		weight = 7
 		reference = "https://attack.mitre.org/techniques/T1089/" // https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml
-		tag = "attack.Defense_Evasion,attack.t1089,"
+		ids = "win_reg"
+	    tag = "attack.Defense_Evasion,attack.t1089,"
 	strings:
 	    $persi = "\\SecurityProviders\\WDigest" nocase ascii wide
 	    $param = "UseLogonCredential" nocase ascii wide // if == 1 then store credential in clear text
@@ -727,7 +766,8 @@ rule Registry_disabled_CredentialProvider {
         version = "0.1"
 		weight = 7
 		reference = "https://attack.mitre.org/techniques/T1089/" //https://fr.slideshare.net/securityxploded/exposing-the-secrets-of-windows-credential-providerer
-		tag = "attack.Defense_Evasion,attack.t1089,"
+		ids = "win_reg"
+	    tag = "attack.Defense_Evasion,attack.t1089,"
 	strings:
 	    $persi = "\\Authentication\\Credential\\" nocase ascii wide
 	    $param = "Disabled" nocase ascii wide //if == 1 then disabled
@@ -742,7 +782,8 @@ rule Registry_disabled_GPO {
         version = "0.1"
 		weight = 7
 		reference = "https://attack.mitre.org/techniques/T1089/" //https://blogs.technet.microsoft.com/mikehall/2013/01/31/group-policy-client-side-extensions/
-		tag = "attack.Defense_Evasion,attack.t1089,"
+		ids = "win_reg"
+	    tag = "attack.Defense_Evasion,attack.t1089,"
 	strings:
 	    $persi = "\\CurrentVersion\\Winlogon\\GPExtensions\\" nocase ascii wide
 	    $param = "NoMachinePolicy" nocase ascii wide //if == 1 then disabled gpo
