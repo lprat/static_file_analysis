@@ -93,7 +93,7 @@ def mso_file_extract(data):
 ############ END OF FUNCTION ORIGIN: https://github.com/decalage2/oletools/blob/master/oletools/olevba.py
 #########################################################################################################
 def usage():
-    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/ -b password.pwdb -i /usr/bin/tesseract -l fra\n"
+    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] [-b password.pwdb] [-i /usr/bin/tesseract] [-l fra] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/\n"
     print "\t -h/--help : for help to use\n"
     print "\t -f/--filename= : path of filename to analysis\n"
     print "\t -y/--yara_rules_path= : path of rules yara level 1\n"
@@ -410,7 +410,10 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
             for check2val in check2vals:
                 check_level2[str(check2val)] = True
         if match.meta['weight'] > 0:
-            detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
+            if 'tag' in match.meta:
+                detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight'], 'tags': match.meta['tag']}})
+            else:
+                   detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
             if match.meta['weight'] > detect_yara_score:
                 detect_yara_score = match.meta['weight']
                 if detect_yara_score > score_max:
@@ -427,7 +430,10 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
     ret_yara = yara_RC2.match(filename, externals=externals_var, timeout=120)
     for match in ret_yara:
         if match.meta['weight'] > 0:
-            detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
+            if 'tag' in match.meta:
+                detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight'], 'tags': match.meta['tag']}})
+            else:
+                detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
             if match.meta['weight'] > detect_yara_score:
                 detect_yara_score = match.meta['weight']
                 if detect_yara_score > score_max:
@@ -594,7 +600,10 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                 for check2val in check2vals:
                     check_level2[str(check2val)] = True
             if match.meta['weight'] > 0:
-                detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
+                if 'tag' in match.meta:
+                    detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight'], 'tags': match.meta['tag']}})
+                else:
+                    detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
                 if match.meta['weight'] > detect_yara_score:
                     detect_yara_score = match.meta['weight']
                     if detect_yara_score > score_max:
@@ -611,7 +620,10 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
         ret_yara = yara_RC2.match(filename_path, externals=externals_var, timeout=120) #Second yara scan on Parent file -- Level 2
         for match in ret_yara:
             if match.meta['weight'] > 0:
-                detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
+                if 'tag' in match.meta:
+                    detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight'], 'tags': match.meta['tag']}})
+                else:
+                    detect_yara_rule.append({match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}})
                 if match.meta['weight'] > detect_yara_score:
                     detect_yara_score = match.meta['weight']
                     if detect_yara_score > score_max:
