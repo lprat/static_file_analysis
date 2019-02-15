@@ -1267,13 +1267,13 @@ def main(argv):
                         words[1] = words[1].replace("\n" , "")
                         coef[words[0]] = float(words[1])
         elif opt in ("-j", "--json_save"):
-            (working_dirj, filenamej) = os.path.split(arg)
+            (working_dirj, filenamej) = os.path.split(os.path.abspath(arg))
             if os.path.isdir(working_dirj):
                 if os.path.splitext(arg)[1] != '.json':
                     arg += '.json'
                 json_file = arg
             else:
-                print "Error: unuable to create directory: " + working_dirj + ".\n"
+                print "Error: directory where write json not exist: " + working_dirj + ".\n"
                 sys.exit(-1)
         elif opt in ("-d", "--directory_tmp"):
             if not os.path.isdir(arg):
