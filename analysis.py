@@ -1226,7 +1226,7 @@ def main(argv):
             removetmp = True
         elif opt in ("-s", "--save_graph"):
             make_graphe = True
-            (working_dirgr, filegr) = os.path.split(arg)
+            (working_dirgr, filegr) = os.path.split(os.path.abspath(arg))
             if os.path.isdir(working_dirgr):
                 if os.path.splitext(arg)[1] != '.png':
                     arg += '.png'
