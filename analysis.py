@@ -421,10 +421,11 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
                     ioc_global[match.meta['ids'].lower()] = []
                 found_rule[match.rule]['ioc']=[]
                 for iocx in match.strings:
-                    if not iocx[2] in found_rule[match.rule]['ioc']:
-                        found_rule[match.rule]['ioc'].append(iocx[2])
-                    if not iocx[2] in ioc_global[match.meta['ids'].lower()]:
-                        ioc_global[match.meta['ids'].lower()].append(iocx[2])
+                    iocxx=str(iocx[2]).replace("\x00", "")
+                    if not iocxx in found_rule[match.rule]['ioc']:
+                        found_rule[match.rule]['ioc'].append(iocxx)
+                    if not iocxx in ioc_global[match.meta['ids'].lower()]:
+                        ioc_global[match.meta['ids'].lower()].append(iocxx)
             detect_yara_rule.append(found_rule)
             if match.meta['weight'] > detect_yara_score:
                 detect_yara_score = match.meta['weight']
@@ -452,10 +453,11 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
                     ioc_global[match.meta['ids'].lower()] = []
                 found_rule[match.rule]['ioc']=[]
                 for iocx in match.strings:
-                    if not iocx[2] in found_rule[match.rule]['ioc']:
-                        found_rule[match.rule]['ioc'].append(iocx[2])
-                    if not iocx[2] in ioc_global[match.meta['ids'].lower()]:
-                        ioc_global[match.meta['ids'].lower()].append(iocx[2])
+                    iocxx=str(iocx[2]).replace("\x00", "")
+                    if not iocxx in found_rule[match.rule]['ioc']:
+                        found_rule[match.rule]['ioc'].append(iocxx)
+                    if not iocxx in ioc_global[match.meta['ids'].lower()]:
+                        ioc_global[match.meta['ids'].lower()].append(iocxx)
             detect_yara_rule.append(found_rule)
             if match.meta['weight'] > detect_yara_score:
                 detect_yara_score = match.meta['weight']
@@ -645,10 +647,11 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                         ioc_global[match.meta['ids'].lower()] = []
                     found_rule[match.rule]['ioc']=[]
                     for iocx in match.strings:
-                        if not iocx[2] in found_rule[match.rule]['ioc']:
-                            found_rule[match.rule]['ioc'].append(iocx[2])
-                        if not iocx[2] in ioc_global[match.meta['ids'].lower()]:
-                            ioc_global[match.meta['ids'].lower()].append(iocx[2])
+                        iocxx=str(iocx[2]).replace("\x00", "")
+                        if not iocxx in found_rule[match.rule]['ioc']:
+                            found_rule[match.rule]['ioc'].append(iocxx)
+                        if not iocxx in ioc_global[match.meta['ids'].lower()]:
+                            ioc_global[match.meta['ids'].lower()].append(iocxx)
                 detect_yara_rule.append(found_rule)
                 if match.meta['weight'] > detect_yara_score:
                     detect_yara_score = match.meta['weight']
@@ -680,10 +683,11 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                         ioc_global[match.meta['ids'].lower()] = []
                     found_rule[match.rule]['ioc']=[]
                     for iocx in match.strings:
-                        if not iocx[2] in found_rule[match.rule]['ioc']:
-                            found_rule[match.rule]['ioc'].append(iocx[2])
-                        if not iocx[2] in ioc_global[match.meta['ids'].lower()]:
-                            ioc_global[match.meta['ids'].lower()].append(iocx[2])
+                        iocxx=str(iocx[2]).replace("\x00", "")
+                        if not iocxx in found_rule[match.rule]['ioc']:
+                            found_rule[match.rule]['ioc'].append(iocxx)
+                        if not iocxx in ioc_global[match.meta['ids'].lower()]:
+                            ioc_global[match.meta['ids'].lower()].append(iocxx)
                 detect_yara_rule.append(found_rule)
                 if match.meta['weight'] > detect_yara_score:
                     detect_yara_score = match.meta['weight']
