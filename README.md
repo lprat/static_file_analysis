@@ -22,26 +22,27 @@ This tool written in python langage makes the link between clam and yara. It can
   - Put max score on top of tree
   - Add global score with coefficient mechanism (coef.conf) to max score
 - Extract IOC on yara rules match
+- Extract text from image by OCR
+- Check VirusTotal
 - Create PNG graph for fast analysis
 - Output result tree json in a file
 
 ## Usage
 ~~~
 Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com
-Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/ -b password.pwdb 
+Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] [-b password.pwdb] [-i /usr/bin/tesseract] [-l fra] [-V API_KEY_VT] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/
 
+	 -h/--help : for help to use
 
-	 -h/--help : how to use
-
-	 -f/--filename= : path of filename to analyse
+	 -f/--filename= : path of filename to analysis
 
 	 -y/--yara_rules_path= : path of rules yara level 1
 
-         -a/--yara_rules_path2= : path of rules yara level 2
-
-	 -b/--password= : path of password clamav (.pwdb see: https://blog.didierstevens.com/2017/02/15/quickpost-clamav-and-zip-file-decryption/)
+	 -a/--yara_rules_path2= : path of rules yara level 2
 
 	 -p/--pattern= : path of pattern filename for data miner
+
+	 -b/--password= : path of password clamav (.pwdb see: https://blog.didierstevens.com/2017/02/15/quickpost-clamav-and-zip-file-decryption/)
 
 	 -c/--clamscan_path= : path of binary clamscan [>=0.99.3]
 
@@ -51,13 +52,21 @@ Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p 
 
 	 -j/--json_save= : path filename where save json result (JSON)
 
-	 -g/--graph : generate graph of analyz
+	 -i/--image= : path of 'tesseract' for analysis on potential social engenering by image
 
-	 -s/--save_graph= : path where to saves the graph (PNG)
+	 -l/--lang_image= : 'tesseract' lang ocr extratc (eng, fra, ...) 
+
+	 -g/--graph : generate graphe of analyz
+
+	 -s/--save_graph= : path filename where save graph (PNG)
+
+	 -r/--remove= : remove tempory files
+
+	 -V/--virustotal= : API Key
 
 	 -v/--verbose= : verbose mode
 
-	 example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -g
+	 example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -i /usr/bin/tesseract -l fra -g
 
 lionel@local:~/static_analysis$ python analysis.py -c clamav-devel/clamscan/clamscan -g -f tests/pdf/jaff.pdf -y yara_rules/  -j /tmp/log.json -p pattern.db
 Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com
@@ -1361,6 +1370,7 @@ You can use extern variables build with clamav context and send them to yara wit
 - EMBED_FILES: if zip file with password, variable contains filenames in zip file
 - image2text: if image file you can extract text with ocr (tesseract => !! attention Leptonica have CVE-2018..., on debian, tesseract compiled with hardening option security)
 - serr: Debug flux of clamav
+- vt_detected/vt_positives_int/vt_total_int/vt_scan_date: Virus total result
 - now_7_int: timstamp of now-7j
 - All variables make in json report of clamav
 - All informations extracted by pattern match

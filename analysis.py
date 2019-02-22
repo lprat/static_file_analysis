@@ -3,7 +3,7 @@
 # (c) 2017-2019, Lionel PRAT <lionel.prat9@gmail.com>
 # Analysis by clamav extraction and yara rules
 # All rights reserved.
-#Require: pydot==1.2.3 && pyparsing==2.2.0
+#Require: pydot==1.2.3 && pyparsing==2.2.0 && virustotal-api
 import logging
 import pydot
 import hashlib
@@ -20,12 +20,15 @@ import sys, getopt
 import collections
 import zlib
 import unidecode
+from virus_total_apis import PublicApi as VirusTotalPublicApi
 
 ## file[path], direcory_extract[path], graph[bool]
 #verify clamscan present, or verify ENV CLAMSCAN_PATH
 
 ######GLOBAL VAR######
 ioc_global = {}
+api_vt=""
+stop_vt=True
 ######################
 #########################################################################################################
 ##### USE MSO FILE EXTRACT because clamav don't uncompress activemime
@@ -94,7 +97,7 @@ def mso_file_extract(data):
 ############ END OF FUNCTION ORIGIN: https://github.com/decalage2/oletools/blob/master/oletools/olevba.py
 #########################################################################################################
 def usage():
-    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] [-b password.pwdb] [-i /usr/bin/tesseract] [-l fra] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/\n"
+    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] [-b password.pwdb] [-i /usr/bin/tesseract] [-l fra] [-V API_KEY_VT] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/\n"
     print "\t -h/--help : for help to use\n"
     print "\t -f/--filename= : path of filename to analysis\n"
     print "\t -y/--yara_rules_path= : path of rules yara level 1\n"
@@ -110,6 +113,7 @@ def usage():
     print "\t -g/--graph : generate graphe of analyz\n"
     print "\t -s/--save_graph= : path filename where save graph (PNG)\n"
     print "\t -r/--remove= : remove tempory files\n"
+    print "\t -V/--virustotal= : API Key\n"
     print "\t -v/--verbose= : verbose mode\n"
     print "\t example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -i /usr/bin/tesseract -l fra -g\n"
 
@@ -188,6 +192,24 @@ def readdict(nested_dict,path):
             return False
     return cour
 
+#parse vt result
+def parse_vt(vt_dict):
+    edict={}
+    keep=['scan_date', 'permalink', 'positives', 'total', 'scans']
+    for k, v in vt_dict.items():
+        if k in keep:
+            if type(v) is str:
+                edict[u"vt_"+k.encode('utf8')]=v
+            elif type(v) is int:
+                edict[u"vt_"+k.encode('utf8')+u"_int"]=v
+            if k == 'scans':
+                edict[u'vt_detected']=[]
+                for kx, vx in v.items():
+                    if 'result' in vx and vx['result'] and not vx['result'] in edict[u'vt_detected']:
+                        edict[u'vt_detected'].append(vx['result'])
+    if 'vt_detected' in edict:
+        edict[u'vt_detected'] = str(edict[u'vt_detected'])
+    return edict
 #extract dict level key/value by path
 def dict_extract_path(nested_dict,path):
     edict={}
@@ -360,6 +382,10 @@ def remove_double(nested_dict):
             remove_double(v) # recursive call
 
 def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, tesseract, lang, externals_var_extra={}, verbose=False):
+    global ioc_global
+    global stop_vt
+    if api_vt:
+        vt = VirusTotalPublicApi(api_vt)
     #find size file 
     size_file = os.path.getsize(filename)
     #extract info
@@ -392,6 +418,28 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
         externals_var['CDBNAME']=cdbname
     if externals_var_extra:
         externals_var.update(externals_var_extra)
+    vt_result=None
+    if api_vt and stop_vt:
+        try:
+            response = vt.get_file_report(md5_file)
+            if response and 'response_code' in response and response['response_code'] == 200:
+                if "results" in response and response["results"]:
+                    vttmp=parse_vt(response["results"])
+                    vt_result=vttmp
+                    externals_var.update(vttmp)
+                else:
+                    if verbose:
+                        print "Debug info: VT no result for you md5hash"
+            else:
+                if response and 'response_code' in response and response['response_code'] == 204:
+                    if verbose:
+                        print "Debug info: VT response error exceeded rate limit:"+str(response)
+                        stop_vt=False
+                else:
+                    if verbose:
+                        print "Debug info: VT response error (maybe key api not valid):"+str(response)
+        except Exception as e:
+            print "Error: Virus total error:"+str(e)+" -- "+str(response)
     if verbose:
         print "Debug info -- External var:"+str(externals_var)
     externals_var.update(var_dynamic)
@@ -472,6 +520,9 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
     if not isinstance(cl_type, unicode):
         cl_type=unicode(cl_type, "utf-8")
     result_file = { u'FileParentType': cl_parent, u'FileType': u"CL_TYPE_" + cl_type, u'FileSize': int(size_file), u'FileMD5': md5_file, u'PathFile': [unicode(filename, "utf-8")],  u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'ContainedObjects': []}
+    if vt_result:
+        print "VT RESULT ADD"
+        result_file[u'VT_Results']=vt_result
     if cdbname:
         result_file[u'CDBNAME']=cdbname
     if 'zip_crypt_bool' in externals_var_extra:
@@ -482,6 +533,9 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
     
 def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patterndb, coef, usepass, tesseract, lang, verbose):
     #add time in external variable yara for special check
+    global ioc_global
+    if api_vt:
+        vt = VirusTotalPublicApi(api_vt)
     now=datetime.now()
     dd=datetime(int(now.strftime('%Y')),int(now.strftime('%m')),int(now.strftime('%d')))+timedelta(days=-7)
     tnow7=dd.strftime("%s000")
@@ -537,6 +591,9 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                     except:
                         print "Error to parse json result..."
         var_dynamic['now_7_int'] = int(tnow7)
+        md5_file = None
+        size_file = None
+        type_file = None
         if result_extract:
             json_find = True
             remove_double(result_extract)
@@ -589,6 +646,23 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             externals_var['CDBNAME']=os.path.basename(filename)
         else:
             externals_var = {'RootFileType': "CL_TYPE_" + type_file, 'CDBNAME': os.path.basename(filename), 'FileType': "CL_TYPE_" + type_file, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8'), 'PathFile': filename_path}
+        vt_result=None
+        if api_vt:
+            try:
+                response = vt.get_file_report(md5_file)
+                if response and 'response_code' in response and response['response_code'] == 200:
+                    if "results" in response and response["results"]:
+                        vttmp=parse_vt(response["results"])
+                        vt_result=vttmp
+                        externals_var.update(vttmp)
+                    else:
+                        if verbose:
+                            print "Debug info: VT no result for you md5hash"
+                else:
+                    if verbose:
+                        print "Debug info: VT response error (maybe key api not valid):"+str(response)
+            except Exception as e:
+                print "Error: Virus total error:"+str(e)
         #Check Zip crypted
         zip_crypt = False
         crypt_names = None
@@ -704,14 +778,18 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             reta = adddict(result_extract,u'Yara',detect_yara_rule,())
             reta = adddict(result_extract,u'ExtractInfo',detect_yara_strings,())
             reta = adddict(result_extract,u'CDBNAME',unicode(os.path.basename(filename), "utf-8"),())
+            if vt_result:
+                reta = adddict(result_extract,u'VT_Results', vt_result,())
             if zip_crypt:
                 reta = adddict(result_extract,u'zip_crypt',True,())
                 if crypt_names:
                     reta = adddict(result_extract,u'EMBED_FILES', crypt_names,())
         else:
             result_extract = { u'RootFileType': u"CL_TYPE_" + unicode(type_file, "utf-8"), u'FileType': u"CL_TYPE_" + unicode(type_file, "utf-8"), u'FileSize': int(size_file), u'FileMD5': md5_file, u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'CDBNAME': unicode(os.path.basename(filename), "utf-8"), u'ContainedObjects': []}
+            if vt_result:
+                result_extract[u'VT_Results'] = vt_result
             if zip_crypt:
-                result_extract[u'zip_crypt'] = True 
+                result_extract[u'zip_crypt'] = True
                 if crypt_names:
                     result_extract[u'EMBED_FILES'] = crypt_names
         #reanalyse log clamav for create JSON information
@@ -985,6 +1063,14 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                                        reta = adddict(result_extract,u'PathFile',ret[u'PathFile'],pmd5[0:len(pmd5)-1],fpresent)
                                        reta = adddict(result_extract,u'RiskScore',ret[u'RiskScore'],pmd5[0:len(pmd5)-1],fpresent)
                                        reta = adddict(result_extract,u'Yara',ret[u'Yara'],pmd5[0:len(pmd5)-1],fpresent)
+                                       if 'VT_Results' in ret:
+                                           reta = adddict(result_extract,u'VT_Results',ret[u'VT_Results'],pmd5[0:len(pmd5)-1],fpresent)
+                                       if 'CDBNAME' in ret:
+                                           reta = adddict(result_extract,u'CDBNAME',ret[u'CDBNAME'],pmd5[0:len(pmd5)-1],fpresent)
+                                       if 'zip_crypt' in ret:
+                                           reta = adddict(result_extract,u'zip_crypt',ret[u'zip_crypt'],pmd5[0:len(pmd5)-1],fpresent)
+                                           if 'EMBED_FILES' in ret:
+                                               reta = adddict(result_extract,u'EMBED_FILES',ret[u'EMBED_FILES'],pmd5[0:len(pmd5)-1],fpresent)
                                        for f_r_y in ret[u'Yara']: #found rules yara []
                                            for r_y_k, r_y_v in f_r_y.items(): #rule yara name
                                                if 'tags' in r_y_v:
@@ -1054,6 +1140,14 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                                 reta = adddict(result_extract,u'PathFile',ret[u'PathFile'],pmd5[0:len(pmd5)-1],fpresent)
                                 reta = adddict(result_extract,u'RiskScore',ret[u'RiskScore'],pmd5[0:len(pmd5)-1],fpresent)
                                 reta = adddict(result_extract,u'Yara',ret[u'Yara'],pmd5[0:len(pmd5)-1],fpresent)
+                                if 'VT_Results' in ret:
+                                    reta = adddict(result_extract,u'VT_Results',ret[u'VT_Results'],pmd5[0:len(pmd5)-1],fpresent)
+                                if 'CDBNAME' in ret:
+                                    reta = adddict(result_extract,u'CDBNAME',ret[u'CDBNAME'],pmd5[0:len(pmd5)-1],fpresent)
+                                if 'zip_crypt' in ret:
+                                    reta = adddict(result_extract,u'zip_crypt',ret[u'zip_crypt'],pmd5[0:len(pmd5)-1],fpresent)
+                                    if 'EMBED_FILES' in ret:
+                                        reta = adddict(result_extract,u'EMBED_FILES',ret[u'EMBED_FILES'],pmd5[0:len(pmd5)-1],fpresent)
                                 for f_r_y in ret[u'Yara']: #found rules yara []
                                            for r_y_k, r_y_v in f_r_y.items(): #rule yara name
                                                if 'tags' in r_y_v:
@@ -1062,6 +1156,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                                                        if tag.lower().startswith("attack.") and tag.lower() not in global_tags:
                                                            global_tags.append(tag.lower())
                                 reta = adddict(result_extract,u'ExtractInfo',ret[u'ExtractInfo'],pmd5[0:len(pmd5)-1],fpresent)
+            
         #actualiz score max
         result_extract[u'GlobalRiskScore'] = score_max
         result_extract[u'GlobalTags'] = ', '.join(sorted(global_tags))
@@ -1209,8 +1304,9 @@ def main(argv):
     usepass = ""
     tesseract=""
     lang="eng"
+    global api_vt
     try:
-        opts, args = getopt.getopt(argv, "hf:gc:d:y:a:b:i:l:s:j:p:m:vr", ["help", "filename=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "yara_rules_path2=", "password=", 'image=', 'lang_image=', "save_graph=", "json_save=", "pattern=", "coef_path=", "verbose", "remove"])
+        opts, args = getopt.getopt(argv, "hf:gc:d:y:a:b:i:l:s:j:p:m:V:vr", ["help", "filename=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "yara_rules_path2=", "password=", 'image=', 'lang_image=', "save_graph=", "json_save=", "pattern=", "coef_path=", "virustotal=", "verbose", "remove"])
     except getopt.GetoptError:
         usage()
         sys.exit(-1)
@@ -1241,6 +1337,9 @@ def main(argv):
                 usage()
                 sys.exit(-1)
             usepass=str(arg)
+        elif opt in ("-V", "--virustotal"):
+            #API KEY VT
+            api_vt=str(arg)
         elif opt in ("-p", "--pattern"):
             #pattern load
             if not os.path.isfile(arg):
