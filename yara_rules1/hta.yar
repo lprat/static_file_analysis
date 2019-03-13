@@ -18,6 +18,7 @@ rule hta_script {
         version = "0.1"
 		weight = 4
 	    check_level2 = "check_command_bool"
+	    tag = "attack.execution,attack.T1170"
 	strings:
 	    $hta0 = "<hta:application" nocase	
 	    $hta1 = "<script" nocase
@@ -32,6 +33,7 @@ rule hta_mini {
         version = "0.1"
 		weight = 4
 	    check_level2 = "check_command_bool"
+	    tag = "attack.execution,attack.T1170"
 	strings:
 	    $hta0 = "<hta:application" nocase	
 	    $hta1 = /windowstate\s*=(\s*|\")+minimize/ nocase
