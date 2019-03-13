@@ -3,7 +3,8 @@
 # (c) 2017-2019, Lionel PRAT <lionel.prat9@gmail.com>
 # Analysis by clamav extraction and yara rules
 # All rights reserved.
-#Require: pydot==1.2.3 && pyparsing==2.2.0 && virustotal-api
+#Require: pydot==1.2.3 && pyparsing==2.2.0 && virustotal-api && google-api-python-client
+#Google api key: https://developers.google.com/api-client-library/python/auth/api-keys
 import logging
 import pydot
 import hashlib
@@ -485,6 +486,13 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
                 var_dynamic[str(match.meta['var_match'])] = True
         elif 'var_match' in match.meta:
             var_dynamic[str(match.meta['var_match'])] = True
+        elif 'ids' in match.meta and match.meta['ids'] and match.strings:
+            if not match.meta['ids'].lower() in ioc_global:
+                ioc_global[match.meta['ids'].lower()] = []
+            for iocx in match.strings:
+                iocxx=str(iocx[2]).replace("\x00", "")
+                if not iocxx in ioc_global[match.meta['ids'].lower()]:
+                    ioc_global[match.meta['ids'].lower()].append(iocxx)
     #Check YARA rules level 2
     externals_var.update(check_level2)
     externals_var.update(var_dynamic)
@@ -517,6 +525,13 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
                 var_dynamic[str(match.meta['var_match'])] = True
         elif 'var_match' in match.meta:
             var_dynamic[str(match.meta['var_match'])] = True
+        elif 'ids' in match.meta and match.meta['ids'] and match.strings:
+            if not match.meta['ids'].lower() in ioc_global:
+                ioc_global[match.meta['ids'].lower()] = []
+            for iocx in match.strings:
+                iocxx=str(iocx[2]).replace("\x00", "")
+                if not iocxx in ioc_global[match.meta['ids'].lower()]:
+                    ioc_global[match.meta['ids'].lower()].append(iocxx)
     if not isinstance(cl_type, unicode):
         cl_type=unicode(cl_type, "utf-8")
     result_file = { u'FileParentType': cl_parent, u'FileType': u"CL_TYPE_" + cl_type, u'FileSize': int(size_file), u'FileMD5': md5_file, u'PathFile': [unicode(filename, "utf-8")],  u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'ContainedObjects': []}
@@ -737,6 +752,13 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                     var_dynamic[str(match.meta['var_match'])] = True
             elif 'var_match' in match.meta:
                 var_dynamic[str(match.meta['var_match'])] = True
+            elif 'ids' in match.meta and match.meta['ids'] and match.strings:
+                if not match.meta['ids'].lower() in ioc_global:
+                    ioc_global[match.meta['ids'].lower()] = []
+                for iocx in match.strings:
+                    iocxx=str(iocx[2]).replace("\x00", "")
+                    if not iocxx in ioc_global[match.meta['ids'].lower()]:
+                        ioc_global[match.meta['ids'].lower()].append(iocxx)
         #Check YARA rules level 2
         externals_var.update(var_dynamic)
         externals_var.update(check_level2)
@@ -773,6 +795,13 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                     var_dynamic[str(match.meta['var_match'])] = True
             elif 'var_match' in match.meta:
                 var_dynamic[str(match.meta['var_match'])] = True
+            elif 'ids' in match.meta and match.meta['ids'] and match.strings:
+                if not match.meta['ids'].lower() in ioc_global:
+                    ioc_global[match.meta['ids'].lower()] = []
+                for iocx in match.strings:
+                    iocxx=str(iocx[2]).replace("\x00", "")
+                    if not iocxx in ioc_global[match.meta['ids'].lower()]:
+                        ioc_global[match.meta['ids'].lower()].append(iocxx)
         if json_find:
             reta = adddict(result_extract,u'RiskScore',detect_yara_score,())
             reta = adddict(result_extract,u'Yara',detect_yara_rule,())
