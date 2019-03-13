@@ -1,3 +1,5 @@
+//PE extension:  .cpl, .exe, .dll, .ocx, .sys, .scr, .drv, .efi, .pif
+
 import "math"
 import "pe"
 
