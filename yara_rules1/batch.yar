@@ -1,5 +1,5 @@
-//https://www.robvanderwoude.com/batchcommands.php
-
+//TODO add cmd: https://www.robvanderwoude.com/batchcommands.php
+//TODO add obfusc: https://www.dostips.com/forum/viewtopic.php?t=7990
 rule batch_file {
 	meta:
 		description = "Batch file"
