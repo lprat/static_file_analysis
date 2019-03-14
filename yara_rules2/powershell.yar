@@ -284,3 +284,100 @@ rule Base64_PS1_Shellcode {
    condition:
       check_command_bool and $substring and 1 of ($p*)
 }
+
+rule powershell_persi {
+	meta:
+		description = "Powershell option persist"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 5
+		tag = "attack.persistence"
+	strings:
+	    $pws0 = "powershell" nocase ascii wide
+		$pws1 = "IEX" nocase ascii wide
+		$pws2 = ".Invoke" nocase ascii wide
+		$pws3 = "new-object" nocase ascii wide
+		$dc1 = "-persist" nocase ascii wide
+	condition:
+	    check_command_bool and any of ($dc*) and any of ($pws*)
+}
+
+rule powershell_URI {
+	meta:
+		description = "Powershell with URI"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 6
+		tag = "attack.command_control,attack.discovery,attack.exfiltration"
+	strings:
+	    $pws0 = "powershell" nocase ascii wide
+		$pws1 = "IEX" nocase ascii wide
+		$pws2 = ".Invoke" nocase ascii wide
+		$pws3 = "new-object" nocase ascii wide
+		$dc1 = /(^|\n|\s+|\"|\')\\\\\S+|(^|\n|\s+|\"|\')\:\/\/\S+/ nocase ascii wide
+	condition:
+	    check_command_bool and any of ($dc*) and any of ($pws*)
+}
+
+rule powershell_credential {
+	meta:
+		description = "Powershell with credential"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 4
+		tag = "attack.credential_access"
+	strings:
+	    $pws0 = "powershell" nocase ascii wide
+		$pws1 = "IEX" nocase ascii wide
+		$pws2 = ".Invoke" nocase ascii wide
+		$pws3 = "new-object" nocase ascii wide
+		$dc1 = "PsCredential" nocase ascii wide
+	condition:
+	    check_command_bool and any of ($dc*) and any of ($pws*)
+}
+
+rule powershell_credential2 {
+	meta:
+		description = "Powershell with credential dump"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 6
+		tag = "attack.credential_access"
+	strings:
+	    $pws0 = "powershell" nocase ascii wide
+		$pws1 = "IEX" nocase ascii wide
+		$pws2 = ".Invoke" nocase ascii wide
+		$pws3 = "new-object" nocase ascii wide
+		$dc1 = "Invoke-NinjaCopy" nocase ascii wide
+		$dc2 = "Invoke-Mimikatz" nocase ascii wide
+		$dc3 = "Invoke_CredentialsPhish" nocase ascii wide
+	condition:
+	    check_command_bool and any of ($dc*) and any of ($pws*)
+}
+
+rule powershell_evil {
+	meta:
+		description = "Powershell use evil tool"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 6
+		tag = "attack.defense_evasion"
+		reference = "https://github.com/Neo23x0/signature-base/blob/7c8745c59ed43cf60f1dd5bace2339f19824fc9c/yara/gen_p0wnshell.yar"
+	strings:
+	    $pws0 = "powershell" nocase ascii wide
+		$pws1 = "IEX" nocase ascii wide
+		$pws2 = ".Invoke" nocase ascii wide
+		$pws3 = "new-object" nocase ascii wide
+		$dc1 = "Invoke-TokenManipulation" nocase ascii wide
+		$dc2 = "Invoke_Shellcode" nocase ascii wide
+		$dc3 = "Invoke-ReflectivePEInjection" nocase ascii wide
+		$dc4 = "Invoke_PsExec" nocase ascii wide
+		$dc5 = "Invoke-Tater" nocase ascii wide
+		$dc6 = "Invoke_PowerUp" nocase ascii wide
+		$dc7 = "Invoke-PortScan" nocase ascii wide
+		$dc8 = "Invoke-PatchDll" nocase ascii wide
+		$dc9 = "Invoke-Wmi" nocase ascii wide
+	condition:
+	    check_command_bool and any of ($dc*) and any of ($pws*)
+}
+
