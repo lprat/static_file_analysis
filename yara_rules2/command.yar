@@ -1153,8 +1153,7 @@ rule cmdnt_rat {
 	    $rat11 = "Uvnc" nocase ascii wide
 	    $rat12 = "RealVnc" nocase ascii wide
 	    $rat13 = "Bomgar" nocase ascii wide
-	    $rat14 = "empire" nocase ascii wide
-	    $rat15 = "meterpreter" nocase ascii wide
+	    $rat14 = "meterpreter" nocase ascii wide
 	condition:
 	    check_command_bool and any of ($rat*)
 }
@@ -1180,6 +1179,36 @@ rule cmdnt_cred {
 	    $cred9 = "sekurlsa" nocase ascii wide
 	    $cred10 = "lsadump" nocase ascii wide
 	    $cred11 = "laZagne" nocase ascii wide
+	    $cred12 = "WCESERVICE" nocase ascii wide
+	    $cred13 = "WCE_SERVICE" nocase ascii wide
+	    $cred14 = "mimilib" nocase ascii wide
+	    $cred15 = "eo.oe.kiwi" nocase ascii wide
+	    $cred16 = /(cred|crendential|pass|)dump|keylogger|sniff/ nocase ascii wide
 	condition:
 	    check_command_bool and any of ($cred*)
+}
+
+rule cmdnt_evil {
+	meta:
+		description = "Suspect evil command"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 5
+	    tag = "attack.execution"
+	    ids = "win_exec"
+	    reference = "https://github.com/Neo23x0/signature-base/blob/7c8745c59ed43cf60f1dd5bace2339f19824fc9c/yara/gen_p0wnshell.yar"
+	strings:
+	    $evil1 = "pwdumpx" nocase ascii wide
+	    $evil2 = "gsecdump" nocase ascii wide
+	    $evil3 = "powersploit" nocase ascii wide
+	    $evil4 = "empire" nocase ascii wide
+	    $evil5 = "EncodedPayload.bat" nocase ascii wide
+	    $evil6 = "powercat" nocase ascii wide
+	    $evil7 = "p0wnedShell" nocase ascii wide
+	    $evil8 = "TaterCommand" nocase ascii wide
+	    $evil9 = "P0wnedListener" nocase ascii wide
+	    $evil10 = "Pshell." nocase ascii wide
+	    $evil11 = "TaterCommand" nocase ascii wide
+	condition:
+	    check_command_bool and any of ($evil*)
 }
