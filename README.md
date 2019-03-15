@@ -23,6 +23,7 @@ This tool written in python langage makes the link between clam and yara. It can
   - Add global score with coefficient mechanism (coef.conf) to max score
 - Extract IOC on yara rules match
 - Extract text from image by OCR
+- Decompile JAR & CLASS java with procyon
 - Check VirusTotal
 - Create PNG graph for fast analysis
 - Output result tree json in a file
@@ -30,7 +31,7 @@ This tool written in python langage makes the link between clam and yara. It can
 ## Usage
 ~~~
 Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com
-Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] [-b password.pwdb] [-i /usr/bin/tesseract] [-l fra] [-V API_KEY_VT] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/
+Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] [-b password.pwdb] [-i /usr/bin/tesseract] [-l fra] [-V API_KEY_VT] [-J] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/
 
 	 -h/--help : for help to use
 
@@ -53,6 +54,8 @@ Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p 
 	 -j/--json_save= : path filename where save json result (JSON)
 
 	 -i/--image= : path of 'tesseract' for analysis on potential social engenering by image
+
+	 -J/--java_decomp : Java decompile class/jar with procyon (apt-get install procyon-decompiler)
 
 	 -l/--lang_image= : 'tesseract' lang ocr extratc (eng, fra, ...) 
 
@@ -1315,6 +1318,7 @@ Phase one finish!
 - clamav
 - python: yara, pydot, hashlib, zlib, json, pyparsing
 - For Image OCR: tesseract-ocr-all (deb)
+- For decompil java: procyon-decompiler (deb)
 ## Install
 
 ~~~

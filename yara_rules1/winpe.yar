@@ -150,6 +150,8 @@ rule Win_PE
         version = "0.1"
 		weight = 1
 		check_level2 = "check_winapi_bool,check_registry_bool,check_command_bool,check_clsid_bool"
+	strings:
+		$magic_class = { ca fe ba be }
     condition:
-		uint16(0) == 0x5A4D or FileType matches /CL_TYPE_AUTOIT|CL_TYPE_MSCAB|CL_TYPE_MSEXE|CL_TYPE_MS-EXE|CL_TYPE_MS-DLL|CL_TYPE_binary/
+		uint16(0) == 0x5A4D or (FileType matches /CL_TYPE_AUTOIT|CL_TYPE_MSCAB|CL_TYPE_MSEXE|CL_TYPE_MS-EXE|CL_TYPE_MS-DLL|CL_TYPE_binary/ and not (CDBNAME matches /.*\.class$/i or $magic_class at 0))
 }

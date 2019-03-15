@@ -3,8 +3,7 @@
 # (c) 2017-2019, Lionel PRAT <lionel.prat9@gmail.com>
 # Analysis by clamav extraction and yara rules
 # All rights reserved.
-#Require: pydot==1.2.3 && pyparsing==2.2.0 && virustotal-api && google-api-python-client
-#Google api key: https://developers.google.com/api-client-library/python/auth/api-keys
+#Require: pydot==1.2.3 && pyparsing==2.2.0 && virustotal-api 
 import logging
 import pydot
 import hashlib
@@ -29,7 +28,9 @@ from virus_total_apis import PublicApi as VirusTotalPublicApi
 ######GLOBAL VAR######
 ioc_global = {}
 api_vt=""
-stop_vt=True
+stop_vt = True
+javadecomp = False
+path_procyon = '/usr/bin/procyon'
 ######################
 #########################################################################################################
 ##### USE MSO FILE EXTRACT because clamav don't uncompress activemime
@@ -98,7 +99,7 @@ def mso_file_extract(data):
 ############ END OF FUNCTION ORIGIN: https://github.com/decalage2/oletools/blob/master/oletools/olevba.py
 #########################################################################################################
 def usage():
-    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] [-b password.pwdb] [-i /usr/bin/tesseract] [-l fra] [-V API_KEY_VT] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/\n"
+    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] [-b password.pwdb] [-i /usr/bin/tesseract] [-l fra] [-V API_KEY_VT] [-J] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/\n"
     print "\t -h/--help : for help to use\n"
     print "\t -f/--filename= : path of filename to analysis\n"
     print "\t -y/--yara_rules_path= : path of rules yara level 1\n"
@@ -110,6 +111,7 @@ def usage():
     print "\t -d/--directory_tmp= : path of directory to extract emmbedded file(s)\n"
     print "\t -j/--json_save= : path filename where save json result (JSON)\n"
     print "\t -i/--image= : path of \'tesseract\' for analysis on potential social engenering by image\n"
+    print "\t -J/--java_decomp : Java decompile class/jar with procyon (apt-get install procyon-decompiler)\n"
     print "\t -l/--lang_image= : \'tesseract\' lang ocr extratc (eng, fra, ...) \n"
     print "\t -g/--graph : generate graphe of analyz\n"
     print "\t -s/--save_graph= : path filename where save graph (PNG)\n"
@@ -385,6 +387,8 @@ def remove_double(nested_dict):
 def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, tesseract, lang, externals_var_extra={}, verbose=False):
     global ioc_global
     global stop_vt
+    global javadecomp
+    global path_procyon
     if api_vt:
         vt = VirusTotalPublicApi(api_vt)
     #find size file 
@@ -450,6 +454,8 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
     detect_yara_rule = []
     detect_yara_score = 0
     detect_yara_strings = ext_info
+    java_compiled_found_jar = False
+    java_compiled_found_class = False
     #Check YARA rules level 1
     ret_yara = yara_RC.match(filename, externals=externals_var, timeout=120)
     check_level2 = {}
@@ -462,6 +468,10 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
         if match.meta['weight'] > 0:
             if verbose and match.strings:
                 print 'YARA '+match.rule+' match DEBUG:'+str(match.strings)
+            if str(match.rule) == "java_class":
+                java_compiled_found_class = True
+            elif str(match.rule) == "java_jar":
+                java_compiled_found_jar = True
             found_rule={match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}}
             if 'tag' in match.meta:
                 found_rule[match.rule]['tags']=match.meta['tag']
@@ -494,6 +504,22 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
                 if not iocxx in ioc_global[match.meta['ids'].lower()]:
                     ioc_global[match.meta['ids'].lower()].append(iocxx)
     #Check YARA rules level 2
+    #decompil jar/class to java
+    if javadecomp and (java_compiled_found_jar or java_compiled_found_class or (cdbname and re.search("\.jar$|\.class$", cdbname))):
+        tempx = tempfile.NamedTemporaryFile()
+        if java_compiled_found_class or re.search("\.class$", cdbname):
+            temp = tempx.name + ".class"
+        else:
+            temp = tempx.name + ".jar"
+        tempx.close
+        shutil.copy2(filename, temp)
+        args_decomp = [path_procyon, temp]
+        new_env = dict(os.environ)
+        (working_dir, filenamex) = os.path.split(filename)
+        proc_decomp = subprocess.Popen(args_decomp, env=new_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_dir)
+        output_decomp, serr_decomp = proc_decomp.communicate()
+        if output_decomp:
+            externals_var['decompiledjava'] = unidecode.unidecode(unicode(output_decomp, "utf-8"))
     externals_var.update(check_level2)
     externals_var.update(var_dynamic)
     ret_yara = yara_RC2.match(filename, externals=externals_var, timeout=120)
@@ -549,6 +575,8 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
 def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patterndb, coef, usepass, tesseract, lang, verbose):
     #add time in external variable yara for special check
     global ioc_global
+    global javadecomp
+    global path_procyon
     if api_vt:
         vt = VirusTotalPublicApi(api_vt)
     now=datetime.now()
@@ -712,6 +740,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
         detect_yara_rule = []
         detect_yara_score = 0
         detect_yara_strings = ext_info
+        java_compiled_found = False
         #Check YARA rules level 1
         ret_yara = yara_RC.match(filename_path, externals=externals_var, timeout=120) #First yara scan on Parent file -- Level 1
         check_level2 = {}
@@ -724,6 +753,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             if match.meta['weight'] > 0:
                 if verbose and match.strings:
                     print 'YARA '+match.rule+' match DEBUG:'+str(match.strings)
+                if str(match.rule) == "java_class" or str(match.rule) == "java_jar":
+                    java_compiled_found = True
                 found_rule={match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}}
                 if 'tag' in match.meta:
                     found_rule[match.rule]['tags']=match.meta['tag']
@@ -760,6 +791,13 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                     if not iocxx in ioc_global[match.meta['ids'].lower()]:
                         ioc_global[match.meta['ids'].lower()].append(iocxx)
         #Check YARA rules level 2
+        #decompil jar/class to java
+        if javadecomp and (java_compiled_found or (externals_var['CDBNAME'] and re.search("\.jar$|\.class$", externals_var['CDBNAME']))):
+            args_decomp = [path_procyon, filename_path]
+            proc_decomp = subprocess.Popen(args_decomp, env=new_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_dir)
+            output_decomp, serr_decomp = proc_decomp.communicate()
+            if output_decomp:
+                externals_var['decompiledjava'] = unidecode.unidecode(unicode(output_decomp, "utf-8"))
         externals_var.update(var_dynamic)
         externals_var.update(check_level2)
         ret_yara = yara_RC2.match(filename_path, externals=externals_var, timeout=120) #Second yara scan on Parent file -- Level 2
@@ -1319,6 +1357,8 @@ def yara_compile(yara_rules_path, directory_tmp, ext_var={}):
 def main(argv):
     print "Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com"
     clamav_path = "/usr/bin/clamscan"
+    global javadecomp
+    global path_procyon
     filename = ""
     directory_tmp = ""
     graph_file = ""
@@ -1335,7 +1375,7 @@ def main(argv):
     lang="eng"
     global api_vt
     try:
-        opts, args = getopt.getopt(argv, "hf:gc:d:y:a:b:i:l:s:j:p:m:V:vr", ["help", "filename=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "yara_rules_path2=", "password=", 'image=', 'lang_image=', "save_graph=", "json_save=", "pattern=", "coef_path=", "virustotal=", "verbose", "remove"])
+        opts, args = getopt.getopt(argv, "hf:gc:d:y:a:b:i:l:s:j:p:m:V:vrJ", ["help", "filename=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "yara_rules_path2=", "password=", 'image=', 'lang_image=', "save_graph=", "json_save=", "pattern=", "coef_path=", "virustotal=", "verbose", "remove", 'java_decomp'])
     except getopt.GetoptError:
         usage()
         sys.exit(-1)
@@ -1349,6 +1389,12 @@ def main(argv):
             verbose = True
         elif opt in ("-r", "--remove"):
             removetmp = True
+        elif opt in ("-J", "--java_decomp"):
+            if not os.path.isfile(path_procyon):
+                print "Error to find: procyon for java decompilation -- install with apt-get install procyon-decompiler\n"
+                sys.exit(-1)
+            else:
+                javadecomp = True
         elif opt in ("-s", "--save_graph"):
             make_graphe = True
             (working_dirgr, filegr) = os.path.split(os.path.abspath(arg))

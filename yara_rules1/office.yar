@@ -362,5 +362,5 @@ rule OFFICE_file {
 		weight = 1
 		var_match = "office_file_bool"
 	condition:
-	    (uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileType matches /CL_TYPE_MSOLE|CL_TYPE_OLE|CL_TYPE_OOXML|CL_TYPE_MSWORD|CL_TYPE_MSXL/) and (not CDBNAME matches /\.zip$/)
+	    (uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileType matches /CL_TYPE_MSOLE|CL_TYPE_OLE|CL_TYPE_OOXML|CL_TYPE_MSWORD|CL_TYPE_MSXL/) and (not CDBNAME matches /\.zip$|\.jar$/)
 }
