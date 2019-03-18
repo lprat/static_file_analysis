@@ -8,7 +8,7 @@ rule URLLoaderCommand_SWF {
 	meta:
 		author = "Lionel PRAT"
 		version = "0.1"
-		weight = 4
+		weight = 5
 		description = "URLLoaderCommand call in SWF"
 		tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194"
     strings:
@@ -222,4 +222,22 @@ rule SWF_file {
 		$str0 = "shockwave-flash" nocase wide ascii
 	condition:
 		$magic in (0..1024) and any of ($str*)
+}
+
+rule SWF_doswf {
+	meta:
+		author = "Lionel PRAT"
+		version = "0.1"
+		weight = 6
+		reference = "http://www.malware-traffic-analysis.net/2019/03/16/index.html"
+		description = "SWF file with cypher content use doswf.com"
+	strings:
+	    $magic = {46 57 53} //FWS
+	    $str0 = "shockwave-flash" nocase wide ascii
+		$doswf0 = "doswf.com" nocase wide ascii
+		$doswf1 = "flash swf encrypt" nocase wide ascii
+		$doswf2 = "Encrypted by DoSWF" nocase wide ascii
+		$doswf3 = "_doswf_" nocase wide ascii
+	condition:
+		(FileType matches /CL_TYPE_SWF/ or ($magic in (0..1024) and any of ($str*))) and any of ($doswf*)
 }
