@@ -2,14 +2,26 @@
 FROM debian:latest
 MAINTAINER Lionel PRAT <lionel.prat9@gmail.com>
 
-RUN apt-get update && apt-get install -y build-essential git python-pip libjson-c-dev libxml2-dev libssl-dev libbz2-dev python-dev python-virtualenv xdot openssl vim zlib1g-dbg zlib1g zlib1g-dev cron hardening-wrapper hardening-includes
+RUN apt-get update && apt-get install -y build-essential git python-pip libjson-c-dev libxml2-dev libssl-dev libbz2-dev python-dev python-virtualenv xdot openssl vim zlib1g-dbg zlib1g zlib1g-dev cron hardening-wrapper hardening-includes libtesseract-dev tesseract-ocr-all npm procyon-decompiler python-setuptools libboost-python-dev libboost-all-dev libxslt-dev libtool graphviz-dev automake libffi-dev graphviz libfuzzy-dev libjpeg-dev pkg-config autoconf
 RUN cd /opt/ && git clone https://github.com/lprat/static_file_analysis
 RUN cd /opt/static_file_analysis && git clone https://github.com/vrtadmin/clamav-devel
 RUN cd /opt/static_file_analysis/clamav-devel && ./configure --enable-static --with-libjson && make
 #bug to install hashlib
 RUN rm -f /usr/lib/python2.7/lib-dynload/_hashlib.x86_64-linux-gnu.so
+#install pygrah & pyv8 for thug
+RUN easy_install -U setuptools pygraphviz==1.3.1
+RUN git clone https://github.com/buffer/pyv8.git && \
+  cd pyv8 && \
+  python setup.py build && \
+  python setup.py install && \
+  cd .. && \
+  rm -rf pyv8
 #install hashlib pydot yara flask
-RUN pip install pydot yara-python hashlib flask gunicorn
+RUN pip install pydot yara-python hashlib flask gunicorn thug
+#install vmonkey
+RUN pip install -U https://github.com/decalage2/ViperMonkey/archive/master.zip
+#install emulator js
+RUN npm install box-js --global
 #make auto signed cert
 RUN cd /opt/static_file_analysis/api && openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 365  -subj '/CN=localdomain/O=SFA/C=FR'
 
