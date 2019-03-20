@@ -3,8 +3,9 @@
 # (c) 2017-2019, Lionel PRAT <lionel.prat9@gmail.com>
 # Analysis by clamav extraction and yara rules
 # All rights reserved.
-#Require: pydot==1.2.3 && pyparsing==2.2.0 && virustotal-api 
+#Require: pydot==1.2.3 && pyparsing==2.2.0 && virustotal-api
 import logging
+import imp
 import pydot
 import hashlib
 import shutil
@@ -20,10 +21,55 @@ import sys, getopt
 import collections
 import zlib
 import unidecode
+import zipfile
 from virus_total_apis import PublicApi as VirusTotalPublicApi
 
 ## file[path], direcory_extract[path], graph[bool]
 #verify clamscan present, or verify ENV CLAMSCAN_PATH
+###########VAR THUG########
+useragent='win7ie90'
+referer='https://mail.google.com'
+###########################
+#Check THUG if present?
+foundThug = None
+try:
+    imp.find_module('thug')
+    from thug.ThugAPI import ThugAPI
+    foundThug = True
+    class ThugurlAPI(ThugAPI):
+        def __init__(self):
+            ThugAPI.__init__(self)
+        
+        def analyze(self, url, useragent, referer, logdir):
+            # Set useragent to Internet Explorer 9.0 (Windows 7)
+            self.set_useragent(useragent)
+        
+            # Set referer to http://www.honeynet.org
+            self.set_referer(referer)
+        
+            # Enable file logging mode
+            self.set_file_logging()
+        
+            # Enable JSON logging mode (requires file logging mode enabled)
+            self.set_json_logging()
+        
+            # [IMPORTANT] The following three steps should be implemented (in the exact
+            # order of this example) almost in every situation when you are going to
+            # analyze a remote site.
+        
+            # Initialize logging
+            self.log_init(url)
+            
+            #choice dir to log
+            self.set_log_dir(logdir)
+        
+            # Run analysis
+            self.run_remote(url)
+        
+            # Log analysis results
+            self.log_event()
+except ImportError:
+    foundThug = False
 
 ######GLOBAL VAR######
 ioc_global = {}
@@ -99,9 +145,13 @@ def mso_file_extract(data):
 ############ END OF FUNCTION ORIGIN: https://github.com/decalage2/oletools/blob/master/oletools/olevba.py
 #########################################################################################################
 def usage():
-    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] [-b password.pwdb] [-i /usr/bin/tesseract] [-l fra] [-V API_KEY_VT] [-J] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/\n"
+    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] [-b password.pwdb] [-i /usr/bin/tesseract] [-l fra] [-V API_KEY_VT] [-J] -f/-u path_filename/URL -y yara_rules_path1/ -a yara_rules_path2/\n"
     print "\t -h/--help : for help to use\n"
     print "\t -f/--filename= : path of filename to analysis\n"
+    print "\t -u/--url= : url analysis use thug\n"
+    print "\t -U/--useragent= : useragent for thug (default: win7ie90)\n"
+    print "\t -L/--listthug= : list useragent for thug\n"
+    print "\t -R/--referer= : referer for thug (default: https://mail.google.com)\n"
     print "\t -y/--yara_rules_path= : path of rules yara level 1\n"
     print "\t -a/--yara_rules_path2= : path of rules yara level 2\n"
     print "\t -p/--pattern= : path of pattern filename for data miner\n"
@@ -119,7 +169,8 @@ def usage():
     print "\t -V/--virustotal= : API Key\n"
     print "\t -v/--verbose= : verbose mode\n"
     print "\t example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -i /usr/bin/tesseract -l fra -g\n"
-
+    print "\t example: analysis.py -c ./clamav-devel/clamscan/clamscan -u www.exploitkit.top/id?000 -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -i /usr/bin/tesseract -l fra -g\n"
+    
 #source: https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
 def which(program):
     import os
@@ -1373,15 +1424,64 @@ def main(argv):
     usepass = ""
     tesseract=""
     lang="eng"
+    uorf = True
+    checkurl=None
+    global referer
+    global useragent
     global api_vt
     try:
-        opts, args = getopt.getopt(argv, "hf:gc:d:y:a:b:i:l:s:j:p:m:V:vrJ", ["help", "filename=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "yara_rules_path2=", "password=", 'image=', 'lang_image=', "save_graph=", "json_save=", "pattern=", "coef_path=", "virustotal=", "verbose", "remove", 'java_decomp'])
+        opts, args = getopt.getopt(argv, "hf:u:gc:d:y:a:b:i:l:s:j:p:m:V:vrJR:U:L", ["help", "filename=", "url=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "yara_rules_path2=", "password=", 'image=', 'lang_image=', "save_graph=", "json_save=", "pattern=", "coef_path=", "virustotal=", "verbose", "remove", 'java_decomp', "referer=", "useragent=", "listthug"])
     except getopt.GetoptError:
         usage()
         sys.exit(-1)
     for opt, arg in opts:
         if opt in ("-h", "--help"):
             usage()
+            sys.exit(-1)
+        if opt in ("-L", "--listthug"):
+            print "THUG USERAGENT LIST:\n"
+            print "winxpie60             Internet Explorer 6.0    (Windows XP)"
+            print "winxpie61             Internet Explorer 6.1    (Windows XP)"
+            print "winxpie70             Internet Explorer 7.0    (Windows XP)"
+            print "winxpie80             Internet Explorer 8.0    (Windows XP)"
+            print "winxpchrome20         Chrome 20.0.1132.47    (Windows XP)"
+            print "winxpfirefox12        Firefox 12.0        (Windows XP)"
+            print "winxpsafari5          Safari 5.1.7        (Windows XP)"
+            print "win2kie60             Internet Explorer 6.0    (Windows 2000)"
+            print "win2kie80             Internet Explorer 8.0    (Windows 2000)"
+            print "win7ie80              Internet Explorer 8.0    (Windows 7)"
+            print "win7ie90              Internet Explorer 9.0    (Windows 7)"
+            print "win7ie100             Internet Explorer 10.0    (Windows 7)"
+            print "win7chrome20          Chrome 20.0.1132.47    (Windows 7)"
+            print "win7chrome40          Chrome 40.0.2214.91    (Windows 7)"
+            print "win7chrome45          Chrome 45.0.2454.85    (Windows 7)"
+            print "win7chrome49          Chrome 49.0.2623.87    (Windows 7)"
+            print "win7firefox3          Firefox 3.6.13        (Windows 7)"
+            print "win7safari5           Safari 5.1.7        (Windows 7)"
+            print "win10ie110            Internet Explorer 11.0    (Windows 10)"
+            print "osx10chrome19         Chrome 19.0.1084.54    (MacOS X 10.7.4)"
+            print "osx10safari5          Safari 5.1.1        (MacOS X 10.7.2)"
+            print "linuxchrome26         Chrome 26.0.1410.19    (Linux)"
+            print "linuxchrome30         Chrome 30.0.1599.15    (Linux)"
+            print "linuxchrome44         Chrome 44.0.2403.89    (Linux)"
+            print "linuxchrome54         Chrome 54.0.2840.100    (Linux)"
+            print "linuxfirefox19        Firefox 19.0        (Linux)"
+            print "linuxfirefox40        Firefox 40.0        (Linux)"
+            print "galaxy2chrome18       Chrome 18.0.1025.166    (Samsung Galaxy S II, Android 4.0.3)"
+            print "galaxy2chrome25       Chrome 25.0.1364.123    (Samsung Galaxy S II, Android 4.0.3)"
+            print "galaxy2chrome29       Chrome 29.0.1547.59    (Samsung Galaxy S II, Android 4.1.2)"
+            print "nexuschrome18         Chrome 18.0.1025.133    (Google Nexus, Android 4.0.4)"
+            print "ipadchrome33          Chrome 33.0.1750.21    (iPad, iOS 7.1)"
+            print "ipadchrome35          Chrome 35.0.1916.41    (iPad, iOS 7.1.1)"
+            print "ipadchrome37          Chrome 37.0.2062.52    (iPad, iOS 7.1.2)"
+            print "ipadchrome38          Chrome 38.0.2125.59    (iPad, iOS 8.0.2)"
+            print "ipadchrome39          Chrome 39.0.2171.45    (iPad, iOS 8.1.1)"
+            print "ipadchrome45          Chrome 45.0.2454.68    (iPad, iOS 8.4.1)"
+            print "ipadchrome46          Chrome 46.0.2490.73    (iPad, iOS 9.0.2)"
+            print "ipadchrome47          Chrome 47.0.2526.70    (iPad, iOS 9.1)"
+            print "ipadsafari7           Safari 7.0        (iPad, iOS 7.0.4)"
+            print "ipadsafari8           Safari 8.0        (iPad, iOS 8.0.2)"
+            print "ipadsafari9           Safari 9.0        (iPad, iOS 9.1)"
             sys.exit(-1)
         elif opt in ("-g", "--graph"):
             make_graphe = True
@@ -1407,11 +1507,11 @@ def main(argv):
                 sys.exit(-1)
         elif opt in ("-b", "--password"):
             #password clamav file
-            if not os.path.isfile(arg):
+            if not os.path.isfile(os.path.abspath(arg)):
                 print "Error: File: " + arg + " not exist.\n"
                 usage()
                 sys.exit(-1)
-            usepass=str(arg)
+            usepass=str(os.path.abspath(arg))
         elif opt in ("-V", "--virustotal"):
             #API KEY VT
             api_vt=str(arg)
@@ -1469,13 +1569,26 @@ def main(argv):
                         print "Error: unuable to make directory temp.\n"
                         sys.exit(-1)
             directory_tmp = arg
-        elif opt in ("-f", "--filename"):
+        elif opt in ("-f", "--filename") and uorf:
             filename = arg
+            uorf = False
             #verify file exist
             if not os.path.isfile(filename):
                 print "Error: File: " + arg + " not exist.\n"
                 usage()
                 sys.exit(-1)
+        elif opt in ("-u", "--url") and uorf:
+            checkurl = arg
+            uorf = False
+            #verify if thug is present
+            if not foundThug:
+                print "Error: you must install thug for check URL.\n"
+                usage()
+                sys.exit(-1)
+            if not re.search("://", checkurl):
+                print "Error: URL is not correct...\n"
+                usage()
+                sys.exit(-1) 
         elif opt in ("-i", "--image"):
              tesseract = arg
              #verify file exist
@@ -1483,6 +1596,10 @@ def main(argv):
                  print "Error: File: " + arg + " not exist.\n"
                  usage()
                  sys.exit(-1)
+        elif opt in ("-R", "--referer"):
+             referer = arg
+        elif opt in ("-U", "--useragent"):
+             useragent = arg
         elif opt in ("-l", "--lang_image"):
              lang = arg
              #verify lang exist
@@ -1523,9 +1640,13 @@ def main(argv):
                 usage()
                 sys.exit(-1)
         elif opt in ("-c", "--clamscan_path"):
-            clamav_path = arg
+            if not os.path.isfile(os.path.abspath(arg)):
+                print "Error: clamscan path: " + arg + " not exist.\n"
+                usage()
+                sys.exit(-1)
+            clamav_path = os.path.abspath(arg)
     #verify option need
-    if not filename:
+    if not filename and not checkurl:
         usage()
         sys.exit(-1)
     if not yarapath:
@@ -1541,6 +1662,44 @@ def main(argv):
         if not directory_tmp:
             shutil.rmtree(directory_tmp)
         sys.exit(-1)
+    if checkurl:
+        print "Check URL:"+str(checkurl)+" -- with THUG..."
+        directory_tmp_thug = tempfile.mkdtemp()
+        thugzz = ThugurlAPI()
+        print "Make thug temporary dir:"+directory_tmp_thug
+        thugzz.analyze(checkurl,useragent,referer,directory_tmp_thug)
+        #check result: dir: application/* text/* analysis/json/analysis.json => create ZIP without analysis?
+        tempx = tempfile.NamedTemporaryFile()
+        filename = tempx.name + ".zip"
+        tempx.close
+        count_zipf=0
+        zipf = zipfile.ZipFile(filename, 'w', zipfile.ZIP_DEFLATED)
+        for root, dirs, files in os.walk(directory_tmp_thug):
+            for filex in files:
+                if filex != 'analysis.json' and filex != 'graph.svg':
+                    zipf.write(os.path.join(root, filex))
+                    count_zipf=+1
+        zipf.close()
+        print "Create zip of site: "+filename
+        #extract info analysis.json
+        # - check if cve found
+        cve_found=[]
+        if os.path.isfile(directory_tmp_thug+'analysis/json/analysis.json'):
+            with open(directory_tmp_thug+'analysis/json/analysis.json') as data_thug:
+                try:    
+                    result_thug = json.load(data_thug)
+                    for tk,tv in result_thug.items():
+                        if type(tv) is dict:
+                            for tkx,tvx in tv.items():
+                                if str(tkx) == "cve" and tvx and tvx not in cve_found:
+                                    cve_found.append(tvx)
+                except:
+                    print "Error to parse json result of thug..."
+        if cve_found:
+            print "CVE found by THUG:"+str(cve_found)
+        if count_zipf == 0:
+			print "Thug don't find file on website!"
+			sys.exit(0)
     #compile yara rules
     #Make Yara rules on 2 level order, for:
     # - Gain fast
