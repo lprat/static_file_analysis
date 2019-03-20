@@ -6,6 +6,7 @@ This tool written in python langage makes the link between clam and yara. It can
 ## Features
 - Clamscan extracts embedded files and makes json report
 - Clamscan check password on zip encrypted (ref: https://blog.didierstevens.com/2017/02/15/quickpost-clamav-and-zip-file-decryption/)
+- Extract file from URL with THUG (https://thug-honeyclient.readthedocs.io/en/latest/intro.html) and analysis files extracted
 - Analyse json report and make json trees to consolidate informations
 - Extract patterns (pattern.db) with the ability to use the yara rules
 - Scan embedded files and root file with yara rules (+context informations in externs variables: type, parent type, pattern extract, ...)
@@ -31,11 +32,13 @@ This tool written in python langage makes the link between clam and yara. It can
 ## Usage
 ~~~
 Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com
-Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] [-b password.pwdb] [-i /usr/bin/tesseract] [-l fra] [-V API_KEY_VT] [-J] -f path_filename -y yara_rules_path1/ -a yara_rules_path2/
+Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] [-b password.pwdb] [-i /usr/bin/tesseract] [-l fra] [-V API_KEY_VT] [-J] -f/-u path_filename/URL -y yara_rules_path1/ -a yara_rules_path2/
 
 	 -h/--help : for help to use
 
 	 -f/--filename= : path of filename to analysis
+
+	 -u/--url= : url analysis use thug
 
 	 -y/--yara_rules_path= : path of rules yara level 1
 
@@ -70,6 +73,8 @@ Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p 
 	 -v/--verbose= : verbose mode
 
 	 example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -i /usr/bin/tesseract -l fra -g
+
+	 example: analysis.py -c ./clamav-devel/clamscan/clamscan -u www.exploitkit.top/id?000 -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -i /usr/bin/tesseract -l fra -g
 
 lionel@local:~/static_analysis$ python analysis.py -c clamav-devel/clamscan/clamscan -g -f tests/pdf/jaff.pdf -y yara_rules/  -j /tmp/log.json -p pattern.db
 Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com
@@ -1316,9 +1321,10 @@ Phase one finish!
 ## Requirements
 
 - clamav
-- python: yara, pydot, hashlib, zlib, json, pyparsing
+- python: yara, pydot, hashlib, zlib, json, pyparsing, thug [use docker]
 - For Image OCR: tesseract-ocr-all (deb)
 - For decompil java: procyon-decompiler (deb)
+
 ## Install
 
 ~~~
@@ -1394,7 +1400,7 @@ I added this tool in CRITS services. I created pull request in CRITS service but
 ## Use API REST
 
 Run docker compose or docker run for launch api
-
+(docker lprat\sfa on cloud)
 ~~~
 docker-compose -f ./docker-compose_api.yml run sfa
 or
