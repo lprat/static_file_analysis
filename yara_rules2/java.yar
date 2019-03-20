@@ -43,7 +43,7 @@ rule java_io {
 		description = "Java IO File"
 		author = "Lionel PRAT"
         version = "0.1"
-		weight = 3
+		weight = 4
 	    tag = "attack.collect"
 	strings:		
 		$imp = "java.io.File" nocase
@@ -109,5 +109,33 @@ rule java_eval {
 		$imp = "javax.script.ScriptEngine" nocase	
 	condition:
 	    (check_java_bool and $imp) or decompiledjava contains "javax.script.ScriptEngine"
+}
+
+rule java_exec {
+	meta:
+		description = "Java execute command"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 7
+	    tag = "attack.execution"
+	strings:		
+		$runtime = ".getRuntime" nocase
+		$exec = ".exec" nocase
+		$processBuilder = "processBuilder." nocase
+	condition:
+	    (check_java_bool and (($runtime and $exec) or $processBuilder)) or (decompiledjava contains ".getRuntime" and decompiledjava contains ".exec") or decompiledjava contains "processBuilder."
+}
+
+rule java_zip {
+	meta:
+		description = "Java zip manipulation"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 5
+	    tag = "attack.exfiltration,attack.defense_evasion"
+	strings:		
+		$zip = "java.util.zip" nocase
+	condition:
+	    (check_java_bool and $zip) or decompiledjava contains "java.util.zip"
 }
 
