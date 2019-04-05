@@ -65,6 +65,7 @@ rule win_api_antidebug {
 		$api8 = "GetForeGroundWindow" nocase ascii wide
 		$api9 = "ZwQueryInformation" nocase ascii wide
 		$api10 = "QueryPerformanceCounter" nocase ascii wide
+                $api11 = "IsProcessorFeaturePresent" nocase ascii wide
 	condition:
 	    check_winapi_bool and any of ($api*)
 }
