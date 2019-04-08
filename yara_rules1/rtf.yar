@@ -14,6 +14,20 @@ rule RTF_obfusced {
       (uint32(0) == 0x74725c7b and uint16(4) != 0x3166) or (PathFile matches /.*\.rtf$|.*\.doc?$/i and uint16(4) != 0x3166) or (CDBNAME matches /.*\.rtf$|.*\.doc?$/i and uint16(4) != 0x3166)
 }
 
+rule CVE201711882_RTF {
+   meta:
+      description = "Detects RTF with possible OLE exploit on equation.2"
+      author = "Lionel PRAT"
+      reference = "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-11882"
+      weight = 7
+      version = "0.1"
+      tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.execution"
+      var_match = "rtf_file_bool"
+      check_level2 = "check_clsid_bool,check_command_bool,check_winapi_bool"
+   condition:
+      ((uint32(0) == 0x74725c7b and uint16(4) == 0x3166) or rtf_file_bool) and (FileType matches /CL_TYPE_OLE/ or FileParentType matches /->CL_TYPE_RTF$/) and serr contains "rtf embedded object, description:equation.2"
+}
+
 
 rule CVE20170199_RTF {
    meta:
@@ -39,7 +53,7 @@ rule OLE_in_RTF {
       weight = 5      
       version = "0.1"
       tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.execution"
-      check_level2 = "check_clsid_bool,check_command_bool,check_entropy_bool"
+      check_level2 = "check_clsid_bool,check_command_bool,check_entropy_bool,check_winapi_bool"
    condition:
       ((uint32(0) == 0x74725c7b and uint16(4) == 0x3166) or rtf_file_bool) and (FileType matches /CL_TYPE_OLE/ or FileParentType matches /->CL_TYPE_RTF$/)
 }
