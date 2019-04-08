@@ -1,3 +1,19 @@
+rule win_api_runhtmlapp {
+        meta:
+                description = "Call windows API RunHTMLApplication"
+                author = "Lionel PRAT"
+                version = "0.1"
+                weight = 6
+                reference = "https://thisissecurity.stormshield.com/2014/08/20/poweliks-command-line-confusion/"
+                ids = "win_api"
+                tag = "attack.execution,attack.defense_evasion"
+        strings:
+                $api1 = "mshtml" nocase ascii wide
+                $api2 = "RunHTMLApplication" nocase ascii wide
+        condition:
+            check_winapi_bool and all of ($api*)
+}
+
 rule win_api_keylogger {
 	meta:
 		description = "Call windows API potential for activity Keylogger"
