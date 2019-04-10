@@ -142,6 +142,20 @@ rule Win_PE_winnet
 		(uint16(0) == 0x5A4D or FileType matches /CL_TYPE_AUTOIT|CL_TYPE_MSCAB|CL_TYPE_MSEXE|CL_TYPE_MS-EXE|CL_TYPE_MS-DLL/) and pe.imports ("wininet.dll") 
 }
 
+rule dotnet
+{
+    meta:
+        description = "Potential Dotnet code - you can decompile with ilspy"
+        author = "Lionel PRAT"
+        version = "0.1"
+        weight = 1
+        reference = "book .NET IL Assembler page 68"
+    strings:
+        $dotnetMagic = "BSJB" ascii
+    condition:
+        (uint16(0) == 0x5A4D or FileType matches /CL_TYPE_AUTOIT|CL_TYPE_MSCAB|CL_TYPE_MSEXE|CL_TYPE_MS-EXE|CL_TYPE_MS-DLL|CL_TYPE_binary/) and $dotnetMagic
+}
+
 rule Win_PE
 {
     meta:
@@ -155,3 +169,4 @@ rule Win_PE
     condition:
 		uint16(0) == 0x5A4D or (FileType matches /CL_TYPE_AUTOIT|CL_TYPE_MSCAB|CL_TYPE_MSEXE|CL_TYPE_MS-EXE|CL_TYPE_MS-DLL|CL_TYPE_binary/ and not (CDBNAME matches /.*\.class$/i or $magic_class at 0))
 }
+
