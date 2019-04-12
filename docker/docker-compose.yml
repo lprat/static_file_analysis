@@ -16,7 +16,7 @@ services:
         #mem_limit: '1g'
         #cpuset: '1'
         environment:
-            DISPLAY:$DISPLAY
+            - DISPLAY=$DISPLAY
         stdin_open: true
         tty: true
         ports:
