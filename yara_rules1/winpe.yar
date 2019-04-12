@@ -159,7 +159,7 @@ rule dotnet
 rule exe_pyinst
 {
     meta:
-        description = "Potential Python executable (pyinstaller)"
+        description = "Potential Python executable (use pyinstxtractor)"
         author = "Lionel PRAT"
         version = "0.1"
         weight = 1
@@ -202,6 +202,20 @@ rule py2exe
     condition:
         (uint16(0) == 0x5A4D or FileType matches /CL_TYPE_AUTOIT|CL_TYPE_MSCAB|CL_TYPE_MSEXE|CL_TYPE_MS-EXE|CL_TYPE_MS-DLL|CL_TYPE_binary/) and (any of ($pythonMagic*) or ($pythonMagix and not $pyinstaller))
 }
+
+rule autoit
+{
+    meta:
+        description = "Potential autoit executable"
+        author = "Lionel PRAT"
+        version = "0.1"
+        weight = 4
+        reference = "https://github.com/Cisco-Talos/clamav-devel/blob/c68f996e6a6f252be5210634f4429a6f1bd8e3f5/libclamav/filetypes_int.h"
+    strings:
+        $autoit = "\xa3\x48\x4b\xbe\x98\x6c\x4a\xa9\x99\x4c\x53\x0a\x86\xd6\x48\x7d\x41\x55\x33\x21\x45\x41\x30" ascii
+    condition:
+        (uint16(0) == 0x5A4D or FileType matches /CL_TYPE_AUTOIT|CL_TYPE_MSCAB|CL_TYPE_MSEXE|CL_TYPE_MS-EXE|CL_TYPE_MS-DLL|CL_TYPE_binary/) and $autoit
+}        
 
 rule Win_PE
 {
