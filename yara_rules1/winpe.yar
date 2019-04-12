@@ -159,7 +159,7 @@ rule dotnet
 rule exe_pyinst
 {
     meta:
-        description = "Potential Python executable (use pyinstxtractor)"
+        description = "Potential Python executable (use pyinstxtractor or binwalk)"
         author = "Lionel PRAT"
         version = "0.1"
         weight = 1
