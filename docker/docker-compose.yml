@@ -15,12 +15,15 @@ services:
         #memswap_limit: '1g'
         #mem_limit: '1g'
         #cpuset: '1'
+        environment:
+            DISPLAY:$DISPLAY
         stdin_open: true
         tty: true
         ports:
             - "8000:8000"
         volumes:
             - /tmp/samples:/opt/static_file_analysis/samples
+        #    - /tmp/.X11-unix:/tmp/.X11-unix
         command: /bin/bash
         #restart: always #for server API
         #logging:
