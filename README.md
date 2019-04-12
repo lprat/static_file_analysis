@@ -29,6 +29,51 @@ This tool written in python langage makes the link between clam and yara. It can
 - Create PNG graph for fast analysis
 - Output result tree json in a file
 
+## Interresting tools
+
+My docker contener contains Static analysis tools and others tools for deep analysis when match to yara rules:
+- Special tools
+  - Flash: ffdec
+  - Office document & rtf: oletools (https://github.com/decalage2/oletools)
+  - pdf: peepdf (https://github.com/jesparza/peepdf)
+  
+- Decompiler
+  - Java: procyon
+  - Exe python py2exe: unpy2exe (https://github.com/matiasb/unpy2exe)
+  - Exe python PyInstaller: PyInstaller Extractor (https://sourceforge.net/projects/pyinstallerextractor/) or binwalk!
+  - Python bytecode (pyc): uncompyle6
+  - Autoit: clamav auto extract script
+  - VisualBasic & dotnet: vb decompiler (https://www.vb-decompiler.org/) use with wine
+  
+- Emulator/sandbox
+  - Vbscript: vmonkey (https://github.com/decalage2/ViperMonkey)
+  - javascript: box-js (https://github.com/CapacitorSet/box-js)
+  - elf: mbox (https://github.com/tsgates/mbox)
+  - PE: wine (http://www.hexacorn.com/blog/2016/12/14/malware-analysis-using-wine/ => WINEDEBUG=+all wine malware.exe)
+  
+- Debugger/DBI
+  - bash: "bash -x script.sh"
+  - python: "python -m pdb script.py"
+  - strace: syscall trace
+  - ltrace: lib trace
+  - frida: frida (https://www.frida.re/)
+  
+- Others
+  - web analyse: thug (https://github.com/buffer/thug)
+  - String Solver: floss (https://github.com/fireeye/flare-floss)
+  - firemware analysis: binwalk (https://github.com/ReFirmLabs/binwalk)
+  
+You can use other tools not include in my docker contener:
+- reverse engineering framework: radare2 (https://hub.docker.com/r/radare/radare2/dockerfile - https://github.com/radare/radare2)
+- decompiler dotnet: ilspy (https://github.com/bannsec/ilspy_docker)
+- decompiler based on LLVM: retdec (https://github.com/avast-tl/retdec) - retdec-fileinfo identify "Original language"
+- sandbox ruby: safe_ruby (https://github.com/ukutaht/safe_ruby)
+- sandbox python: pysandbox (https://github.com/vstinner/pysandbox)
+- API call trace: drltrace (https://github.com/mxmssh/drltrace) use
+- DBI: pin (https://software.intel.com/en-us/articles/pin-a-dynamic-binary-instrumentation-tool)
+- Reverse Android: androidre (https://github.com/cryptax/androidre)
+- Reverse: radare2 (https://rada.re/r/)
+
 ## Usage
 ~~~
 Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com
