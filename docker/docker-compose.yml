@@ -23,7 +23,7 @@ services:
             - "8000:8000"
         volumes:
             - /tmp/samples:/opt/static_file_analysis/samples
-        #    - /tmp/.X11-unix:/tmp/.X11-unix
+            - /tmp/.X11-unix:/tmp/.X11-unix
         command: /bin/bash
         #restart: always #for server API
         #logging:
