@@ -14,7 +14,7 @@ https_proxy=http://$UPDATE_PROXY git pull
 EOM
 	fi
 	echo "Run update git"
-    /opt/git_update.sh
+    /bin/bash -x /opt/git_update.sh
     exec "$@"
 else
 	#change API KEY
