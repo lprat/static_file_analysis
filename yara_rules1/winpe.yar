@@ -156,6 +156,53 @@ rule dotnet
         (uint16(0) == 0x5A4D or FileType matches /CL_TYPE_AUTOIT|CL_TYPE_MSCAB|CL_TYPE_MSEXE|CL_TYPE_MS-EXE|CL_TYPE_MS-DLL|CL_TYPE_binary/) and $dotnetMagic
 }
 
+rule exe_pyinst
+{
+    meta:
+        description = "Potential Python executable (pyinstaller)"
+        author = "Lionel PRAT"
+        version = "0.1"
+        weight = 1
+        reference = "https://sourceforge.net/projects/pyinstallerextractor/"
+    strings:
+        $pythonMagic = "MEI\x0c\x0b\x0a\x0b\x0e" ascii
+    condition:
+        (uint16(0) == 0x5A4D or FileType matches /CL_TYPE_AUTOIT|CL_TYPE_MSCAB|CL_TYPE_MSEXE|CL_TYPE_MS-EXE|CL_TYPE_MS-DLL|CL_TYPE_binary/) and $pythonMagic
+}
+
+rule py2exe
+{
+    meta:
+        description = "Potential Python executable (use unpy2exe)"
+        author = "Lionel PRAT"
+        version = "0.1"
+        weight = 1
+        reference = "https://github.com/matiasb/unpy2exe/blob/master/unpy2exe.py"
+    strings:
+        $pyinstaller = "MEI\x0c\x0b\x0a\x0b\x0e" ascii
+        $pythonMagix = "\x03\xf3\x0d\x0a" ascii
+        $pythonMagic1 = "\x99N\x0d\x0a" ascii
+        $pythonMagic2 = "\xfc\xc4\x0d\x0a" ascii
+        $pythonMagic3 = "\x87\xc6\x0d\x0a" ascii
+        $pythonMagic4 = "*\xeb\x0d\x0a" ascii
+        $pythonMagic5 = "-\xed\x0d\x0a" ascii
+        $pythonMagic6 = ";\xf2\x0d\x0a" ascii
+        $pythonMagic7 = "m\xf2\x0d\x0a" ascii
+        $pythonMagic8 = "\xb3\xf2\x0d\x0a" ascii
+        $pythonMagic9 = "\xd1\xf2\x0d\x0a" ascii
+        $pythonMagic10 = "\xef\xf2\x0d\x0a" ascii
+        $pythonMagic11 = "\xb8\x0b\x0d\x0a" ascii
+        $pythonMagic12 = "E\x0c\x0d\x0a" ascii
+        $pythonMagic13 = "X\x0c\x0d\x0a" ascii
+        $pythonMagic14 = "v\x0c\x0d\x0a" ascii
+        $pythonMagic15 = "\xb2\x0c\x0d\x0a" ascii
+        $pythonMagic16 = "\x16\x0d\x0d\x0a" ascii
+        $pythonMagic17 = " \x0d\x0d\x0a" ascii
+        $pythonMagic18 = ">\x0d\x0d\x0a" ascii
+    condition:
+        (uint16(0) == 0x5A4D or FileType matches /CL_TYPE_AUTOIT|CL_TYPE_MSCAB|CL_TYPE_MSEXE|CL_TYPE_MS-EXE|CL_TYPE_MS-DLL|CL_TYPE_binary/) and (any of ($pythonMagic*) or ($pythonMagix and not $pyinstaller))
+}
+
 rule Win_PE
 {
     meta:
