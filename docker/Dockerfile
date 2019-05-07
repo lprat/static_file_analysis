@@ -80,7 +80,7 @@ RUN wget https://github.com/crypto2011/IDR/releases/download/27_01_2019/Idr.exe 
 ##idr error message: cannot initialize diasm
 
 #install ffdec - https://github.com/jindrapetrik/jpexs-decompiler/releases -- installed by apt
-RUN wget https://github.com/jindrapetrik/jpexs-decompiler/releases/download/nightly1715/ffdec_11.2.0_nightly1715.deb -O /tmp/ffdec_11.2.0_nightly1715.deb && dpkg -i /tmp/ffdec_11.2.0_nightly1715.deb && rm /tmp/ffdec_11.2.0_nightly1715.deb 
+RUN wget https://github.com/jindrapetrik/jpexs-decompiler/releases/download/nightly1721/ffdec_11.2.0_nightly1721.deb -O /tmp/ffdec_11.2.0_nightly1721.deb && dpkg -i /tmp/ffdec_11.2.0_nightly1721.deb && rm /tmp/ffdec_11.2.0_nightly1721.deb
 
 #add script to update git
 ADD git_update.sh /opt/git_update.sh
