@@ -1455,8 +1455,17 @@ docker run -ti -e "API_KEY=myapikey" -p 8000:8000 docker_sfa
 Request on port 8000:
 
 ~~~
+Check File:
 curl -k  -F 'file=@/home/lionel/malwares/calc.xll' -H "x-api-key: mykeyapi" https://127.0.0.1:8000/api/sfa_check_file
-Return score of file in field "risk_score" or '-1' if error to scan
+Check URL:
+curl -k --header "Content-Type: application/json" --request POST --data '{"url":"http://www.google.fr"}' -H "x-api-key: mykeyapi" https://127.0.0.1:8000/api/sfa_check_url
+
+Return JSON:
+{"graph.png":"/download/700c4644ec40bfdada4502ffd5cb1411","result.json":"/download/9b9c453dc45b665c596b0f58c1c272b1","risk_score":4,"trace-serr.debug":"/download/d41d8cd98f00b204e9800998ecf8427e","trace-sout.debug":"/download/ef59eb8e65035a1064c1c32565bc0e74","ef59eb8e65035a1064c1c32565bc0000":"/download/ef59eb8e65035a1064c1c32565bc000"}
+"ef59eb8e65035a1064c1c32565bc0000": for download embed file md5
+
+Download file embed/json result/graph/...
+curl -k -X 'POST' -H "x-api-key: mykeyapi" https://127.0.0.1:8000/download/ef59eb8e65035a1064c1c32565bc0000
 ~~~
 
 ## Trick for pdf analysis

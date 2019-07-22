@@ -1,27 +1,49 @@
+#docker-compose up -d
+#docker-compose exec sfa /bin/bash
 version: '2'
 
 services:
     sfa:
+        image: lprat/sfa:latest
         build:
             context: .
             args:
                 - http_proxy=${http_proxy}
                 - https_proxy=${https_proxy}
                 - no_proxy=${no_proxy}
-        ports:
-            - "8000:8000"
-        environment:
-            - API_KEY=myapikey
-            - UPDATE_PROXY=${http_proxy}
-        restart: always
         #mem_reservation: '512m'
         #memswap_limit: '1g'
         #mem_limit: '1g'
         #cpuset: '1'
+        environment:
+            - DISPLAY=$DISPLAY
+            - API_KEY=myapikey
+            - TIMEOUT=120
+            - WORKER=10
+            - UPDATE_PROXY=${http_proxy}
+            #RM_FILE is the delay you keep temp files created by API => 1 == 1days !!run cron in user root docker-compose exec sfa bash (run cron -f)
+            - RM_FILE_OLD=1
+            #Use UPDATE variable if you dont check update (comment), if you want check uncomment!
+            #- UPDATE=true
+        stdin_open: true
+        tty: true
+        ports:
+            - "8000:8000"
+        volumes:
+            - /tmp/samples:/opt/static_file_analysis/samples
+            - /tmp/.X11-unix:/tmp/.X11-unix
+            #- ./docker-entrypoint.sh:/docker-entrypoint.sh
+        #Comment command if you run API service!! 
+        #command: /bin/bash
+        #restart: always #for server API
         #logging:
         #    driver: "syslog"
         #    options:
         #        syslog-address: "tcp://172.17.0.1:514"
         #        tag: "docker_{{.ImageName}}_{{.Name}}"
+        #command: python analysis.py -c clamav-devel/clamscan/clamscan -y yara_rules1/ -a yara_rules2/ -b password.pwdb -g -v -i /usr/bin/tesseract -l fra -p pattern.db -u "http://brigma.com/wp-admin/sendincsec/service/verif/En/03-2019/" -J &> /tmp/log
         #curl -k  -F 'file=@/home/lionel/malwares/calc.xll' -H "x-api-key: mykeyapi" https://127.0.0.1:8000/api/sfa_check_file
+        #curl -k --header "Content-Type: application/json" --request POST --data '{"url":"http://www.google.fr"}' -H "x-api-key: mykeyapi" https://127.0.0.1:8000/api/sfa_check_url
+        #curl -k -X 'POST' -H "x-api-key: mykeyapi" https://127.0.0.1:8000/download/ef59eb8e65035a1064c1c32565bc0e74
         #return json with "risk_score"
+

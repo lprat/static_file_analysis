@@ -24,6 +24,7 @@ import unidecode
 import zipfile
 from virus_total_apis import PublicApi as VirusTotalPublicApi
 
+#TODO: interesting projet: https://github.com/jacob-baines/elfparser
 ## file[path], direcory_extract[path], graph[bool]
 #verify clamscan present, or verify ENV CLAMSCAN_PATH
 ###########VAR THUG########
@@ -1557,8 +1558,7 @@ def main(argv):
                 except OSError as e:
                     print "Error: unuable to make directory temp.\n"
                     sys.exit(-1)
-            else:
-                #verify directory is empty
+            elif len(os.listdir(arg) ) > 0:
                 #ask for remove
                 confirm_rm = raw_input("Confirm remove all contained files in " + arg + ": Y/N ?").lower()
                 if confirm_rm.startswith('y'):
