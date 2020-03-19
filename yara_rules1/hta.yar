@@ -17,11 +17,27 @@ rule hta_script {
 		author = "Lionel PRAT"
         version = "0.1"
 		weight = 4
-	    check_level2 = "check_command_bool"
+	    check_level2 = "check_command_bool,check_clsid_bool"
 	    tag = "attack.execution,attack.T1170"
 	strings:
 	    $hta0 = "<hta:application" nocase	
 	    $hta1 = "<script" nocase
+	condition:
+	    all of ($hta*) or PathFile matches /.*\.hta$/i or CDBNAME matches /.*\.hta$/i
+}
+
+rule hta_scriptA {
+	meta:
+		description = "HTA file with script use ActiveX"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 6
+	    check_level2 = "check_command_bool,check_clsid_bool"
+	    tag = "attack.execution,attack.T1170"
+	strings:
+	    $hta0 = "<hta:application" nocase	
+	    $hta1 = "<script" nocase
+	    $hta2 = "ActiveXObject" nocase
 	condition:
 	    all of ($hta*) or PathFile matches /.*\.hta$/i or CDBNAME matches /.*\.hta$/i
 }

@@ -1,0 +1,14 @@
+pydot
+pyparsing
+virustotal-api
+thug
+yara-python
+OTXv2
+pymisp
+cfscrape
+unidecode
+requests
+pygraphviz
+flask
+gunicorn
+soupsieve

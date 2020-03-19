@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# (c) 2017-2019, Lionel PRAT <lionel.prat9@gmail.com>
+# (c) 2017-2020, Lionel PRAT <lionel.prat9@gmail.com>
+# Version 1.0
 # Analysis by clamav extraction and yara rules
 # All rights reserved.
-#Require: pydot==1.2.3 && pyparsing==2.2.0 && virustotal-api
 import logging
-import imp
+import importlib
 import pydot
 import hashlib
 import shutil
@@ -22,7 +22,13 @@ import collections
 import zlib
 import unidecode
 import zipfile
+import traceback
+import cfscrape
+import base64
 from virus_total_apis import PublicApi as VirusTotalPublicApi
+from OTXv2 import OTXv2
+from OTXv2 import IndicatorTypes
+import pymisp
 
 #TODO: interesting projet: https://github.com/jacob-baines/elfparser
 ## file[path], direcory_extract[path], graph[bool]
@@ -32,9 +38,8 @@ useragent='win7ie90'
 referer='https://mail.google.com'
 ###########################
 #Check THUG if present?
-foundThug = None
-try:
-    imp.find_module('thug')
+foundThug = importlib.util.find_spec("thug")
+if foundThug:
     from thug.ThugAPI import ThugAPI
     foundThug = True
     class ThugurlAPI(ThugAPI):
@@ -69,15 +74,27 @@ try:
         
             # Log analysis results
             self.log_event()
-except ImportError:
+else:
     foundThug = False
 
 ######GLOBAL VAR######
 ioc_global = {}
 api_vt=""
+api_misp=""
+host_misp=""
+api_otx=""
+api_intezer=""
+api_xforce=""
+pass_xforce=""
+api_hybrid=""
+osint_scoremin=3
+osint = False
+rate_vt=4 #4/min
 stop_vt = True
 javadecomp = False
 path_procyon = '/usr/bin/procyon'
+#IF YARA ERROR 30 change value:
+#yara.set_config(max_strings_per_rule=100000, stack_size=65536)
 ######################
 #########################################################################################################
 ##### USE MSO FILE EXTRACT because clamav don't uncompress activemime
@@ -146,35 +163,34 @@ def mso_file_extract(data):
 ############ END OF FUNCTION ORIGIN: https://github.com/decalage2/oletools/blob/master/oletools/olevba.py
 #########################################################################################################
 def usage():
-    print "Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] [-b password.pwdb] [-i /usr/bin/tesseract] [-l fra] [-V API_KEY_VT] [-J] -f/-u path_filename/URL -y yara_rules_path1/ -a yara_rules_path2/\n"
-    print "\t -h/--help : for help to use\n"
-    print "\t -f/--filename= : path of filename to analysis\n"
-    print "\t -u/--url= : url analysis use thug\n"
-    print "\t -U/--useragent= : useragent for thug (default: win7ie90)\n"
-    print "\t -L/--listthug= : list useragent for thug\n"
-    print "\t -R/--referer= : referer for thug (default: https://mail.google.com)\n"
-    print "\t -y/--yara_rules_path= : path of rules yara level 1\n"
-    print "\t -a/--yara_rules_path2= : path of rules yara level 2\n"
-    print "\t -p/--pattern= : path of pattern filename for data miner\n"
-    print "\t -b/--password= : path of password clamav (.pwdb see: https://blog.didierstevens.com/2017/02/15/quickpost-clamav-and-zip-file-decryption/)\n"
-    print "\t -c/--clamscan_path= : path of binary clamscan [>=0.99.3]\n"
-    print "\t -m/--coef_path= : path of coef config file\n"
-    print "\t -d/--directory_tmp= : path of directory to extract emmbedded file(s)\n"
-    print "\t -j/--json_save= : path filename where save json result (JSON)\n"
-    print "\t -i/--image= : path of \'tesseract\' for analysis on potential social engenering by image\n"
-    print "\t -J/--java_decomp : Java decompile class/jar with procyon (apt-get install procyon-decompiler)\n"
-    print "\t -l/--lang_image= : \'tesseract\' lang ocr extratc (eng, fra, ...) \n"
-    print "\t -g/--graph : generate graphe of analyz\n"
-    print "\t -s/--save_graph= : path filename where save graph (PNG)\n"
-    print "\t -r/--remove= : remove tempory files\n"
-    print "\t -V/--virustotal= : API Key\n"
-    print "\t -v/--verbose= : verbose mode\n"
-    print "\t example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -i /usr/bin/tesseract -l fra -g\n"
-    print "\t example: analysis.py -c ./clamav-devel/clamscan/clamscan -u www.exploitkit.top/id?000 -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -i /usr/bin/tesseract -l fra -g\n"
+    print("Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] [-b password.pwdb] [-i /usr/bin/tesseract] [-l fra] [-O] [-J] -f/-u path_filename/URL -y yara_rules_path1/ -a yara_rules_path2/\n")
+    print("\t -h/--help : for help to use\n")
+    print("\t -f/--filename= : path of filename to analysis\n")
+    print("\t -u/--url= : url analysis use thug\n")
+    print("\t -U/--useragent= : useragent for thug (default: win7ie90)\n")
+    print("\t -L/--listthug= : list useragent for thug\n")
+    print("\t -R/--referer= : referer for thug (default: https://mail.google.com)\n")
+    print("\t -y/--yara_rules_path= : path of rules yara level 1\n")
+    print("\t -a/--yara_rules_path2= : path of rules yara level 2\n")
+    print("\t -p/--pattern= : path of pattern filename for data miner\n")
+    print("\t -b/--password= : path of password clamav (.pwdb see: https://blog.didierstevens.com/2017/02/15/quickpost-clamav-and-zip-file-decryption/)\n")
+    print("\t -c/--clamscan_path= : path of binary clamscan [>=0.99.3]\n")
+    print("\t -m/--coef_path= : path of coef config file\n")
+    print("\t -d/--directory_tmp= : path of directory to extract emmbedded file(s)\n")
+    print("\t -j/--json_save= : path filename where save json result (JSON)\n")
+    print("\t -i/--image= : path of \'tesseract\' for analysis on potential social engenering by image\n")
+    print("\t -J/--java_decomp : Java decompile class/jar with procyon (apt-get install procyon-decompiler)\n")
+    print("\t -l/--lang_image= : \'tesseract\' lang ocr extratc (eng, fra, ...) \n")
+    print("\t -g/--graph : generate graphe of analyz\n")
+    print("\t -s/--save_graph= : path filename where save graph (PNG)\n")
+    print("\t -r/--remove= : remove tempory files\n")
+    print("\t -O/--osint : active OSINT (hash, filename, domaine, url)\n\t\tOSINT hybridanalisys env key: HYBRID_KEY\n\t\tOTX env key: OTX_KEY\n\t\tXFORCE env key: XFORCE_KEY & env pass: XFORCE_PASS\n\t\tVirusTotal env key: VT_KEY\n\t\tMISP env key: MISP_KEY & MISP env host: MISP_HOST\n\t\tINTEZER env key: INTEZER_KEY\n")
+    print("\t -v/--verbose= : verbose mode\n")
+    print("\t example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y yara_rules1/ -a yara_rules2/ -b password.pwdb -i /usr/bin/tesseract -l fra -g -O\n")
+    print("\t example: analysis.py -c ./clamav-devel/clamscan/clamscan -u www.exploitkit.top/id?000 -y yara_rules1/ -a yara_rules2/ -b password.pwdb -i /usr/bin/tesseract -l fra -g -O\n")
     
 #source: https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
 def which(program):
-    import os
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
@@ -213,15 +229,16 @@ def flatten(d, parent_key='', sep='_'):
 #extract pattern info: URI, IP, ...
 def extract_info(pathfile,pat):
     find = []
-    with open(pathfile, 'r') as content_file:
+    with open(pathfile, 'rb') as content_file:
         content = content_file.read()
         for k, v in pat.items():
-            ret = re.findall(v,content)
+            ret = re.findall(v,content.decode('utf-8', errors='ignore'))
             retl = [each for each in ret if len(each) >0]
             for item in retl:
                 tmp = {}
                 tmp[k] = str(item)
-                find.append(tmp)
+                if tmp not in find:
+                    find.append(tmp)
     return find
 #check key exist element in key dict
 def checkdict(nested_dict,path):
@@ -254,16 +271,18 @@ def parse_vt(vt_dict):
     for k, v in vt_dict.items():
         if k in keep:
             if type(v) is str:
-                edict[u"vt_"+k.encode('utf8')]=v
+                #edict["vt_"+k.encode('utf8')]=v #p2v
+                edict["vt_"+k]=v
             elif type(v) is int:
-                edict[u"vt_"+k.encode('utf8')+u"_int"]=v
+                #edict["vt_"+k.encode('utf8')+"_int"]=v #p2v
+                edict["vt_"+k+"_int"]=v
             if k == 'scans':
-                edict[u'vt_detected']=[]
+                edict['vt_detected']=[]
                 for kx, vx in v.items():
-                    if 'result' in vx and vx['result'] and not vx['result'] in edict[u'vt_detected']:
-                        edict[u'vt_detected'].append(vx['result'])
+                    if 'result' in vx and vx['result'] and not vx['result'] in edict['vt_detected']:
+                        edict['vt_detected'].append(vx['result'])
     if 'vt_detected' in edict:
-        edict[u'vt_detected'] = str(edict[u'vt_detected'])
+        edict['vt_detected'] = str(edict['vt_detected'])
     return edict
 #extract dict level key/value by path
 def dict_extract_path(nested_dict,path):
@@ -278,17 +297,15 @@ def dict_extract_path(nested_dict,path):
         else:
             return edict
     for k, v in cour.items():
-        if u"ContainedObjects" != k:
-            if type(v) is str:
-                edict[k.encode('utf8')]=v
-            elif type(v) is int:
-                edict[k.encode('utf8')+"_int"]=v
+        if "ContainedObjects" != k:
+            if type(v) is int:
+                edict[k+"_int"]=v
             elif type(v) is bool:
-                edict[k.encode('utf8')+"_bool"]=v
-            elif type(v) is unicode:
-                edict[k.encode('utf8')]=v.encode('utf8')
+                edict[k+"_bool"]=v
+            elif type(v) is str:
+                edict[k]=v
             elif type(v) is dict:
-                tmp = flatten(v,k.encode('utf8'))
+                tmp = flatten(v,k)
                 flat_info.update(tmp)
             elif type(v) is list:
                 edict[k] = str(v)
@@ -304,7 +321,7 @@ def dict_extract_path(nested_dict,path):
             edict[kr+"_int"] = vr
         else:
             if kr not in edict:
-                edict[kr] = str(vr.encode('utf8'))
+                edict[kr] = str(vr)
             else:
                 edict[kr] = edict[kr] + "||--||" + str(vr)
     return edict
@@ -342,7 +359,7 @@ def adddict(nested_dict,k,v,path,overwrite=False):
                else:
                    cour[k] += "||||" + v
     else:
-        if k == u'ContainedObjects':
+        if k == 'ContainedObjects':
             cour[k]=[v]
         else:
             cour[k]=v
@@ -382,7 +399,7 @@ def getpath(nested_dict, value, prepath=()):
             resultx = ret + resultx
             #if p is not None:
                 #return p
-        elif k == u'FileMD5' and v == value: # found value
+        elif k == 'FileMD5' and v == value: # found value
             resultx.append(path)
     return resultx
 
@@ -399,12 +416,12 @@ def findLogPath(serr,directory_tmp,path_find):
 def check_all_score(nested_dict):
     scores = {}
     for k, v in nested_dict.items():
-        if type(v) is list and k == u"Yara":
+        if type(v) is list and k == "Yara":
             for elem in v:
                 if type(elem) is dict:
                     for kx, vx in elem.items():
                         scores[kx] = vx['score']
-        if type(v) is list and k == u"ContainedObjects":
+        if type(v) is list and k == "ContainedObjects":
             for elem in v:
                 if type(elem) is dict:
                     ret = check_all_score(elem) # recursive call
@@ -418,20 +435,20 @@ def remove_double(nested_dict):
     list_md5 = []
     remove_count = []
     for k, v in nested_dict.items():
-        if type(v) is list and k == u"ContainedObjects":
+        if type(v) is list and k == "ContainedObjects":
             count = 0
             for elem in v:
-                if type(elem) is dict and u'FileMD5' in elem:
-                    if elem[u'FileMD5'] in list_md5:
+                if type(elem) is dict and 'FileMD5' in elem:
+                    if elem['FileMD5'] in list_md5:
                         #remove
                         remove_count.append(count)
                     else:
-                        list_md5.append(elem[u'FileMD5']) 
+                        list_md5.append(elem['FileMD5']) 
                 count += 1
             for index in sorted(remove_count, key=int, reverse=True):
                 v.pop(index)
             for elem in v:
-                if type(elem) is dict and u'ContainedObjects' in elem:
+                if type(elem) is dict and 'ContainedObjects' in elem:
                     remove_double(elem)
         elif type(v) is dict: # v is a dict
             remove_double(v) # recursive call
@@ -459,7 +476,7 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
             elif vx not in extract_var_global[kx]:
                 extract_var_global["extract_global_"+kx] = extract_var_global[kx] + "||--||" + vx
     #yara check
-    externals_var = {'FileParentType': cl_parent, 'FileType': "CL_TYPE_" + cl_type, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8'), 'PathFile': filename}
+    externals_var = {'FileParentType': cl_parent, 'FileType': "CL_TYPE_" + cl_type, 'FileSize': int(size_file), 'FileMD5': md5_file, 'PathFile': filename}
     #check image content by ocr
     if tesseract and os.path.isfile(tesseract) and cl_type in ['PNG', 'JPEG', 'GIF', 'TIFF', 'BMP']:
         temp = tempfile.NamedTemporaryFile()
@@ -469,36 +486,15 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
         proc_ocr = subprocess.Popen(args_ocr, env=new_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_dir)
         output_ocr, serr_ocr = proc_ocr.communicate()
         with open(temp.name+".txt", 'r') as content_file:
-            externals_var['image2text'] = unidecode.unidecode(unicode(content_file.read(), "utf-8"))
+            #A VERIFIER PASSAGE PY3!!!! TODO
+            externals_var['image2text'] = unidecode.unidecode(content_file.read())
         temp.close
     if cdbname:
         externals_var['CDBNAME']=cdbname
     if externals_var_extra:
         externals_var.update(externals_var_extra)
-    vt_result=None
-    if api_vt and stop_vt:
-        try:
-            response = vt.get_file_report(md5_file)
-            if response and 'response_code' in response and response['response_code'] == 200:
-                if "results" in response and response["results"]:
-                    vttmp=parse_vt(response["results"])
-                    vt_result=vttmp
-                    externals_var.update(vttmp)
-                else:
-                    if verbose:
-                        print "Debug info: VT no result for you md5hash"
-            else:
-                if response and 'response_code' in response and response['response_code'] == 204:
-                    if verbose:
-                        print "Debug info: VT response error exceeded rate limit:"+str(response)
-                        stop_vt=False
-                else:
-                    if verbose:
-                        print "Debug info: VT response error (maybe key api not valid):"+str(response)
-        except Exception as e:
-            print "Error: Virus total error:"+str(e)+" -- "+str(response)
     if verbose:
-        print "Debug info -- External var:"+str(externals_var)
+        print("Debug info -- External var:"+str(externals_var))
     externals_var.update(var_dynamic)
     #add extinfo in var_dyn
     externals_var.update(extract_var_local)
@@ -519,7 +515,7 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
                 check_level2[str(check2val)] = True
         if match.meta['weight'] > 0:
             if verbose and match.strings:
-                print 'YARA '+match.rule+' match DEBUG:'+str(match.strings)
+                print('YARA '+match.rule+' match DEBUG:'+str(match.strings))
             if str(match.rule) == "java_class":
                 java_compiled_found_class = True
             elif str(match.rule) == "java_jar":
@@ -532,7 +528,8 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
                     ioc_global[match.meta['ids'].lower()] = []
                 found_rule[match.rule]['ioc']=[]
                 for iocx in match.strings:
-                    iocxx=str(iocx[2]).replace("\x00", "")
+                    #iocxx=str(iocx[2]).replace("\x00", "")
+                    iocxx=iocx[2].decode('utf-8', errors='ignore').replace("\x00", "")
                     if not iocxx in found_rule[match.rule]['ioc']:
                         found_rule[match.rule]['ioc'].append(iocxx)
                     if not iocxx in ioc_global[match.meta['ids'].lower()]:
@@ -552,7 +549,8 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
             if not match.meta['ids'].lower() in ioc_global:
                 ioc_global[match.meta['ids'].lower()] = []
             for iocx in match.strings:
-                iocxx=str(iocx[2]).replace("\x00", "")
+                #iocxx=str(iocx[2]).replace("\x00", "")
+                iocxx=iocx[2].decode('utf-8', errors='ignore').replace("\x00", "")
                 if not iocxx in ioc_global[match.meta['ids'].lower()]:
                     ioc_global[match.meta['ids'].lower()].append(iocxx)
     #Check YARA rules level 2
@@ -571,14 +569,14 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
         proc_decomp = subprocess.Popen(args_decomp, env=new_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_dir)
         output_decomp, serr_decomp = proc_decomp.communicate()
         if output_decomp:
-            externals_var['decompiledjava'] = unidecode.unidecode(unicode(output_decomp, "utf-8"))
+            externals_var['decompiledjava'] = unidecode.unidecode(output_decomp)
     externals_var.update(check_level2)
     externals_var.update(var_dynamic)
     ret_yara = yara_RC2.match(filename, externals=externals_var, timeout=120)
     for match in ret_yara:
         if match.meta['weight'] > 0:
             if verbose and match.strings:
-                print 'YARA '+match.rule+' match DEBUG:'+str(match.strings)
+                print('YARA '+match.rule+' match DEBUG:'+str(match.strings))
             found_rule={match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}}
             if 'tag' in match.meta:
                 found_rule[match.rule]['tags']=match.meta['tag']
@@ -587,7 +585,8 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
                     ioc_global[match.meta['ids'].lower()] = []
                 found_rule[match.rule]['ioc']=[]
                 for iocx in match.strings:
-                    iocxx=str(iocx[2]).replace("\x00", "")
+                    #iocxx=str(iocx[2]).replace("\x00", "")
+                    iocxx=iocx[2].decode('utf-8', errors='ignore').replace("\x00", "")
                     if not iocxx in found_rule[match.rule]['ioc']:
                         found_rule[match.rule]['ioc'].append(iocxx)
                     if not iocxx in ioc_global[match.meta['ids'].lower()]:
@@ -607,21 +606,282 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
             if not match.meta['ids'].lower() in ioc_global:
                 ioc_global[match.meta['ids'].lower()] = []
             for iocx in match.strings:
-                iocxx=str(iocx[2]).replace("\x00", "")
+                #iocxx=str(iocx[2]).replace("\x00", "")
+                iocxx=iocx[2].decode('utf-8', errors='ignore').replace("\x00", "")
                 if not iocxx in ioc_global[match.meta['ids'].lower()]:
                     ioc_global[match.meta['ids'].lower()].append(iocxx)
-    if not isinstance(cl_type, unicode):
-        cl_type=unicode(cl_type, "utf-8")
-    result_file = { u'FileParentType': cl_parent, u'FileType': u"CL_TYPE_" + cl_type, u'FileSize': int(size_file), u'FileMD5': md5_file, u'PathFile': [unicode(filename, "utf-8")],  u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'ContainedObjects': []}
+    #if not isinstance(cl_type, unicode):
+    #    cl_type=unicode(cl_type, "utf-8")
+    vt_result=None
+    xforce_result=None
+    hybrid_result=None
+    anyrun_result=None
+    otx_result=None
+    misp_result=None
+    intezer_result=None
+    if osint:
+        #CHECK VT
+        if api_vt and stop_vt and detect_yara_score > osint_scoremin:
+            try:
+                response = vt.get_file_report(md5_file)
+                if response and 'response_code' in response and response['response_code'] == 200:
+                    if "results" in response and response["results"]:
+                        vttmp=parse_vt(response["results"])
+                        vt_result=vttmp
+                        #add yara rules and add score
+                        if 'vt_detected' in vt_result and vt_result['vt_detected'] and re.match(r"CVE[_\-]*[0-9]+", vt_result['vt_detected'], re.IGNORECASE):
+                            #Virus Total detect CVE use
+                            found_rule={'VT_cve': {'description': 'Virus Total detect CVE use', 'score': 8}}
+                            detect_yara_rule.append(found_rule)
+                            if 8 > detect_yara_score:
+                                detect_yara_score = 8
+                                if detect_yara_score > score_max:
+                                    score_max = detect_yara_score
+                        if 'vt_positives_int' in vt_result and vt_result['vt_positives_int'] and vt_result['vt_positives_int']>10:
+                            #Virus Total detect malware
+                            found_rule={'VT_high': {'description': 'Virus Total detect malware', 'score': 8}}
+                            detect_yara_rule.append(found_rule)
+                            if 8 > detect_yara_score:
+                                detect_yara_score = 8
+                                if detect_yara_score > score_max:
+                                    score_max = detect_yara_score
+                        elif 'vt_positives_int' in vt_result and vt_result['vt_positives_int'] and vt_result['vt_positives_int']>2 and vt_result['vt_positives_int']<10:
+                            #Virus Total detect potential malware
+                            found_rule={'VT_low': {'description': 'Virus Total detect potential malware', 'score': 4}}
+                            detect_yara_rule.append(found_rule)
+                            if 4 > detect_yara_score:
+                                detect_yara_score = 4
+                                if detect_yara_score > score_max:
+                                    score_max = detect_yara_score
+                    else:
+                        if verbose:
+                            print("Debug info: VT no result for you md5hash")
+                else:
+                    if response and 'response_code' in response and response['response_code'] == 204:
+                        if verbose:
+                            print("Debug info: VT response error exceeded rate limit:"+str(response))
+                            stop_vt=False
+                    else:
+                        if verbose:
+                            print("Debug info: VT response error (maybe key api not valid):"+str(response))
+                            stop_vt=False
+            except Exception as e:
+                print("Error: Virus total error:"+str(e))
+        #OTX API
+        if api_otx and detect_yara_score > osint_scoremin:
+            try:
+                otx = OTXv2(api_otx)
+                response = otx.get_indicator_details_full(IndicatorTypes.FILE_HASH_MD5, md5_file)
+                if response and 'general' in response and response['general'] and 'pulse_info' in response['general'] and response['general']['pulse_info'] and 'count' in response['general']['pulse_info'] and response['general']['pulse_info']['count']:
+                    otx_result="https://otx.alienvault.com/indicator/file/" + str(md5_file)
+            except Exception as e:
+                print("Error: OTX error:"+str(e))
+        #XFORCE API
+        if api_xforce and pass_xforce and detect_yara_score > osint_scoremin:
+            #from https://github.com/johestephan/XFE/blob/master/python/xfexchange.py
+            try:
+                myURL = "https://api.xforce.ibmcloud.com:443/malware/" + md5_file
+                token = base64.b64encode(str("{0}:{1}".format(api_xforce, pass_xforce)).encode())
+                headers = {"Authorization": "Basic %s" % token.decode(), "Accept": "application/json", 'User-Agent': 'Mozilla 5.0'}
+                response = requests.get(myURL, headers=headers, verify=False).json()
+                if response and 'malware' in response and response['malware'] and 'origins' in response['malware'] and response['malware']['origins']:
+                    #url https://exchange.xforce.ibmcloud.com/malware/MD5
+                    xforce_result={'link': 'https://exchange.xforce.ibmcloud.com/malware/'+md5_file.upper()}
+                    #risk - score
+                    if 'risk' in response['malware']['origins'] and response['malware']['origins']['risk']:
+                        xforce_result['risk']=response['malware']['origins']['risk'].lower()
+                        if 'high' in response['malware']['origins']['risk'].lower():
+                            found_rule={'XForce_high': {'description': 'XFORCE detect risk high', 'score': 8}}
+                            detect_yara_rule.append(found_rule)
+                            if 8 > detect_yara_score:
+                                detect_yara_score = 8
+                                if detect_yara_score > score_max:
+                                    score_max = detect_yara_score
+                        elif 'medium' in response['malware']['origins']['risk'].lower():
+                            found_rule={'XForce_middle': {'description': 'XFORCE detect risk medium', 'score': 5}}
+                            detect_yara_rule.append(found_rule)
+                            if 5 > detect_yara_score:
+                                detect_yara_score = 5
+                                if detect_yara_score > score_max:
+                                    score_max = detect_yara_score
+                        elif 'low' in response['malware']['origins']['risk'].lower():
+                            found_rule={'XForce_low': {'description': 'XFORCE detect risk low', 'score': 3}}
+                            detect_yara_rule.append(found_rule)
+                            if 3 > detect_yara_score:
+                                detect_yara_score = 3
+                                if detect_yara_score > score_max:
+                                    score_max = detect_yara_score
+                    #external - info
+                    if 'external' in response['malware']['origins'] and response['malware']['origins']['external']:
+                        #malwareType
+                        if 'malwareType' in response['malware']['origins']['external'] and response['malware']['origins']['external']['malwareType']:
+                            xforce_result['malwareType']=response['malware']['origins']['external']['malwareType']
+                        #detectionCoverage
+                        if 'detectionCoverage' in response['malware']['origins']['external'] and response['malware']['origins']['external']['detectionCoverage']:
+                            xforce_result['detectionCoverage']=response['malware']['origins']['external']['detectionCoverage']
+                        #family
+                        if 'family' in response['malware']['origins']['external'] and response['malware']['origins']['external']['family']:
+                            xforce_result['family']=response['malware']['origins']['external']['family']
+            except Exception as e:
+                print("Error: XFORCE error:"+str(e))
+        #APP ANYRUN
+        if detect_yara_score > osint_scoremin:
+            #from: https://github.com/Neo23x0/munin/blob/master/munin.py
+            try:
+                cfscraper = cfscrape.create_scraper()
+                sha256=None
+                with open(filename,"rb") as f:
+                    bytes = f.read() # read entire file as bytes
+                    sha256 = str(hashlib.sha256(bytes).hexdigest()).lower();
+                response = cfscraper.get("https://any.run/report/%s" % sha256)
+                if response.status_code == 200:
+                    #exist
+                    anyrun_result="https://any.run/report/%s" % sha256
+            except Exception as e:
+                print("Error: APP ANYRUN error:"+str(e))
+        #INTEZER API
+        if api_intezer and detect_yara_score > osint_scoremin:
+            #from: https://github.com/Neo23x0/munin/blob/master/munin.py
+            try:
+                base_url = 'https://analyze.intezer.com/api/v2-0'
+                response = requests.post(base_url + '/get-access-token', json={'api_key': api_intezer})
+                response.raise_for_status()
+                session = requests.session()
+                session.headers['Authorization'] = session.headers['Authorization'] = 'Bearer %s' % response.json()['result']
+                data = {'hash': md5_file}
+                response = session.post(base_url + '/analyze-by-hash', json=data).json()
+                if response and 'result_url' in response and response['result_url']:
+                    intezer_result="https://analyze.intezer.com/#"+str(response['result_url'])
+            except Exception as e:
+                print("Error: INTEZER error:"+str(e))
+        #HYBRID API
+        if api_hybrid and detect_yara_score > osint_scoremin:
+            #from: https://github.com/Neo23x0/munin/blob/master/munin.py
+            try:
+                headers = {'User-Agent': 'VxStream', 'api-key': api_hybrid}
+                data = {'hash': md5_file}
+                response = requests.post('https://www.hybrid-analysis.com/api/v2/search/hash', headers=headers, data=data).json()
+                if response and isinstance(response, list) and len(response)>0:
+                    hybrid_result = []
+                    for hybrid_r in response:
+                        hyb_tmp={}
+                        if 'sha256' in hybrid_r and hybrid_r['sha256']:
+                            hyb_tmp['link']='https://www.hybrid-analysis.com/sample/'+hybrid_r['sha256']+'?environmentId=100'
+                        if 'av_detect' in hybrid_r and hybrid_r['av_detect']: #int max 100
+                            hyb_tmp['av_detect']=hybrid_r['av_detect']
+                            if hybrid_r['av_detect'] >= 50:
+                                found_rule={'Hybrid_av_detect': {'description': 'Hybrid Analysis AV detect > 50', 'score': 8}}
+                                detect_yara_rule.append(found_rule)
+                                if 8 > detect_yara_score:
+                                    detect_yara_score = 8
+                                    if detect_yara_score > score_max:
+                                        score_max = detect_yara_score
+                            elif hybrid_r['av_detect'] > 10:
+                                found_rule={'Hybrid_av_detect': {'description': 'Hybrid Analysis AV detect > 10 & < 50', 'score': 4}}
+                                detect_yara_rule.append(found_rule)
+                                if 4 > detect_yara_score:
+                                    detect_yara_score = 4
+                                    if detect_yara_score > score_max:
+                                        score_max = detect_yara_score
+                        if 'vx_family' in hybrid_r and hybrid_r['vx_family']: #str
+                            hyb_tmp['vx_family']=hybrid_r['vx_family']
+                        if 'threat_score' in hybrid_r and hybrid_r['threat_score']: #int
+                            hyb_tmp['threat_score']=hybrid_r['threat_score']
+                            if hyb_tmp['threat_score'] >= 80:
+                                found_rule={'Hybrid_threat_score': {'description': 'Hybrid Analysis threat score >= 80', 'score': 8}}
+                                detect_yara_rule.append(found_rule)
+                                if 8 > detect_yara_score:
+                                    detect_yara_score = 8
+                                    if detect_yara_score > score_max:
+                                        score_max = detect_yara_score
+                            elif hyb_tmp['threat_score'] >= 50:
+                                found_rule={'Hybrid_threat_score': {'description': 'Hybrid Analysis threat score >= 50', 'score': 6}}
+                                detect_yara_rule.append(found_rule)
+                                if 6 > detect_yara_score:
+                                    detect_yara_score = 6
+                                    if detect_yara_score > score_max:
+                                        score_max = detect_yara_score
+                            elif hyb_tmp['threat_score'] >= 20:
+                                found_rule={'Hybrid_threat_score': {'description': 'Hybrid Analysis threat score >= 20', 'score': 4}}
+                                detect_yara_rule.append(found_rule)
+                                if 4 > detect_yara_score:
+                                    detect_yara_score = 4
+                                    if detect_yara_score > score_max:
+                                        score_max = detect_yara_score
+                        if 'threat_level' in hybrid_r and hybrid_r['threat_level']: #int #(0=No Threat, 1=Suspicious, 2=Malicious, 3=Unknown)
+                            hyb_tmp['threat_level']=hybrid_r['threat_level']
+                            if hyb_tmp['threat_level'] >= 2:
+                                found_rule={'Hybrid_threat_level': {'description': 'Hybrid Analysis threat Malicious or Unknown', 'score': 8}}
+                                detect_yara_rule.append(found_rule)
+                                if 8 > detect_yara_score:
+                                    detect_yara_score = 8
+                                    if detect_yara_score > score_max:
+                                        score_max = detect_yara_score
+                            elif hyb_tmp['threat_level'] == 1:
+                                found_rule={'Hybrid_threat_level': {'description': 'Hybrid Analysis threat Suspicious', 'score': 5}}
+                                detect_yara_rule.append(found_rule)
+                                if 5 > detect_yara_score:
+                                    detect_yara_score = 5
+                                    if detect_yara_score > score_max:
+                                        score_max = detect_yara_score
+                        if 'verdict' in hybrid_r and hybrid_r['verdict']: #(0=No Threat, 1=Suspicious, 2=Malicious, 3=Unknown)
+                            hyb_tmp['verdict']=hybrid_r['verdict']
+                        hyb_tmp['mitre_attcks']=[]
+                        if 'mitre_attcks' in hybrid_r and hybrid_r['mitre_attcks']:
+                            found_rule={'Hybrid_mitre': {'description': 'Hybrid Analysis detect mitre attack techniques', 'score': 5}}
+                            if 5 > detect_yara_score:
+                                detect_yara_score = 5
+                                if detect_yara_score > score_max:
+                                    score_max = detect_yara_score
+                            for ma_hybrid in hybrid_r['mitre_attcks']:
+                                if 'tactic' in ma_hybrid and ma_hybrid['tactic']: #"tactic": "Execution",
+                                    hyb_tmp['mitre_attcks'].append('attack.'+ma_hybrid['tactic'].lower().replace(' ','_'))
+                                if 'attck_id' in ma_hybrid and ma_hybrid['attck_id']: #"attck_id": "T1168"
+                                    hyb_tmp['mitre_attcks'].append('attack.'+ma_hybrid['attck_id'].lower())
+                            found_rule['Hybrid_mitre']['tags']=','.join(hyb_tmp['mitre_attcks'])
+                            detect_yara_rule.append(found_rule)
+                        hybrid_result.append()
+            except Exception as e:
+                print("Error: Hybrid Analysis error:"+str(e))
+        #MISP API
+        if api_misp and detect_yara_score > osint_scoremin:
+            try:
+                misp = pymisp.PyMISP(host_misp, api_misp, True, 'json')
+                response = misp.search(controller='attributes', type_attribute='md5', value=md5_file)
+                if response and 'Attribute' in response and response['Attribute']:
+                    found_in_misp=len(response['Attribute']) #number of found entry in misp
+                    for misp_resp in response['Attribute']:
+                        misp_result='https://misppriv.circl.lu/events/view/%s' % misp_resp['event_id']
+            except Exception as e:
+                print("Error: MISP error:"+str(e))
+    result_file = { 'FileParentType': cl_parent, 'FileType': "CL_TYPE_" + cl_type, 'FileSize': int(size_file), 'FileMD5': md5_file, 'PathFile': [filename],  'RiskScore': detect_yara_score, 'Yara': detect_yara_rule, 'ExtractInfo': detect_yara_strings, 'ContainedObjects': []}
     if vt_result:
-        print "VT RESULT ADD"
-        result_file[u'VT_Results']=vt_result
+        print("VT RESULT ADD")
+        result_file['VT_Results']=vt_result
+    if hybrid_result:
+        print("Hybrid RESULT ADD")
+        result_file['Hybrid_Results']=hybrid_result
+    if otx_result:
+        print("OTX RESULT ADD")
+        result_file['OTX_Results']=otx_result
+    if xforce_result:
+        print("XFORCE RESULT ADD")
+        result_file['XFORCE_Results']=xforce_result
+    if misp_result:
+        print("MISP RESULT ADD")
+        result_file['MISP_Results']=misp_result
+    if anyrun_result:
+        print("ANYRUN RESULT ADD")
+        result_file['ANYRUN_Results']=anyrun_result
+    if intezer_result:
+        print("INTEZER RESULT ADD")
+        result_file['INTEZER_Results']=intezer_result
     if cdbname:
-        result_file[u'CDBNAME']=cdbname
+        result_file['CDBNAME']=cdbname
     if 'zip_crypt_bool' in externals_var_extra:
-        result_file[u'zip_crypt']=True
+        result_file['zip_crypt']=True
         if 'EMBED_FILES' in externals_var_extra:
-            result_file[u'EMBED_FILES']=externals_var_extra['EMBED_FILES']
+            result_file['EMBED_FILES']=externals_var_extra['EMBED_FILES']
     return score_max, var_dynamic, extract_var_global, result_file
     
 def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patterndb, coef, usepass, tesseract, lang, verbose):
@@ -636,7 +896,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
     tnow7=dd.strftime("%s000")
     result_extract = {}
     coefx = 1 
-    print "Extract emmbedded file(s) with clamav..."
+    print("Extract emmbedded file(s) with clamav...")
     #create file for no check sig on file but check password if file crypted
     #Ref: https://blog.didierstevens.com/2017/02/15/quickpost-clamav-and-zip-file-decryption/
     emptyrule_path = tempfile.gettempdir() + '/empty.yar'
@@ -647,23 +907,25 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             f=open(emptyrule_path, 'a').close
     (working_dir, filename) = os.path.split(filename_path)
     new_env = dict(os.environ)
+    #'--max-filesize=300M', '--max-scansize=300M',
     args = [clamav_path, '--gen-json', '--debug', '--leave-temps', '--normalize=no', '--tempdir=' + directory_tmp, '-d', emptyrule_path, filename]
     proc = subprocess.Popen(args, env=new_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_dir)
     output, serr = proc.communicate()
-    print "Analyz result..."
+    serr=serr.decode('utf-8', errors='ignore')
+    print("Analyz result...")
     #run command problem
     if verbose:
-        print serr
+        print(serr)
     if proc.returncode:
-        print "Error: clamscan could not process the file.\n"
+        print("Error: clamscan could not process the file.\n")
         shutil.rmtree(directory_tmp)
         sys.exit(-1)
     #run command OK
     #LibClamAV debug: cli_updatelimits: scansize exceeded (initial: 104857600, consumed: 0, needed: 873684452)
     #LibClamAV debug: cli_updatelimits: filesize exceeded (allowed: 26214400, needed: 873684452)
     if re.search("cli_updatelimits: filesize exceeded", serr):
-        print serr
-        print "Error: clamscan could not process the file because file size is exceeded size allowed.\n"
+        print(serr)
+        print("Error: clamscan could not process the file because file size is exceeded size allowed.\n")
         shutil.rmtree(directory_tmp)
         sys.exit(-1)
     else:
@@ -678,13 +940,13 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
         json_file = ""
         if m:
             json_file = m.group(1)
-            print "Find resultat in json file:" + json_file + "..."
+            print("Find resultat in json file:" + json_file + "...")
             if os.path.isfile(json_file):
                 with open(json_file) as data_file:
                     try:    
                         result_extract = json.load(data_file)
                     except:
-                        print "Error to parse json result..."
+                        print("Error to parse json result...")
         var_dynamic['now_7_int'] = int(tnow7)
         md5_file = None
         size_file = None
@@ -698,7 +960,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             regexp_int = re.compile(r'_int$')
             #Put serr (clamav debug) in external variable if json not detected
             var_dynamic['serr'] = serr
-            pdf_analyz = { 'cli_pdf: %%EOF not found': u'PDFStats_NoEOF_bool', 'cli_pdf: encrypted pdf found': u'PDFStats_Encrypted_bool', 'cli_pdf: did not find valid xref': u'PDFStats_NoXREF_bool', 'cli_pdf: startxref not found': u'PDFStats_NoXREF_bool', 'cli_pdf: bad pdf version:': u'PDFStats_BadVersion_bool', 'cli_pdf: no PDF- header found': u'PDFStats_BadHeaderPosition_bool', 'cli_pdf: bad format object': u'PDFStats_InvalidObjectCount_int'}
+            pdf_analyz = { 'cli_pdf: %%EOF not found': 'PDFStats_NoEOF_bool', 'cli_pdf: encrypted pdf found': 'PDFStats_Encrypted_bool', 'cli_pdf: did not find valid xref': 'PDFStats_NoXREF_bool', 'cli_pdf: startxref not found': 'PDFStats_NoXREF_bool', 'cli_pdf: bad pdf version:': 'PDFStats_BadVersion_bool', 'cli_pdf: no PDF- header found': 'PDFStats_BadHeaderPosition_bool', 'cli_pdf: bad format object': 'PDFStats_InvalidObjectCount_int'}
             for ka,va in pdf_analyz.items():
                 if ka in serr:
                     if regexp_bool.search(va):
@@ -707,7 +969,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                         var_dynamic[va] = 1
                     else:
                         var_dynamic[va] = "True"
-            md5_file = unicode(md5(filename_path), "utf-8")
+            md5_file = md5(filename_path)
             size_file = os.path.getsize(filename_path)
             #LibClamAV debug: Recognized RTF file
             type_file = "UNKNOWN"
@@ -740,24 +1002,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             externals_var=dict_extract_path(result_extract,())
             externals_var['CDBNAME']=os.path.basename(filename)
         else:
-            externals_var = {'RootFileType': "CL_TYPE_" + type_file, 'CDBNAME': os.path.basename(filename), 'FileType': "CL_TYPE_" + type_file, 'FileSize': int(size_file), 'FileMD5': md5_file.encode('utf8'), 'PathFile': filename_path}
-        vt_result=None
-        if api_vt:
-            try:
-                response = vt.get_file_report(md5_file)
-                if response and 'response_code' in response and response['response_code'] == 200:
-                    if "results" in response and response["results"]:
-                        vttmp=parse_vt(response["results"])
-                        vt_result=vttmp
-                        externals_var.update(vttmp)
-                    else:
-                        if verbose:
-                            print "Debug info: VT no result for you md5hash"
-                else:
-                    if verbose:
-                        print "Debug info: VT response error (maybe key api not valid):"+str(response)
-            except Exception as e:
-                print "Error: Virus total error:"+str(e)
+            externals_var = {'RootFileType': "CL_TYPE_" + type_file, 'CDBNAME': os.path.basename(filename), 'FileType': "CL_TYPE_" + type_file, 'FileSize': int(size_file), 'FileMD5': md5_file, 'PathFile': filename_path}
         #Check Zip crypted
         zip_crypt = False
         crypt_names = None
@@ -780,10 +1025,10 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             proc_ocr = subprocess.Popen(args_ocr, env=new_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_dir)
             output_ocr, serr_ocr = proc_ocr.communicate()
             with open(temp.name+".txt", 'r') as content_file:
-                externals_var['image2text'] = unidecode.unidecode(unicode(content_file.read(), "utf-8"))
+                externals_var['image2text'] = unidecode.unidecode(content_file.read())
             temp.close
         if verbose:
-            print 'Debug info -- Variable external of Root file:'+str(externals_var)
+            print('Debug info -- Variable external of Root file:'+str(externals_var))
         #add var_dynamic in var ext
         externals_var.update(var_dynamic)
         #add extinfo in var_dyn
@@ -804,7 +1049,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                     check_level2[str(check2val)] = True
             if match.meta['weight'] > 0:
                 if verbose and match.strings:
-                    print 'YARA '+match.rule+' match DEBUG:'+str(match.strings)
+                    print('YARA '+match.rule+' match DEBUG:'+str(match.strings))
                 if str(match.rule) == "java_class" or str(match.rule) == "java_jar":
                     java_compiled_found = True
                 found_rule={match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}}
@@ -819,7 +1064,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                         ioc_global[match.meta['ids'].lower()] = []
                     found_rule[match.rule]['ioc']=[]
                     for iocx in match.strings:
-                        iocxx=str(iocx[2]).replace("\x00", "")
+                        #iocxx=str(iocx[2]).replace("\x00", "")
+                        iocxx=iocx[2].decode('utf-8', errors='ignore').replace("\x00", "")
                         if not iocxx in found_rule[match.rule]['ioc']:
                             found_rule[match.rule]['ioc'].append(iocxx)
                         if not iocxx in ioc_global[match.meta['ids'].lower()]:
@@ -839,7 +1085,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                 if not match.meta['ids'].lower() in ioc_global:
                     ioc_global[match.meta['ids'].lower()] = []
                 for iocx in match.strings:
-                    iocxx=str(iocx[2]).replace("\x00", "")
+                    #iocxx=str(iocx[2]).replace("\x00", "")
+                    iocxx=iocx[2].decode('utf-8', errors='ignore').replace("\x00", "")
                     if not iocxx in ioc_global[match.meta['ids'].lower()]:
                         ioc_global[match.meta['ids'].lower()].append(iocxx)
         #Check YARA rules level 2
@@ -849,14 +1096,14 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             proc_decomp = subprocess.Popen(args_decomp, env=new_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_dir)
             output_decomp, serr_decomp = proc_decomp.communicate()
             if output_decomp:
-                externals_var['decompiledjava'] = unidecode.unidecode(unicode(output_decomp, "utf-8"))
+                externals_var['decompiledjava'] = unidecode.unidecode(output_decomp)
         externals_var.update(var_dynamic)
         externals_var.update(check_level2)
         ret_yara = yara_RC2.match(filename_path, externals=externals_var, timeout=120) #Second yara scan on Parent file -- Level 2
         for match in ret_yara:
             if match.meta['weight'] > 0:
                 if verbose and match.strings:
-                    print 'YARA '+match.rule+' match DEBUG:'+str(match.strings)
+                    print('YARA '+match.rule+' match DEBUG:'+str(match.strings))
                 found_rule={match.rule: {'description': match.meta['description'], 'score': match.meta['weight']}}
                 if 'tag' in match.meta:
                     found_rule[match.rule]['tags']=match.meta['tag']
@@ -869,7 +1116,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                         ioc_global[match.meta['ids'].lower()] = []
                     found_rule[match.rule]['ioc']=[]
                     for iocx in match.strings:
-                        iocxx=str(iocx[2]).replace("\x00", "")
+                        #iocxx=str(iocx[2]).replace("\x00", "")
+                        iocxx=iocx[2].decode('utf-8', errors='ignore').replace("\x00", "")
                         if not iocxx in found_rule[match.rule]['ioc']:
                             found_rule[match.rule]['ioc'].append(iocxx)
                         if not iocxx in ioc_global[match.meta['ids'].lower()]:
@@ -889,40 +1137,307 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                 if not match.meta['ids'].lower() in ioc_global:
                     ioc_global[match.meta['ids'].lower()] = []
                 for iocx in match.strings:
-                    iocxx=str(iocx[2]).replace("\x00", "")
+                    #iocxx=str(iocx[2]).replace("\x00", "")
+                    iocxx=iocx[2].decode('utf-8', errors='ignore').replace("\x00", "")
                     if not iocxx in ioc_global[match.meta['ids'].lower()]:
                         ioc_global[match.meta['ids'].lower()].append(iocxx)
+        vt_result=None
+        xforce_result=None
+        hybrid_result=None
+        anyrun_result=None
+        otx_result=None
+        misp_result=None
+        intezer_result=None
+        if osint:
+            #CHECK VT
+            if api_vt and stop_vt and detect_yara_score > osint_scoremin:
+                try:
+                    response = vt.get_file_report(md5_file)
+                    if response and 'response_code' in response and response['response_code'] == 200:
+                        if "results" in response and response["results"]:
+                            vttmp=parse_vt(response["results"])
+                            vt_result=vttmp
+                            #add yara rules and add score
+                            if 'vt_detected' in vt_result and vt_result['vt_detected'] and re.match(r"CVE[_\-]*[0-9]+", vt_result['vt_detected'], re.IGNORECASE):
+                                #Virus Total detect CVE use
+                                found_rule={'VT_cve': {'description': 'Virus Total detect CVE use', 'score': 8}}
+                                detect_yara_rule.append(found_rule)
+                                if 8 > detect_yara_score:
+                                    detect_yara_score = 8
+                                    if detect_yara_score > score_max:
+                                        score_max = detect_yara_score
+                            if 'vt_positives_int' in vt_result and vt_result['vt_positives_int'] and vt_result['vt_positives_int']>10:
+                                #Virus Total detect malware
+                                found_rule={'VT_high': {'description': 'Virus Total detect malware', 'score': 8}}
+                                detect_yara_rule.append(found_rule)
+                                if 8 > detect_yara_score:
+                                    detect_yara_score = 8
+                                    if detect_yara_score > score_max:
+                                        score_max = detect_yara_score
+                            elif 'vt_positives_int' in vt_result and vt_result['vt_positives_int'] and vt_result['vt_positives_int']>2 and vt_result['vt_positives_int']<10:
+                                #Virus Total detect potential malware
+                                found_rule={'VT_low': {'description': 'Virus Total detect potential malware', 'score': 4}}
+                                detect_yara_rule.append(found_rule)
+                                if 4 > detect_yara_score:
+                                    detect_yara_score = 4
+                                    if detect_yara_score > score_max:
+                                        score_max = detect_yara_score
+                        else:
+                            if verbose:
+                                print("Debug info: VT no result for you md5hash")
+                    else:
+                        if response and 'response_code' in response and response['response_code'] == 204:
+                            if verbose:
+                                print("Debug info: VT response error exceeded rate limit:"+str(response))
+                                stop_vt=False
+                        else:
+                            if verbose:
+                                print("Debug info: VT response error (maybe key api not valid):"+str(response))
+                                stop_vt=False
+                except Exception as e:
+                    print("Error: Virus total error:"+str(e))
+            #OTX API
+            if api_otx and detect_yara_score > osint_scoremin:
+                try:
+                    otx = OTXv2(api_otx)
+                    response = otx.get_indicator_details_full(IndicatorTypes.FILE_HASH_MD5, md5_file)
+                    if response and 'general' in response and response['general'] and 'pulse_info' in response['general'] and response['general']['pulse_info'] and 'count' in response['general']['pulse_info'] and response['general']['pulse_info']['count']:
+                        otx_result="https://otx.alienvault.com/indicator/file/" + str(md5_file)
+                except Exception as e:
+                    print("Error: OTX error:"+str(e))
+            #XFORCE API
+            if api_xforce and pass_xforce and detect_yara_score > osint_scoremin:
+                #from https://github.com/johestephan/XFE/blob/master/python/xfexchange.py
+                try:
+                    myURL = "https://api.xforce.ibmcloud.com:443/malware/" + md5_file
+                    token = base64.b64encode(str("{0}:{1}".format(api_xforce, pass_xforce)).encode())
+                    headers = {"Authorization": "Basic %s" % token.decode(), "Accept": "application/json", 'User-Agent': 'Mozilla 5.0'}
+                    response = requests.get(myURL, headers=headers, verify=False).json()
+                    if response and 'malware' in response and response['malware'] and 'origins' in response['malware'] and response['malware']['origins']:
+                        #url https://exchange.xforce.ibmcloud.com/malware/MD5
+                        xforce_result={'link': 'https://exchange.xforce.ibmcloud.com/malware/'+md5_file.upper()}
+                        #risk - score
+                        if 'risk' in response['malware']['origins'] and response['malware']['origins']['risk']:
+                            xforce_result['risk']=response['malware']['origins']['risk'].lower()
+                            if 'high' in response['malware']['origins']['risk'].lower():
+                                found_rule={'XForce_high': {'description': 'XFORCE detect risk high', 'score': 8}}
+                                detect_yara_rule.append(found_rule)
+                                if 8 > detect_yara_score:
+                                    detect_yara_score = 8
+                                    if detect_yara_score > score_max:
+                                        score_max = detect_yara_score
+                            elif 'medium' in response['malware']['origins']['risk'].lower():
+                                found_rule={'XForce_middle': {'description': 'XFORCE detect risk medium', 'score': 5}}
+                                detect_yara_rule.append(found_rule)
+                                if 5 > detect_yara_score:
+                                    detect_yara_score = 5
+                                    if detect_yara_score > score_max:
+                                        score_max = detect_yara_score
+                            elif 'low' in response['malware']['origins']['risk'].lower():
+                                found_rule={'XForce_low': {'description': 'XFORCE detect risk low', 'score': 3}}
+                                detect_yara_rule.append(found_rule)
+                                if 3 > detect_yara_score:
+                                    detect_yara_score = 3
+                                    if detect_yara_score > score_max:
+                                        score_max = detect_yara_score
+                        #external - info
+                        if 'external' in response['malware']['origins'] and response['malware']['origins']['external']:
+                            #malwareType
+                            if 'malwareType' in response['malware']['origins']['external'] and response['malware']['origins']['external']['malwareType']:
+                                xforce_result['malwareType']=response['malware']['origins']['external']['malwareType']
+                            #detectionCoverage
+                            if 'detectionCoverage' in response['malware']['origins']['external'] and response['malware']['origins']['external']['detectionCoverage']:
+                                xforce_result['detectionCoverage']=response['malware']['origins']['external']['detectionCoverage']
+                            #family
+                            if 'family' in response['malware']['origins']['external'] and response['malware']['origins']['external']['family']:
+                                xforce_result['family']=response['malware']['origins']['external']['family']
+                except Exception as e:
+                    print("Error: XFORCE error:"+str(e))
+            #APP ANYRUN
+            if detect_yara_score > osint_scoremin:
+                #from: https://github.com/Neo23x0/munin/blob/master/munin.py
+                try:
+                    cfscraper = cfscrape.create_scraper()
+                    sha256=None
+                    with open(filename,"rb") as f:
+                        bytes = f.read() # read entire file as bytes
+                        sha256 = str(hashlib.sha256(bytes).hexdigest()).lower();
+                    response = cfscraper.get("https://any.run/report/%s" % sha256)
+                    if response.status_code == 200:
+                        #exist
+                        anyrun_result="https://any.run/report/%s" % sha256
+                except Exception as e:
+                    print("Error: APP ANYRUN error:"+str(e))
+            #INTEZER API
+            if api_intezer and detect_yara_score > osint_scoremin:
+                #from: https://github.com/Neo23x0/munin/blob/master/munin.py
+                try:
+                    base_url = 'https://analyze.intezer.com/api/v2-0'
+                    response = requests.post(base_url + '/get-access-token', json={'api_key': api_intezer})
+                    response.raise_for_status()
+                    session = requests.session()
+                    session.headers['Authorization'] = session.headers['Authorization'] = 'Bearer %s' % response.json()['result']
+                    data = {'hash': md5_file}
+                    response = session.post(base_url + '/analyze-by-hash', json=data).json()
+                    if response and 'result_url' in response and response['result_url']:
+                        intezer_result="https://analyze.intezer.com/#"+str(response['result_url'])
+                except Exception as e:
+                    print("Error: INTEZER error:"+str(e))
+            #HYBRID API
+            if api_hybrid and detect_yara_score > osint_scoremin:
+                #from: https://github.com/Neo23x0/munin/blob/master/munin.py
+                try:
+                    headers = {'User-Agent': 'VxStream', 'api-key': api_hybrid}
+                    data = {'hash': md5_file}
+                    response = requests.post('https://www.hybrid-analysis.com/api/v2/search/hash', headers=headers, data=data).json()
+                    if response and isinstance(response, list) and len(response)>0:
+                        hybrid_result = []
+                        for hybrid_r in response:
+                            hyb_tmp={}
+                            if 'sha256' in hybrid_r and hybrid_r['sha256']:
+                                hyb_tmp['link']='https://www.hybrid-analysis.com/sample/'+hybrid_r['sha256']+'?environmentId=100'
+                            if 'av_detect' in hybrid_r and hybrid_r['av_detect']: #int max 100
+                                hyb_tmp['av_detect']=hybrid_r['av_detect']
+                                if hybrid_r['av_detect'] >= 50:
+                                    found_rule={'Hybrid_av_detect': {'description': 'Hybrid Analysis AV detect > 50', 'score': 8}}
+                                    detect_yara_rule.append(found_rule)
+                                    if 8 > detect_yara_score:
+                                        detect_yara_score = 8
+                                        if detect_yara_score > score_max:
+                                            score_max = detect_yara_score
+                                elif hybrid_r['av_detect'] > 10:
+                                    found_rule={'Hybrid_av_detect': {'description': 'Hybrid Analysis AV detect > 10 & < 50', 'score': 4}}
+                                    detect_yara_rule.append(found_rule)
+                                    if 4 > detect_yara_score:
+                                        detect_yara_score = 4
+                                        if detect_yara_score > score_max:
+                                            score_max = detect_yara_score
+                            if 'vx_family' in hybrid_r and hybrid_r['vx_family']: #str
+                                hyb_tmp['vx_family']=hybrid_r['vx_family']
+                            if 'threat_score' in hybrid_r and hybrid_r['threat_score']: #int
+                                hyb_tmp['threat_score']=hybrid_r['threat_score']
+                                if hyb_tmp['threat_score'] >= 80:
+                                    found_rule={'Hybrid_threat_score': {'description': 'Hybrid Analysis threat score >= 80', 'score': 8}}
+                                    detect_yara_rule.append(found_rule)
+                                    if 8 > detect_yara_score:
+                                        detect_yara_score = 8
+                                        if detect_yara_score > score_max:
+                                            score_max = detect_yara_score
+                                elif hyb_tmp['threat_score'] >= 50:
+                                    found_rule={'Hybrid_threat_score': {'description': 'Hybrid Analysis threat score >= 50', 'score': 6}}
+                                    detect_yara_rule.append(found_rule)
+                                    if 6 > detect_yara_score:
+                                        detect_yara_score = 6
+                                        if detect_yara_score > score_max:
+                                            score_max = detect_yara_score
+                                elif hyb_tmp['threat_score'] >= 20:
+                                    found_rule={'Hybrid_threat_score': {'description': 'Hybrid Analysis threat score >= 20', 'score': 4}}
+                                    detect_yara_rule.append(found_rule)
+                                    if 4 > detect_yara_score:
+                                        detect_yara_score = 4
+                                        if detect_yara_score > score_max:
+                                            score_max = detect_yara_score
+                            if 'threat_level' in hybrid_r and hybrid_r['threat_level']: #int #(0=No Threat, 1=Suspicious, 2=Malicious, 3=Unknown)
+                                hyb_tmp['threat_level']=hybrid_r['threat_level']
+                                if hyb_tmp['threat_level'] >= 2:
+                                    found_rule={'Hybrid_threat_level': {'description': 'Hybrid Analysis threat Malicious or Unknown', 'score': 8}}
+                                    detect_yara_rule.append(found_rule)
+                                    if 8 > detect_yara_score:
+                                        detect_yara_score = 8
+                                        if detect_yara_score > score_max:
+                                            score_max = detect_yara_score
+                                elif hyb_tmp['threat_level'] == 1:
+                                    found_rule={'Hybrid_threat_level': {'description': 'Hybrid Analysis threat Suspicious', 'score': 5}}
+                                    detect_yara_rule.append(found_rule)
+                                    if 5 > detect_yara_score:
+                                        detect_yara_score = 5
+                                        if detect_yara_score > score_max:
+                                            score_max = detect_yara_score
+                            if 'verdict' in hybrid_r and hybrid_r['verdict']: #(0=No Threat, 1=Suspicious, 2=Malicious, 3=Unknown)
+                                hyb_tmp['verdict']=hybrid_r['verdict']
+                            hyb_tmp['mitre_attcks']=[]
+                            if 'mitre_attcks' in hybrid_r and hybrid_r['mitre_attcks']:
+                                found_rule={'Hybrid_mitre': {'description': 'Hybrid Analysis detect mitre attack techniques', 'score': 5}}
+                                if 5 > detect_yara_score:
+                                    detect_yara_score = 5
+                                    if detect_yara_score > score_max:
+                                        score_max = detect_yara_score
+                                for ma_hybrid in hybrid_r['mitre_attcks']:
+                                    if 'tactic' in ma_hybrid and ma_hybrid['tactic']: #"tactic": "Execution",
+                                        hyb_tmp['mitre_attcks'].append('attack.'+ma_hybrid['tactic'].lower().replace(' ','_'))
+                                    if 'attck_id' in ma_hybrid and ma_hybrid['attck_id']: #"attck_id": "T1168"
+                                        hyb_tmp['mitre_attcks'].append('attack.'+ma_hybrid['attck_id'].lower())
+                                found_rule['Hybrid_mitre']['tags']=','.join(hyb_tmp['mitre_attcks'])
+                                detect_yara_rule.append(found_rule)
+                            hybrid_result.append()
+                except Exception as e:
+                    print("Error: Hybrid Analysis error:"+str(e))
+            #MISP API
+            if api_misp and detect_yara_score > osint_scoremin:
+                try:
+                    misp = pymisp.PyMISP(host_misp, api_misp, True, 'json')
+                    response = misp.search(controller='attributes', type_attribute='md5', value=md5_file)
+                    if response and 'Attribute' in response and response['Attribute']:
+                        found_in_misp=len(response['Attribute']) #number of found entry in misp
+                        for misp_resp in response['Attribute']:
+                            misp_result='https://misppriv.circl.lu/events/view/%s' % misp_resp['event_id']
+                except Exception as e:
+                    print("Error: MISP error:"+str(e))
         if json_find:
-            reta = adddict(result_extract,u'RiskScore',detect_yara_score,())
-            reta = adddict(result_extract,u'Yara',detect_yara_rule,())
-            reta = adddict(result_extract,u'ExtractInfo',detect_yara_strings,())
-            reta = adddict(result_extract,u'CDBNAME',unicode(os.path.basename(filename), "utf-8"),())
+            reta = adddict(result_extract,'RiskScore',detect_yara_score,())
+            reta = adddict(result_extract,'Yara',detect_yara_rule,())
+            reta = adddict(result_extract,'ExtractInfo',detect_yara_strings,())
+            reta = adddict(result_extract,'CDBNAME',os.path.basename(filename),())
             if vt_result:
-                reta = adddict(result_extract,u'VT_Results', vt_result,())
+                reta = adddict(result_extract,'VT_Results', vt_result,())
+            if hybrid_result:
+                reta = adddict(result_extract,'Hybrid_Results', hybrid_result,())
+            if otx_result:
+                reta = adddict(result_extract,'OTX_Results', otx_result,())
+            if xforce_result:
+                reta = adddict(result_extract,'XFORCE_Results', xforce_result,())
+            if misp_result:
+                reta = adddict(result_extract,'MISP_Results', misp_result,())
+            if anyrun_result:
+                reta = adddict(result_extract,'ANYRUN_Results', anyrun_result,())
+            if intezer_result:
+                reta = adddict(result_extract,'INTEZER_Results', intezer_result,())
             if zip_crypt:
-                reta = adddict(result_extract,u'zip_crypt',True,())
+                reta = adddict(result_extract,'zip_crypt',True,())
                 if crypt_names:
-                    reta = adddict(result_extract,u'EMBED_FILES', crypt_names,())
+                    reta = adddict(result_extract,'EMBED_FILES', crypt_names,())
         else:
-            result_extract = { u'RootFileType': u"CL_TYPE_" + unicode(type_file, "utf-8"), u'FileType': u"CL_TYPE_" + unicode(type_file, "utf-8"), u'FileSize': int(size_file), u'FileMD5': md5_file, u'RiskScore': detect_yara_score, u'Yara': detect_yara_rule, u'ExtractInfo': detect_yara_strings, u'CDBNAME': unicode(os.path.basename(filename), "utf-8"), u'ContainedObjects': []}
+            result_extract = { 'RootFileType': "CL_TYPE_" + type_file, 'FileType': "CL_TYPE_" + type_file, 'FileSize': int(size_file), 'FileMD5': md5_file, 'RiskScore': detect_yara_score, 'Yara': detect_yara_rule, 'ExtractInfo': detect_yara_strings, 'CDBNAME': os.path.basename(filename), 'ContainedObjects': []}
             if vt_result:
-                result_extract[u'VT_Results'] = vt_result
+                result_extract['VT_Results'] = vt_result
+            if hybrid_result:
+                result_extract['Hybrid_Results'] = hybrid_result
+            if otx_result:
+                result_extract['OTX_Results'] = otx_result
+            if xforce_result:
+                result_extract['XFORCE_Results'] = xforce_result
+            if misp_result:
+                result_extract['MISP_Results'] = misp_result
+            if anyrun_result:
+                result_extract['ANYRUN_Results'] = anyrun_result
+            if intezer_result:
+                result_extract['INTEZER_Results'] = intezer_result
             if zip_crypt:
-                result_extract[u'zip_crypt'] = True
+                result_extract['zip_crypt'] = True
                 if crypt_names:
-                    result_extract[u'EMBED_FILES'] = crypt_names
+                    result_extract['EMBED_FILES'] = crypt_names
         #reanalyse log clamav for create JSON information
         level_cour = 0
         tempdir_cour = ""
-        cl_parent = result_extract[u'RootFileType'].encode('utf8')
-        cl_parentmd5 = result_extract[u'FileMD5']
+        cl_parent = result_extract['RootFileType']
+        cl_parentmd5 = result_extract['FileMD5']
         temp_json = {} # 'temp_dir': { 'CL_PARENT': clparent, 'LEVEL': level }
         all_md5 = {}
         #check md5 on all file in temp dir
         md5_list_av = {}
         for root, directories, filenames in os.walk(directory_tmp):
             for filename in filenames:
-                md5_file = unicode(md5(os.path.join(root, filename)), "utf-8")
+                md5_file = md5(os.path.join(root, filename))
                 if md5_file not in md5_list_av:
                     md5_list_av[md5_file] = os.path.join(root, filename)
         regexp_dir = re.compile(directory_tmp+r'\/clamav-[a-z0-9]{32}.tmp\/[a-zA-Z0-9\/\._-]+')
@@ -955,7 +1470,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                if os.path.isfile(filex) and json_file != filex:
                    #file exist
                    #check md5sum
-                   md5_file = unicode(md5(filex), "utf-8")
+                   md5_file = md5(filex)
                    nopresent = True
                    #check if dir exist in temp_json?
                    fpresent = False
@@ -984,7 +1499,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                        find_type = getpath(result_extract, md5_file)
                        if find_type:
                            json_not_find=False
-                           find_type = find_type[0][:-1] + (u'FileType',)
+                           find_type = find_type[0][:-1] + ('FileType',)
                            type_file_tmp = readdict(result_extract,find_type)
                            if type_file_tmp:
                                type_file = type_file_tmp.replace('CL_TYPE_','')
@@ -1079,7 +1594,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                        #extract SWF file attributes
                        r=re.compile("SWF: File attributes:(?:.*\n){1}(LibClamAV debug:\s+\*\s+[^\n]+\n){1,10}", re.MULTILINE)
                        aswf=r.search(serr)
-                       swf_add_info = {u'SWF_attributes': {}}
+                       swf_add_info = {'SWF_attributes': {}}
                        if aswf:
                            r=re.compile("LibClamAV debug:\s+\*\s+(?P<type>[^\n]+)")
                            #print "SWG G0:" + str(aswf.group(0))
@@ -1087,8 +1602,8 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                                retx=m.groupdict() 
                                #print "SWG RET:" + str(retx)
                                if retx['type']:
-                                   swf_add_info[u'SWF_attributes'][retx['type'].replace(" ", "_")]=True
-                                   externals_var_extra[u'swf_attributes_'+retx['type'].replace(" ", "_").replace(".", "").lower()+'_bool']=True
+                                   swf_add_info['SWF_attributes'][retx['type'].replace(" ", "_")]=True
+                                   externals_var_extra['swf_attributes_'+retx['type'].replace(" ", "_").replace(".", "").lower()+'_bool']=True
                    if 'CL_TYPE_MHTML' in serr and not md5_file in all_md5 and (type_file == "UNKNOWN" or type_file == "CL_TYPE_BINARY_DATA"):
                        with open(filex, 'rb') as fx:
                            content = fx.read()
@@ -1100,9 +1615,9 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                                    f.write(uc_activemime)
                        if os.path.isfile(filex+'_activemime'):
                            #run analyz clamav
-                           print "\tAnalyz interne activemime on " + str(md5_file) + "..."
+                           print("\tAnalyz interne activemime on " + str(md5_file) + "...")
                            ret_analyz=clamscan(clamav_path, directory_tmp, filex+'_activemime', yara_RC, yara_RC2, patterndb, {}, usepass, tesseract, lang, verbose)
-                           print "\tEnd of analyz interne activemime!"
+                           print("\tEnd of analyz interne activemime!")
                    if not dirx in temp_json:
                        #new dir -> new level OR first file!
                        level_cour += 1
@@ -1112,16 +1627,16 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                        list_PType = ""
                        if find_md5:
                            temp_json[dirx]['find_md5'] = find_md5
-                           for x in xrange(len(find_md5[0])): #keep courant field
+                           for x in range(len(find_md5[0])): #keep courant field
                                fpmd5 = find_md5[0][0:x]
-                               fpmd5 = fpmd5 + (u'FileType',)
+                               fpmd5 = fpmd5 + ('FileType',)
                                type_parent = readdict(result_extract,fpmd5)
                                if type_parent:
                                    list_PType += "->" + type_parent
                            temp_json[dirx]['cl_parent'] = list_PType
                            #scan yara and make json
                            if re.search("CL_TYPE_GZip$", temp_json[dirx]["cl_parent"]):
-                               fpmd5 = find_md5[0][:-1] + (u'CDBNAME',)
+                               fpmd5 = find_md5[0][:-1] + ('CDBNAME',)
                                try:
                                   temp_json[dirx]['origname_file'] = re.sub('\.[A-Z0-9a-z_\-]+$', '', readdict(result_extract,fpmd5))
                                except:
@@ -1168,55 +1683,67 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                            ret.update(swf_add_info)
                        if ret_analyz:
                            #remove key global
-                           ret_analyz.pop(u'RootFileType', None)
-                           if ret_analyz[u'GlobalRiskScore'] > score_max:
-                               score_max = ret_analyz[u'GlobalRiskScore']
-                           ret_analyz.pop(u'GlobalRiskScore', None)
-                           ret_analyz.pop(u'GlobalRiskScoreCoef', None)
-                           ret[u'ContainedObjects'].append(ret_analyz)
+                           ret_analyz.pop('RootFileType', None)
+                           if ret_analyz['GlobalRiskScore'] > score_max:
+                               score_max = ret_analyz['GlobalRiskScore']
+                           ret_analyz.pop('GlobalRiskScore', None)
+                           ret_analyz.pop('GlobalRiskScoreCoef', None)
+                           ret['ContainedObjects'].append(ret_analyz)
                        if json_find:
                            find_md5 = getpath(result_extract, md5_file)
                            if find_md5:
                                for pmd5 in find_md5:
-                                       reta = adddict(result_extract,u'FileParentType',ret[u'FileParentType'],pmd5[0:len(pmd5)-1],fpresent)
-                                       reta = adddict(result_extract,u'PathFile',ret[u'PathFile'],pmd5[0:len(pmd5)-1],fpresent)
-                                       reta = adddict(result_extract,u'RiskScore',ret[u'RiskScore'],pmd5[0:len(pmd5)-1],fpresent)
-                                       reta = adddict(result_extract,u'Yara',ret[u'Yara'],pmd5[0:len(pmd5)-1],fpresent)
+                                       reta = adddict(result_extract,'FileParentType',ret['FileParentType'],pmd5[0:len(pmd5)-1],fpresent)
+                                       reta = adddict(result_extract,'PathFile',ret['PathFile'],pmd5[0:len(pmd5)-1],fpresent)
+                                       reta = adddict(result_extract,'RiskScore',ret['RiskScore'],pmd5[0:len(pmd5)-1],fpresent)
+                                       reta = adddict(result_extract,'Yara',ret['Yara'],pmd5[0:len(pmd5)-1],fpresent)
                                        if 'VT_Results' in ret:
-                                           reta = adddict(result_extract,u'VT_Results',ret[u'VT_Results'],pmd5[0:len(pmd5)-1],fpresent)
+                                           reta = adddict(result_extract,'VT_Results',ret['VT_Results'],pmd5[0:len(pmd5)-1],fpresent)
+                                       if 'Hybrid_Results' in ret:
+                                           reta = adddict(result_extract,'Hybrid_Results',ret['Hybrid_Results'],pmd5[0:len(pmd5)-1],fpresent)
+                                       if 'OTX_Results' in ret:
+                                           reta = adddict(result_extract,'OTX_Results',ret['OTX_Results'],pmd5[0:len(pmd5)-1],fpresent)
+                                       if 'XFORCE_Results' in ret:
+                                           reta = adddict(result_extract,'XFORCE_Results',ret['XFORCE_Results'],pmd5[0:len(pmd5)-1],fpresent)
+                                       if 'MISP_Results' in ret:
+                                           reta = adddict(result_extract,'MISP_Results',ret['MISP_Results'],pmd5[0:len(pmd5)-1],fpresent)
+                                       if 'ANYRUN_Results' in ret:
+                                           reta = adddict(result_extract,'ANYRUN_Results',ret['ANYRUN_Results'],pmd5[0:len(pmd5)-1],fpresent)
+                                       if 'INTEZER_Results' in ret:
+                                           reta = adddict(result_extract,'INTEZER_Results',ret['INTEZER_Results'],pmd5[0:len(pmd5)-1],fpresent)
                                        if 'CDBNAME' in ret:
-                                           reta = adddict(result_extract,u'CDBNAME',ret[u'CDBNAME'],pmd5[0:len(pmd5)-1],fpresent)
+                                           reta = adddict(result_extract,'CDBNAME',ret['CDBNAME'],pmd5[0:len(pmd5)-1],fpresent)
                                        if 'zip_crypt' in ret:
-                                           reta = adddict(result_extract,u'zip_crypt',ret[u'zip_crypt'],pmd5[0:len(pmd5)-1],fpresent)
+                                           reta = adddict(result_extract,'zip_crypt',ret['zip_crypt'],pmd5[0:len(pmd5)-1],fpresent)
                                            if 'EMBED_FILES' in ret:
-                                               reta = adddict(result_extract,u'EMBED_FILES',ret[u'EMBED_FILES'],pmd5[0:len(pmd5)-1],fpresent)
-                                       for f_r_y in ret[u'Yara']: #found rules yara []
+                                               reta = adddict(result_extract,'EMBED_FILES',ret['EMBED_FILES'],pmd5[0:len(pmd5)-1],fpresent)
+                                       for f_r_y in ret['Yara']: #found rules yara []
                                            for r_y_k, r_y_v in f_r_y.items(): #rule yara name
                                                if 'tags' in r_y_v:
                                                    atags = r_y_v['tags'].split(',')
                                                    for tag in atags:
                                                        if tag.lower().startswith("attack.") and tag.lower() not in global_tags:
                                                            global_tags.append(tag.lower())
-                                       reta = adddict(result_extract,u'ExtractInfo',ret[u'ExtractInfo'],pmd5[0:len(pmd5)-1],fpresent)
+                                       reta = adddict(result_extract,'ExtractInfo',ret['ExtractInfo'],pmd5[0:len(pmd5)-1],fpresent)
                                        if swf_add_info:
-                                           reta = adddict(result_extract,u'SWF_attributes',ret[u'SWF_attributes'],pmd5[0:len(pmd5)-1],fpresent)
+                                           reta = adddict(result_extract,'SWF_attributes',ret['SWF_attributes'],pmd5[0:len(pmd5)-1],fpresent)
                                        #if origname_file:             
                                        #    reta = adddict(result_extract,u'CDBNAME',ret[u'CDBNAME'],pmd5[0:len(pmd5)-1],fpresent)
                                        if ret_analyz:
                                            #print "RET ANALYZ -- ADD1"
                                            pp = pprint.PrettyPrinter(indent=4)
                                            pp.pprint(ret)
-                                           reta = adddict(result_extract,u'ContainedObjects',ret_analyz,pmd5[0:len(pmd5)-1],fpresent)
+                                           reta = adddict(result_extract,'ContainedObjects',ret_analyz,pmd5[0:len(pmd5)-1],fpresent)
                            else:
                                #md5 not present in json
                                for pmd5 in temp_json[dirx]['find_md5']:
-                                   reta = adddict(result_extract,u'ContainedObjects',ret,pmd5[0:len(pmd5)-1])
+                                   reta = adddict(result_extract,'ContainedObjects',ret,pmd5[0:len(pmd5)-1])
                        else:
                            if level_cour == 1:
                                result_extract["ContainedObjects"].append(ret)
                            else:
                                for pmd5 in temp_json[dirx]['find_md5']:
-                                   reta = adddict(result_extract,u'ContainedObjects',ret,pmd5[0:len(pmd5)-1])
+                                   reta = adddict(result_extract,'ContainedObjects',ret,pmd5[0:len(pmd5)-1])
                    cl_parentmd5 = md5_file 
         #verify json with md5 not find in debug log
         if json_find:
@@ -1227,7 +1754,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             #find file with md5 in tmp folder
             for root, directories, filenames in os.walk(directory_tmp):
                 for filename in filenames:
-                    md5_file = unicode(md5(os.path.join(root, filename)), "utf-8")
+                    md5_file = md5(os.path.join(root, filename))
                     if md5_file in md5_free and md5_file not in md5_list:
                         md5_list.append(md5_file)
                         #analyz
@@ -1238,13 +1765,13 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                         if find_type:
                             for pmd5 in find_type:
                                 #find parent type
-                                for x in xrange(len(pmd5)-1):
+                                for x in range(len(pmd5)-1):
                                     fpmd5 = pmd5[0:x]
-                                    fpmd5 = fpmd5 + (u'FileType',)
+                                    fpmd5 = fpmd5 + ('FileType',)
                                     type_parent = readdict(result_extract,fpmd5)
                                     if type_parent:
                                         list_PType += "->" + type_parent
-                            find_typex = find_type[0][:-1] + (u'FileType',) # FIxed todo verify ok
+                            find_typex = find_type[0][:-1] + ('FileType',) # FIxed todo verify ok
                             type_file_tmp = readdict(result_extract,find_typex)
                             if type_file_tmp:
                                 type_file = type_file_tmp
@@ -1255,34 +1782,46 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
                             #   print "Debug info -- Externals Var from clamav for current file:" + str(externals_var_extra)
                             score_max, var_dynamic, extract_var_global, ret = scan_json(os.path.join(root, filename), list_PType, "", type_file, patterndb, var_dynamic, extract_var_global, yara_RC, yara_RC2, score_max, md5_file, tesseract, lang, externals_var_extra, verbose)
                             for pmd5 in find_type:
-                                reta = adddict(result_extract,u'FileParentType',ret[u'FileParentType'],pmd5[0:len(pmd5)-1],fpresent)
-                                reta = adddict(result_extract,u'PathFile',ret[u'PathFile'],pmd5[0:len(pmd5)-1],fpresent)
-                                reta = adddict(result_extract,u'RiskScore',ret[u'RiskScore'],pmd5[0:len(pmd5)-1],fpresent)
-                                reta = adddict(result_extract,u'Yara',ret[u'Yara'],pmd5[0:len(pmd5)-1],fpresent)
+                                reta = adddict(result_extract,'FileParentType',ret['FileParentType'],pmd5[0:len(pmd5)-1],fpresent)
+                                reta = adddict(result_extract,'PathFile',ret['PathFile'],pmd5[0:len(pmd5)-1],fpresent)
+                                reta = adddict(result_extract,'RiskScore',ret['RiskScore'],pmd5[0:len(pmd5)-1],fpresent)
+                                reta = adddict(result_extract,'Yara',ret['Yara'],pmd5[0:len(pmd5)-1],fpresent)
                                 if 'VT_Results' in ret:
-                                    reta = adddict(result_extract,u'VT_Results',ret[u'VT_Results'],pmd5[0:len(pmd5)-1],fpresent)
+                                    reta = adddict(result_extract,'VT_Results',ret['VT_Results'],pmd5[0:len(pmd5)-1],fpresent)
+                                if 'Hybrid_Results' in ret:
+                                    reta = adddict(result_extract,'Hybrid_Results',ret['Hybrid_Results'],pmd5[0:len(pmd5)-1],fpresent)
+                                if 'OTX_Results' in ret:
+                                    reta = adddict(result_extract,'OTX_Results',ret['OTX_Results'],pmd5[0:len(pmd5)-1],fpresent)
+                                if 'XFORCE_Results' in ret:
+                                    reta = adddict(result_extract,'XFORCE_Results',ret['XFORCE_Results'],pmd5[0:len(pmd5)-1],fpresent)
+                                if 'MISP_Results' in ret:
+                                    reta = adddict(result_extract,'MISP_Results',ret['MISP_Results'],pmd5[0:len(pmd5)-1],fpresent)
+                                if 'ANYRUN_Results' in ret:
+                                    reta = adddict(result_extract,'ANYRUN_Results',ret['ANYRUN_Results'],pmd5[0:len(pmd5)-1],fpresent)
+                                if 'INTEZER_Results' in ret:
+                                    reta = adddict(result_extract,'INTEZER_Results',ret['INTEZER_Results'],pmd5[0:len(pmd5)-1],fpresent)
                                 if 'CDBNAME' in ret:
-                                    reta = adddict(result_extract,u'CDBNAME',ret[u'CDBNAME'],pmd5[0:len(pmd5)-1],fpresent)
+                                    reta = adddict(result_extract,'CDBNAME',ret['CDBNAME'],pmd5[0:len(pmd5)-1],fpresent)
                                 if 'zip_crypt' in ret:
-                                    reta = adddict(result_extract,u'zip_crypt',ret[u'zip_crypt'],pmd5[0:len(pmd5)-1],fpresent)
+                                    reta = adddict(result_extract,'zip_crypt',ret['zip_crypt'],pmd5[0:len(pmd5)-1],fpresent)
                                     if 'EMBED_FILES' in ret:
-                                        reta = adddict(result_extract,u'EMBED_FILES',ret[u'EMBED_FILES'],pmd5[0:len(pmd5)-1],fpresent)
-                                for f_r_y in ret[u'Yara']: #found rules yara []
+                                        reta = adddict(result_extract,'EMBED_FILES',ret['EMBED_FILES'],pmd5[0:len(pmd5)-1],fpresent)
+                                for f_r_y in ret['Yara']: #found rules yara []
                                            for r_y_k, r_y_v in f_r_y.items(): #rule yara name
                                                if 'tags' in r_y_v:
                                                    atags = r_y_v['tags'].split(',')
                                                    for tag in atags:
                                                        if tag.lower().startswith("attack.") and tag.lower() not in global_tags:
                                                            global_tags.append(tag.lower())
-                                reta = adddict(result_extract,u'ExtractInfo',ret[u'ExtractInfo'],pmd5[0:len(pmd5)-1],fpresent)
+                                reta = adddict(result_extract,'ExtractInfo',ret['ExtractInfo'],pmd5[0:len(pmd5)-1],fpresent)
             
         #actualiz score max
-        result_extract[u'GlobalRiskScore'] = score_max
-        result_extract[u'GlobalTags'] = ', '.join(sorted(global_tags))
-        result_extract[u'GlobalRiskScoreCoef'] = coefx
-        result_extract[u'GlobalIOC'] = ioc_global
+        result_extract['GlobalRiskScore'] = score_max
+        result_extract['GlobalTags'] = ', '.join(sorted(global_tags))
+        result_extract['GlobalRiskScoreCoef'] = coefx
+        result_extract['GlobalIOC'] = ioc_global
         #add info tmp dir
-        result_extract[u'TempDirExtract'] =  directory_tmp
+        result_extract['TempDirExtract'] =  directory_tmp
         #calcul globalriskscore with coef
         if coef:
             scores=check_all_score(result_extract)
@@ -1298,15 +1837,15 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             score_max_coef = int(round(score_max * coefx))
             if score_max_coef > 10:
                 score_max_coef = 10
-            result_extract[u'GlobalRiskScore'] = score_max_coef
-            result_extract[u'GlobalRiskScoreCoef'] = coefx
-    print "Phase one finish!\n"
+            result_extract['GlobalRiskScore'] = score_max_coef
+            result_extract['GlobalRiskScoreCoef'] = coefx
+    print("Phase one finish!\n")
     return result_extract
 
 def find_md5free(nested_dict):
     md5_list = []
-    if u'FileMD5' in nested_dict and not u'RiskScore' in nested_dict:
-        md5_list.append(nested_dict[u'FileMD5'])
+    if 'FileMD5' in nested_dict and not 'RiskScore' in nested_dict:
+        md5_list.append(nested_dict['FileMD5'])
     if "ContainedObjects" in nested_dict:
         for elem in nested_dict["ContainedObjects"]:
             if type(elem) is dict:
@@ -1316,28 +1855,28 @@ def find_md5free(nested_dict):
         
 def json2dot(nested_dict, dangerous_score, name_cour, name_parent):
     dot_content = ""
-    if u'FileMD5' in nested_dict and not u'RootFileType' in nested_dict:
+    if 'FileMD5' in nested_dict and not 'RootFileType' in nested_dict:
         #create DOT line
         color="green"
         #if u'GlobalRiskScore' in nested_dict and nested_dict[u'GlobalRiskScore'] >= dangerous_score:
-        if nested_dict[u'RiskScore'] >= dangerous_score:
+        if nested_dict['RiskScore'] >= dangerous_score:
             color="red"
-        if u'CDBNAME' in nested_dict:
-            dot_content += name_cour + ' [shape=record, label="{{' + nested_dict[u'CDBNAME'].encode('utf8') + "(" + nested_dict[u'FileMD5'].encode('utf8') + ')|' + str(nested_dict[u'RiskScore']) + '}|' + nested_dict[u'FileType'].encode('utf8') + '}", color=' + color + '];\n'    
+        if 'CDBNAME' in nested_dict:
+            dot_content += name_cour + ' [shape=record, label="{{' + nested_dict['CDBNAME'] + "(" + nested_dict['FileMD5'] + ')|' + str(nested_dict['RiskScore']) + '}|' + nested_dict['FileType'] + '}", color=' + color + '];\n'    
         else:
-            dot_content += name_cour + ' [shape=record, label="{{' + nested_dict[u'FileMD5'].encode('utf8') + '|' + str(nested_dict[u'RiskScore']) + '}|' + nested_dict[u'FileType'].encode('utf8') + '}", color=' + color + '];\n'    
-        if nested_dict[u'Yara']:
-            for found_rule in nested_dict[u'Yara']:
+            dot_content += name_cour + ' [shape=record, label="{{' + nested_dict['FileMD5'] + '|' + str(nested_dict['RiskScore']) + '}|' + nested_dict['FileType'] + '}", color=' + color + '];\n'    
+        if nested_dict['Yara']:
+            for found_rule in nested_dict['Yara']:
                 for k,v in found_rule.items():
                     if 'ioc' in v:
                         v.pop('ioc',None)
-            dot_content += name_cour + '_info [label="' + str(nested_dict[u'Yara']).replace('}, {', '},\n{').replace('"', '').replace("'", '').encode('utf8') + '", color=blue];\n'    
+            dot_content += name_cour + '_info [label="' + str(nested_dict['Yara']).replace('}, {', '},\n{').replace('"', '').replace("'", '') + '", color=blue];\n'    
         # create link
         if color == 'red':
             dot_content += name_parent + ' -> ' + name_cour + ' [color=red];\n'
         else:
             dot_content += name_parent + ' -> ' + name_cour + ';\n'
-        if nested_dict[u'Yara']:
+        if nested_dict['Yara']:
             dot_content += name_cour + ' -- ' + name_cour + '_info [style=dotted];\n'
     if "ContainedObjects" in nested_dict:
         #extract info object
@@ -1353,23 +1892,23 @@ def create_graph(filename, result_extract, verbose, path_write_png='/tmp/analysi
     #create DOT
     dot_content = 'digraph Analysis {\nratio=auto;\nnodesep="2.5 equally";\nranksep="2.5 equally";\n'
     color="green"
-    if result_extract[u'GlobalRiskScore'] >= dangerous_score:
+    if result_extract['GlobalRiskScore'] >= dangerous_score:
         color="red"
-    dot_content += 'R_0 [shape=record, label="{{' + os.path.basename(filename) + '|' + str(result_extract[u'GlobalRiskScore']) + '|' + 'Coef:' + str(result_extract[u'GlobalRiskScoreCoef']) + '}|' + result_extract[u'RootFileType'].encode('utf8') + '}", color=' + color + '];\n'
-    if result_extract[u'Yara']:
-        for found_rule in result_extract[u'Yara']:
+    dot_content += 'R_0 [shape=record, label="{{' + os.path.basename(filename) + '|' + str(result_extract['GlobalRiskScore']) + '|' + 'Coef:' + str(result_extract['GlobalRiskScoreCoef']) + '}|' + result_extract['RootFileType'] + '}", color=' + color + '];\n'
+    if result_extract['Yara']:
+        for found_rule in result_extract['Yara']:
             for k,v in found_rule.items():
                 if 'ioc' in v:
                     v.pop('ioc',None)
-        dot_content += 'R_0_info [label="' + str(result_extract[u'Yara']).replace('}, {', '},\n{').replace('"', '').replace("'", '').encode('utf8') + '", color=blue];\n' 
+        dot_content += 'R_0_info [label="' + str(result_extract['Yara']).replace('}, {', '},\n{').replace('"', '').replace("'", '') + '", color=blue];\n' 
         dot_content += 'R_0 -- R_0_info [style=dotted];\n'
-    if result_extract[u'GlobalTags']:
-        dot_content += 'R_0_tags [label="' + result_extract[u'GlobalTags'].replace('}, {', '},\n{').replace('"', '').replace("'", '').replace(", ", ',\n').encode('utf8') + '", color=red];\n' 
+    if result_extract['GlobalTags']:
+        dot_content += 'R_0_tags [label="' + result_extract['GlobalTags'].replace('}, {', '},\n{').replace('"', '').replace("'", '').replace(", ", ',\n') + '", color=red];\n' 
         dot_content += 'R_0 -- R_0_tags [style=dotted];\n'
     dot_content += json2dot(result_extract, dangerous_score, 'R_0', 'R_0')
     dot_content += '}'
     if verbose:
-        print dot_content
+        print(dot_content)
     #convert dot to png
     (graph,) = pydot.graph_from_dot_data(dot_content)
     graph.write_png(path_write_png)
@@ -1385,7 +1924,7 @@ def yara_compile(yara_rules_path, directory_tmp, ext_var={}):
             r=re.findall(r'undefined identifier \"(\S+)\"',error)
             count += 1
             if count > 300:
-                print "Error: lot of Errors > 300 -- Yara rules compilations =>" + error
+                print("Error: lot of Errors > 300 -- Yara rules compilations =>" + error)
                 shutil.rmtree(directory_tmp)
                 sys.exit(-1)
             if r:
@@ -1401,13 +1940,48 @@ def yara_compile(yara_rules_path, directory_tmp, ext_var={}):
                except Exception as e:
                    error = str(e)
             else:
-                print "Error: Yara rules compilations =>" + error
+                print("Error: Yara rules compilations =>" + error)
                 shutil.rmtree(directory_tmp)
                 sys.exit(-1)
     return rules
-    
+
+def osint_int(nested_dict, dangerous_score, name_cour, name_parent):
+    dot_content = ""
+    if 'FileMD5' in nested_dict and not 'RootFileType' in nested_dict:
+        #create DOT line
+        color="green"
+        #if u'GlobalRiskScore' in nested_dict and nested_dict[u'GlobalRiskScore'] >= dangerous_score:
+        if nested_dict['RiskScore'] >= dangerous_score:
+            color="red"
+        if 'CDBNAME' in nested_dict:
+            dot_content += name_cour + ' [shape=record, label="{{' + nested_dict['CDBNAME'] + "(" + nested_dict['FileMD5'] + ')|' + str(nested_dict['RiskScore']) + '}|' + nested_dict['FileType'] + '}", color=' + color + '];\n'    
+        else:
+            dot_content += name_cour + ' [shape=record, label="{{' + nested_dict['FileMD5'] + '|' + str(nested_dict['RiskScore']) + '}|' + nested_dict['FileType'] + '}", color=' + color + '];\n'    
+        if nested_dict['Yara']:
+            for found_rule in nested_dict['Yara']:
+                for k,v in found_rule.items():
+                    if 'ioc' in v:
+                        v.pop('ioc',None)
+            dot_content += name_cour + '_info [label="' + str(nested_dict['Yara']).replace('}, {', '},\n{').replace('"', '').replace("'", '') + '", color=blue];\n'    
+        # create link
+        if color == 'red':
+            dot_content += name_parent + ' -> ' + name_cour + ' [color=red];\n'
+        else:
+            dot_content += name_parent + ' -> ' + name_cour + ';\n'
+        if nested_dict['Yara']:
+            dot_content += name_cour + ' -- ' + name_cour + '_info [style=dotted];\n'
+    if "ContainedObjects" in nested_dict:
+        #extract info object
+        count = 0
+        for elem in nested_dict["ContainedObjects"]:
+            if type(elem) is dict:
+                ret = json2dot(elem, dangerous_score, name_cour+'_'+str(count), name_cour) # recursive call
+                dot_content += ret
+            count += 1
+    return dot_content
+       
 def main(argv):
-    print "Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com"
+    print("Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com")
     clamav_path = "/usr/bin/clamscan"
     global javadecomp
     global path_procyon
@@ -1420,6 +1994,7 @@ def main(argv):
     patterndb = {}
     coef = {}
     verbose = False
+    global osint
     removetmp = False
     make_graphe = False
     usepass = ""
@@ -1430,8 +2005,16 @@ def main(argv):
     global referer
     global useragent
     global api_vt
+    global rate_vt
+    global api_otx
+    global api_intezer
+    global host_misp
+    global api_misp
+    global api_xforce
+    global pass_xforce
+    global api_hybrid
     try:
-        opts, args = getopt.getopt(argv, "hf:u:gc:d:y:a:b:i:l:s:j:p:m:V:vrJR:U:L", ["help", "filename=", "url=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "yara_rules_path2=", "password=", 'image=', 'lang_image=', "save_graph=", "json_save=", "pattern=", "coef_path=", "virustotal=", "verbose", "remove", 'java_decomp', "referer=", "useragent=", "listthug"])
+        opts, args = getopt.getopt(argv, "hf:u:gc:d:y:a:b:i:l:s:j:p:m:vrJR:U:LO", ["help", "filename=", "url=", "graph", "clamscan_path=", "directory_tmp=", "yara_rules_path=", "yara_rules_path2=", "password=", 'image=', 'lang_image=', "save_graph=", "json_save=", "pattern=", "coef_path=", "verbose", "remove", 'java_decomp', "referer=", "useragent=", "listthug", "osint"])
     except getopt.GetoptError:
         usage()
         sys.exit(-1)
@@ -1440,49 +2023,49 @@ def main(argv):
             usage()
             sys.exit(-1)
         if opt in ("-L", "--listthug"):
-            print "THUG USERAGENT LIST:\n"
-            print "winxpie60             Internet Explorer 6.0    (Windows XP)"
-            print "winxpie61             Internet Explorer 6.1    (Windows XP)"
-            print "winxpie70             Internet Explorer 7.0    (Windows XP)"
-            print "winxpie80             Internet Explorer 8.0    (Windows XP)"
-            print "winxpchrome20         Chrome 20.0.1132.47    (Windows XP)"
-            print "winxpfirefox12        Firefox 12.0        (Windows XP)"
-            print "winxpsafari5          Safari 5.1.7        (Windows XP)"
-            print "win2kie60             Internet Explorer 6.0    (Windows 2000)"
-            print "win2kie80             Internet Explorer 8.0    (Windows 2000)"
-            print "win7ie80              Internet Explorer 8.0    (Windows 7)"
-            print "win7ie90              Internet Explorer 9.0    (Windows 7)"
-            print "win7ie100             Internet Explorer 10.0    (Windows 7)"
-            print "win7chrome20          Chrome 20.0.1132.47    (Windows 7)"
-            print "win7chrome40          Chrome 40.0.2214.91    (Windows 7)"
-            print "win7chrome45          Chrome 45.0.2454.85    (Windows 7)"
-            print "win7chrome49          Chrome 49.0.2623.87    (Windows 7)"
-            print "win7firefox3          Firefox 3.6.13        (Windows 7)"
-            print "win7safari5           Safari 5.1.7        (Windows 7)"
-            print "win10ie110            Internet Explorer 11.0    (Windows 10)"
-            print "osx10chrome19         Chrome 19.0.1084.54    (MacOS X 10.7.4)"
-            print "osx10safari5          Safari 5.1.1        (MacOS X 10.7.2)"
-            print "linuxchrome26         Chrome 26.0.1410.19    (Linux)"
-            print "linuxchrome30         Chrome 30.0.1599.15    (Linux)"
-            print "linuxchrome44         Chrome 44.0.2403.89    (Linux)"
-            print "linuxchrome54         Chrome 54.0.2840.100    (Linux)"
-            print "linuxfirefox19        Firefox 19.0        (Linux)"
-            print "linuxfirefox40        Firefox 40.0        (Linux)"
-            print "galaxy2chrome18       Chrome 18.0.1025.166    (Samsung Galaxy S II, Android 4.0.3)"
-            print "galaxy2chrome25       Chrome 25.0.1364.123    (Samsung Galaxy S II, Android 4.0.3)"
-            print "galaxy2chrome29       Chrome 29.0.1547.59    (Samsung Galaxy S II, Android 4.1.2)"
-            print "nexuschrome18         Chrome 18.0.1025.133    (Google Nexus, Android 4.0.4)"
-            print "ipadchrome33          Chrome 33.0.1750.21    (iPad, iOS 7.1)"
-            print "ipadchrome35          Chrome 35.0.1916.41    (iPad, iOS 7.1.1)"
-            print "ipadchrome37          Chrome 37.0.2062.52    (iPad, iOS 7.1.2)"
-            print "ipadchrome38          Chrome 38.0.2125.59    (iPad, iOS 8.0.2)"
-            print "ipadchrome39          Chrome 39.0.2171.45    (iPad, iOS 8.1.1)"
-            print "ipadchrome45          Chrome 45.0.2454.68    (iPad, iOS 8.4.1)"
-            print "ipadchrome46          Chrome 46.0.2490.73    (iPad, iOS 9.0.2)"
-            print "ipadchrome47          Chrome 47.0.2526.70    (iPad, iOS 9.1)"
-            print "ipadsafari7           Safari 7.0        (iPad, iOS 7.0.4)"
-            print "ipadsafari8           Safari 8.0        (iPad, iOS 8.0.2)"
-            print "ipadsafari9           Safari 9.0        (iPad, iOS 9.1)"
+            print("THUG USERAGENT LIST:\n")
+            print("winxpie60             Internet Explorer 6.0    (Windows XP)")
+            print("winxpie61             Internet Explorer 6.1    (Windows XP)")
+            print("winxpie70             Internet Explorer 7.0    (Windows XP)")
+            print("winxpie80             Internet Explorer 8.0    (Windows XP)")
+            print("winxpchrome20         Chrome 20.0.1132.47    (Windows XP)")
+            print("winxpfirefox12        Firefox 12.0        (Windows XP)")
+            print("winxpsafari5          Safari 5.1.7        (Windows XP)")
+            print("win2kie60             Internet Explorer 6.0    (Windows 2000)")
+            print("win2kie80             Internet Explorer 8.0    (Windows 2000)")
+            print("win7ie80              Internet Explorer 8.0    (Windows 7)")
+            print("win7ie90              Internet Explorer 9.0    (Windows 7)")
+            print("win7ie100             Internet Explorer 10.0    (Windows 7)")
+            print("win7chrome20          Chrome 20.0.1132.47    (Windows 7)")
+            print("win7chrome40          Chrome 40.0.2214.91    (Windows 7)")
+            print("win7chrome45          Chrome 45.0.2454.85    (Windows 7)")
+            print("win7chrome49          Chrome 49.0.2623.87    (Windows 7)")
+            print("win7firefox3          Firefox 3.6.13        (Windows 7)")
+            print("win7safari5           Safari 5.1.7        (Windows 7)")
+            print("win10ie110            Internet Explorer 11.0    (Windows 10)")
+            print("osx10chrome19         Chrome 19.0.1084.54    (MacOS X 10.7.4)")
+            print("osx10safari5          Safari 5.1.1        (MacOS X 10.7.2)")
+            print("linuxchrome26         Chrome 26.0.1410.19    (Linux)")
+            print("linuxchrome30         Chrome 30.0.1599.15    (Linux)")
+            print("linuxchrome44         Chrome 44.0.2403.89    (Linux)")
+            print("linuxchrome54         Chrome 54.0.2840.100    (Linux)")
+            print("linuxfirefox19        Firefox 19.0        (Linux)")
+            print("linuxfirefox40        Firefox 40.0        (Linux)")
+            print("galaxy2chrome18       Chrome 18.0.1025.166    (Samsung Galaxy S II, Android 4.0.3)")
+            print("galaxy2chrome25       Chrome 25.0.1364.123    (Samsung Galaxy S II, Android 4.0.3)")
+            print("galaxy2chrome29       Chrome 29.0.1547.59    (Samsung Galaxy S II, Android 4.1.2)")
+            print("nexuschrome18         Chrome 18.0.1025.133    (Google Nexus, Android 4.0.4)")
+            print("ipadchrome33          Chrome 33.0.1750.21    (iPad, iOS 7.1)")
+            print("ipadchrome35          Chrome 35.0.1916.41    (iPad, iOS 7.1.1)")
+            print("ipadchrome37          Chrome 37.0.2062.52    (iPad, iOS 7.1.2)")
+            print("ipadchrome38          Chrome 38.0.2125.59    (iPad, iOS 8.0.2)")
+            print("ipadchrome39          Chrome 39.0.2171.45    (iPad, iOS 8.1.1)")
+            print("ipadchrome45          Chrome 45.0.2454.68    (iPad, iOS 8.4.1)")
+            print("ipadchrome46          Chrome 46.0.2490.73    (iPad, iOS 9.0.2)")
+            print("ipadchrome47          Chrome 47.0.2526.70    (iPad, iOS 9.1)")
+            print("ipadsafari7           Safari 7.0        (iPad, iOS 7.0.4)")
+            print("ipadsafari8           Safari 8.0        (iPad, iOS 8.0.2)")
+            print("ipadsafari9           Safari 9.0        (iPad, iOS 9.1)")
             sys.exit(-1)
         elif opt in ("-g", "--graph"):
             make_graphe = True
@@ -1492,7 +2075,7 @@ def main(argv):
             removetmp = True
         elif opt in ("-J", "--java_decomp"):
             if not os.path.isfile(path_procyon):
-                print "Error to find: procyon for java decompilation -- install with apt-get install procyon-decompiler\n"
+                print("Error to find: procyon for java decompilation -- install with apt-get install procyon-decompiler\n")
                 sys.exit(-1)
             else:
                 javadecomp = True
@@ -1504,43 +2087,40 @@ def main(argv):
                     arg += '.png'
                 graph_file = arg
             else:
-                print "Error: unuable to create directory: " + working_dirgr + ".\n"
+                print("Error: unuable to create directory: " + working_dirgr + ".\n")
                 sys.exit(-1)
         elif opt in ("-b", "--password"):
             #password clamav file
             if not os.path.isfile(os.path.abspath(arg)):
-                print "Error: File: " + arg + " not exist.\n"
+                print("Error: File: " + arg + " not exist.\n")
                 usage()
                 sys.exit(-1)
             usepass=str(os.path.abspath(arg))
-        elif opt in ("-V", "--virustotal"):
-            #API KEY VT
-            api_vt=str(arg)
         elif opt in ("-p", "--pattern"):
             #pattern load
             if not os.path.isfile(arg):
-                print "Error: File: " + arg + " not exist.\n"
+                print("Error: File: " + arg + " not exist.\n")
                 usage()
                 sys.exit(-1)
-            pattern_content = file(arg)
-            for line in pattern_content:
-                words = line.split('=>>')
-                if words:
-                    words[1] = words[1].replace("\n" , "")
-                    patterndb[words[0]] = words[1]
+            with open(arg) as pattern_content:
+                for line in pattern_content:
+                    words = line.split('=>>')
+                    if words:
+                        words[1] = words[1].replace("\n" , "")
+                        patterndb[words[0]] = words[1]
         elif opt in ("-m", "--coef_path"):
             #coef load
             if not os.path.isfile(arg):
-                print "Error: File: " + arg + " not exist.\n"
+                print("Error: File: " + arg + " not exist.\n")
                 usage()
                 sys.exit(-1)
-            tmp_content = file(arg)
-            for line in tmp_content:
-                if '#' not in line and not '\n' == line:
-                    words = line.split(':')
-                    if words:
-                        words[1] = words[1].replace("\n" , "")
-                        coef[words[0]] = float(words[1])
+            with open(arg) as tmp_content:
+                for line in tmp_content:
+                    if '#' not in line and not '\n' == line:
+                        words = line.split(':')
+                        if words:
+                            words[1] = words[1].replace("\n" , "")
+                            coef[words[0]] = float(words[1])
         elif opt in ("-j", "--json_save"):
             (working_dirj, filenamej) = os.path.split(os.path.abspath(arg))
             if os.path.isdir(working_dirj):
@@ -1548,7 +2128,7 @@ def main(argv):
                     arg += '.json'
                 json_file = arg
             else:
-                print "Error: directory where write json not exist: " + working_dirj + ".\n"
+                print("Error: directory where write json not exist: " + working_dirj + ".\n")
                 sys.exit(-1)
         elif opt in ("-d", "--directory_tmp"):
             if not os.path.isdir(arg):
@@ -1556,17 +2136,17 @@ def main(argv):
                 try:
                     os.makedirs(arg)
                 except OSError as e:
-                    print "Error: unuable to make directory temp.\n"
+                    print("Error: unuable to make directory temp.\n")
                     sys.exit(-1)
             elif len(os.listdir(arg) ) > 0:
                 #ask for remove
-                confirm_rm = raw_input("Confirm remove all contained files in " + arg + ": Y/N ?").lower()
+                confirm_rm = input("Confirm remove all contained files in " + arg + ": Y/N ?").lower()
                 if confirm_rm.startswith('y'):
                     shutil.rmtree(arg)
                     try:
                         os.makedirs(arg)
                     except OSError as e:
-                        print "Error: unuable to make directory temp.\n"
+                        print("Error: unuable to make directory temp.\n")
                         sys.exit(-1)
             directory_tmp = arg
         elif opt in ("-f", "--filename") and uorf:
@@ -1574,7 +2154,7 @@ def main(argv):
             uorf = False
             #verify file exist
             if not os.path.isfile(filename):
-                print "Error: File: " + arg + " not exist.\n"
+                print("Error: File: " + arg + " not exist.\n")
                 usage()
                 sys.exit(-1)
         elif opt in ("-u", "--url") and uorf:
@@ -1582,18 +2162,18 @@ def main(argv):
             uorf = False
             #verify if thug is present
             if not foundThug:
-                print "Error: you must install thug for check URL.\n"
+                print("Error: you must install thug for check URL.\n")
                 usage()
                 sys.exit(-1)
             if not re.search("://", checkurl):
-                print "Error: URL is not correct...\n"
+                print("Error: URL is not correct...\n")
                 usage()
                 sys.exit(-1) 
         elif opt in ("-i", "--image"):
              tesseract = arg
              #verify file exist
              if not os.path.isfile(tesseract):
-                 print "Error: File: " + arg + " not exist.\n"
+                 print("Error: File: " + arg + " not exist.\n")
                  usage()
                  sys.exit(-1)
         elif opt in ("-R", "--referer"):
@@ -1604,7 +2184,7 @@ def main(argv):
              lang = arg
              #verify lang exist
              if not lang in ['Arabic','Armenian','Bengali','Canadian_Aboriginal','Cherokee','Cyrillic','Devanagari','Ethiopic','Fraktur','Georgian','Greek','Gujarati','Gurmukhi','HanS','HanS_vert','HanT','HanT_vert','Hangul','Hangul_vert','Hebrew','Japanese','Japanese_vert','Kannada','Khmer','Lao','Latin','Malayalam','Myanmar','Oriya','Sinhala','Syriac','Tamil','Telugu','Thaana','Thai','Tibetan','Vietnamese','afr','amh','ara','asm','aze','aze_cyrl','bel','ben','bod','bos','bre','bul','cat','ceb','ces','chi_sim','chi_sim_vert','chi_tra','chi_tra_vert','chr','cos','cym','dan','deu','div','dzo','ell','eng','enm','epo','est','eus','fao','fas','fil','fin','fra','frk','frm','fry','gla','gle','glg','grc','guj','hat','heb','hin','hrv','hun','hye','iku','ind','isl','ita','ita_old','jav','jpn','jpn_vert','kan','kat','kat_old','kaz','khm','kir','kmr','kor','kor_vert','lao','lat','lav','lit','ltz','mal','mar','mkd','mlt','mon','mri','msa','mya','nep','nld','nor','oci','ori','osd','pan','pol','por','pus','que','ron','rus','san','sin','slk','slv','snd','spa','spa_old','sqi','srp','srp_latn','sun','swa','swe','syr','tam','tat','tel','tgk','tha','tir','ton','tur','uig','ukr','urd','uzb','uzb_cyrl','vie','yid','yor']:
-                 print "Error: Lang tesseract: " + arg + " not exist (check \"tesseract --list-langs).\n"
+                 print("Error: Lang tesseract: " + arg + " not exist (check \"tesseract --list-langs).\n")
                  usage()
                  sys.exit(-1)
         elif opt in ("-y", "--yara_rules_path"):
@@ -1616,11 +2196,11 @@ def main(argv):
                     for filen in filenames:
                         yarapath[str(os.path.basename(filen))] = str(os.path.join(root, filen))
                 if not yarapath:
-                    print "Error: File(s) yara level 1: " + arg + " not exist.\n"
+                    print("Error: File(s) yara level 1: " + arg + " not exist.\n")
                     usage()
                     sys.exit(-1)
             else:
-                print "Error: Yara rules path level1: " + arg + " not exist.\n"
+                print("Error: Yara rules path level1: " + arg + " not exist.\n")
                 usage()
                 sys.exit(-1)
         elif opt in ("-a", "--yara_rules_path2"):
@@ -1632,16 +2212,49 @@ def main(argv):
                     for filen in filenames:
                         yarapath2[str(os.path.basename(filen))] = str(os.path.join(root, filen))
                 if not yarapath2:
-                    print "Error: File(s) yara rules level 2: " + arg + " not exist.\n"
+                    print("Error: File(s) yara rules level 2: " + arg + " not exist.\n")
                     usage()
                     sys.exit(-1)
             else:
-                print "Error: Yara rules path level 2: " + arg + " not exist.\n"
+                print("Error: Yara rules path level 2: " + arg + " not exist.\n")
                 usage()
                 sys.exit(-1)
+        elif opt in ("-O", "--osint"):
+            osint = True
+            #check env var
+            if "VT_KEY" in os.environ:
+                api_vt = os.getenv('VT_KEY')
+                if "VT_RATE" in os.environ:
+                    rate_vt = int(os.getenv('VT_RATE'))
+            else:
+                api_vt = None
+            if "XFORCE_KEY" in os.environ and "XFORCE_PASS" in os.environ:
+                api_xforce = os.getenv('XFORCE_KEY')
+                pass_xforce = os.getenv('XFORCE_PASS')
+            else:
+                api_xforce = None
+                pass_xforce = None
+            if "HYBRID_KEY" in os.environ:
+                api_hybrid = os.getenv('HYBRID_KEY')
+            else:
+                api_hybrid = None
+            if "OTX_KEY" in os.environ:
+                api_otx = os.getenv('OTX_KEY')
+            else:
+                api_otx = None
+            if "INTEZER_KEY" in os.environ:
+                api_intezer = os.getenv('INTEZER_KEY')
+            else:
+                api_intezer = None
+            if "MISP_KEY" in os.environ and "MISP_HOST" in os.environ:
+                api_misp = os.getenv('MISP_KEY')
+                host_misp = os.getenv('MISP_HOST')
+            else:
+                api_misp = None
+                host_misp = None
         elif opt in ("-c", "--clamscan_path"):
             if not os.path.isfile(os.path.abspath(arg)):
-                print "Error: clamscan path: " + arg + " not exist.\n"
+                print("Error: clamscan path: " + arg + " not exist.\n")
                 usage()
                 sys.exit(-1)
             clamav_path = os.path.abspath(arg)
@@ -1654,19 +2267,19 @@ def main(argv):
         sys.exit(-1)
     if not directory_tmp:
         directory_tmp = tempfile.mkdtemp()
-        print "Create directory temp for emmbedded file: " + directory_tmp + "\n"
+        print("Create directory temp for emmbedded file: " + directory_tmp + "\n")
     #verify clamscan path exist
     if not os.path.isfile(clamav_path):
-        print "Error: Binary clamscan [" + clamav_path + "] not exist.\n"
+        print("Error: Binary clamscan [" + clamav_path + "] not exist.\n")
         usage()
         if not directory_tmp:
             shutil.rmtree(directory_tmp)
         sys.exit(-1)
     if checkurl:
-        print "Check URL:"+str(checkurl)+" -- with THUG..."
+        print("Check URL:"+str(checkurl)+" -- with THUG...")
         directory_tmp_thug = tempfile.mkdtemp()
         thugzz = ThugurlAPI()
-        print "Make thug temporary dir:"+directory_tmp_thug
+        print("Make thug temporary dir:"+directory_tmp_thug)
         thugzz.analyze(checkurl,useragent,referer,directory_tmp_thug)
         #check result: dir: application/* text/* analysis/json/analysis.json => create ZIP without analysis?
         tempx = tempfile.NamedTemporaryFile()
@@ -1680,7 +2293,7 @@ def main(argv):
                     zipf.write(os.path.join(root, filex))
                     count_zipf=+1
         zipf.close()
-        print "Create zip of site: "+filename
+        print("Create zip of site: "+filename)
         #extract info analysis.json
         # - check if cve found
         cve_found=[]
@@ -1694,12 +2307,12 @@ def main(argv):
                                 if str(tkx) == "cve" and tvx and tvx not in cve_found:
                                     cve_found.append(tvx)
                 except:
-                    print "Error to parse json result of thug..."
+                    print("Error to parse json result of thug...")
         if cve_found:
-            print "CVE found by THUG:"+str(cve_found)
+            print("CVE found by THUG:"+str(cve_found))
         if count_zipf == 0:
-			print "Thug don't find file on website!"
-			sys.exit(0)
+            print("Thug don't find file on website!")
+            sys.exit(0)
     #compile yara rules
     #Make Yara rules on 2 level order, for:
     # - Gain fast
@@ -1715,7 +2328,7 @@ def main(argv):
     #run clamscan on file with yara rule empty and option: --gen-json --debug -d empty_rule.yara --leave-temps --tempdir=$DIR_TEMP/
     yara_RC = yara_compile(yarapath, directory_tmp)
     yara_RC2 = yara_compile(yarapath2, directory_tmp)
-    ret = clamscan(clamav_path, directory_tmp, filename,yara_RC, yara_RC2, patterndb, coef, usepass, tesseract, lang, verbose)
+    ret = clamscan(clamav_path, directory_tmp, filename, yara_RC, yara_RC2, patterndb, coef, usepass, tesseract, lang, verbose)
     if json_file:
         with open(json_file, 'w') as fp:
             json.dump(ret, fp, sort_keys=True, indent=4)
@@ -1734,8 +2347,8 @@ def main(argv):
         shutil.rmtree(directory_tmp)
     if not ret:
         sys.exit(-1)
-    elif u'GlobalRiskScore' in ret:
-        sys.exit(int(ret[u'GlobalRiskScore']))
+    elif 'GlobalRiskScore' in ret:
+        sys.exit(int(ret['GlobalRiskScore']))
     else:
         sys.exit(0)
 #parse log for find json file
@@ -1743,5 +2356,3 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv[1:])
-
-

@@ -1,0 +1,38 @@
+Changelog
+- version 1.0
+ - Add:
+  - Osint: xforce, otx, misp, vt, hybrid, intezer, app.anyrun (see in docker-compose -> env)
+  - sdb signature
+  - xml signature
+  - com thug signature
+  - html signature
+  - idx signature
+  - peid (https://github.com/Xumeiquer/PEiD_to_Yara/)
+  - multi exploit kit (https://github.com/Yara-Rules/rules/blob/master/exploit_kits/)
+  - multi cve (https://github.com/Yara-Rules/rules/tree/master/cve_rules)
+  - crypto pe signature
+    - https://github.com/Yara-Rules/rules/blob/master/crypto/crypto_signatures.yar
+  - capability pe signature
+    - https://github.com/Yara-Rules/rules/blob/master/capabilities/capabilities.yar
+  - antidebug pe signature
+    - https://github.com/Yara-Rules/rules/blob/master/antidebug_antivm/antidebug_antivm.yar
+  - packer signature 
+    - https://github.com/unipacker/unipacker/blob/master/unipacker/packer_signatures.yar
+    - https://github.com/Yara-Rules/rules/blob/master/packers/packer.yar
+    - https://github.com/Yara-Rules/rules/blob/master/packers/packer_compiler_signatures.yar
+  - docker tools:
+   - js-beautify
+   - Cmulator
+   - scanR
+   - Java_IDX_Parser
+ - update:
+  - com HHCtrl signature
+  - Appref-ms signature
+  - inf level2 signature
+  - hta signature
+  - xxe signature
+  - js level2 signature 
+  - pass python2 to python3
+ - Fix:
+  - remove duplicated extract
+  - crontab with sudo

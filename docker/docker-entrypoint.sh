@@ -45,7 +45,7 @@ EOM
         fi
     #run crontab service -- or use volume on run crontab on host
     echo "Run crontab deamon"
-    cron -u user / &
+    sudo /etc/init.d/cron start
 	#run flask service
 	echo "Run API REST with gunicorn"
 	cd /opt/static_file_analysis/api/ && gunicorn --certfile cert.pem --keyfile key.pem -b 0.0.0.0:8000 --timeout $TIMEOUT --workers $WORKER api:app

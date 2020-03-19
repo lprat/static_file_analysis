@@ -208,6 +208,219 @@ rule File_contains_SWF {
 		(FileType matches /CL_TYPE_SWF/ or ($magic in (0..1024) and any of ($str*))) and FileParentType matches /->/ and not FileParentType matches /->CL_TYPE_SWF/
 }
 
+
+rule Flash_CVE_2015_5119_APT3 : Exploit {
+    meta:
+        description = "Exploit Sample CVE-2015-5119"
+        author = "Florian Roth"
+        score = 70
+        date = "2015-08-01"
+        tag = "attack.initial"
+		weight = 6
+    strings:
+        $s0 = "HT_exploit" fullword ascii
+        $s1 = "HT_Exploit" fullword ascii
+        $s2 = "flash_exploit_" ascii
+        $s3 = "exp1_fla/MainTimeline" ascii fullword
+        $s4 = "exp2_fla/MainTimeline" ascii fullword
+        $s5 = "_shellcode_32" fullword ascii
+        $s6 = "todo: unknown 32-bit target" fullword ascii 
+    condition:
+        uint16(0) == 0x5746 and 1 of them
+}
+
+rule angler_flash : EK
+{
+meta:
+   author = "Josh Berry"
+   date = "2016-06-26"
+   description = "Angler Exploit Kit FLASH"
+   hash0 = "8081397c30b53119716c374dd58fc653"
+   sample_filetype = "unknown"
+   yaragenerator = "https://github.com/Xen0ph0n/YaraGenerator"
+   tag = "attack.initial"
+   weight = 6
+strings:
+   $string0 = "(9OOSp"
+   $string1 = "r$g@ 0'[A"
+   $string2 = ";R-1qTP"
+   $string3 = "xwBtR4"
+   $string4 = "YbVjxp"
+   $string5 = "ddgXkF"
+   $string6 = ")n'URF"
+   $string7 = "vAzq@W"
+   $string8 = "rOkX$6m<"
+   $string9 = "@@DB}q "
+   $string10 = "TiKV'iV"
+   $string11 = "538x;B"
+   $string12 = "9pEM{d"
+   $string13 = ".SIy/O"
+   $string14 = "ER<Gu,"
+condition:
+   14 of them
+}
+
+rule angler_flash2 : EK
+{
+meta:
+   author = "Josh Berry"
+   date = "2016-06-26"
+   description = "Angler Exploit Kit FLASH"
+   hash0 = "23812c5a1d33c9ce61b0882f860d79d6"
+   sample_filetype = "unknown"
+   yaragenerator = "https://github.com/Xen0ph0n/YaraGenerator"
+   tag = "attack.initial"
+   weight = 6
+strings:
+   $string0 = "4yOOUj"
+   $string1 = "CSvI4e"
+   $string2 = "'fwaEnkI"
+   $string3 = "'y4m%X"
+   $string4 = "eOc)a,"
+   $string5 = "'0{Q5<"
+   $string6 = "1BdX;P"
+   $string7 = "D _J)C"
+   $string8 = "-epZ.E"
+   $string9 = "QpRkP."
+   $string10 = "<o/]atel"
+   $string11 = "@B.,X<"
+   $string12 = "5r[c)U"
+   $string13 = "52R7F'"
+   $string14 = "NZ[FV'P"
+condition:
+   14 of them
+}
+
+rule angler_flash4 : EK
+{
+meta:
+   author = "Josh Berry"
+   date = "2016-06-26"
+   description = "Angler Exploit Kit FLASH"
+   hash0 = "dbb3f5e90c05602d92e5d6e12f8c1421"
+   sample_filetype = "unknown"
+   yaragenerator = "https://github.com/Xen0ph0n/YaraGenerator"
+   tag = "attack.initial"
+   weight = 6
+strings:
+   $string0 = "_u;cwD;"
+   $string1 = "lhNp74"
+   $string2 = "Y0GQ%v"
+   $string3 = "qjqCb,nx"
+   $string4 = "vn{l{Wl"
+   $string5 = "5j5jz5"
+   $string6 = "a3EWwhM"
+   $string7 = "hVJb/4Aut"
+   $string8 = ",lm4v,"
+   $string9 = ",6MekS"
+   $string10 = "YM.mxzO"
+   $string11 = ";6 -$E"
+   $string12 = "QA%: fy"
+   $string13 = "<@{qvR"
+   $string14 = "b9'$'6l"
+   $string15 = ",x:pQ@-"
+   $string16 = "2Dyyr9"
+condition:
+   16 of them
+}
+
+rule angler_flash5 : EK
+{
+meta:
+   author = "Josh Berry"
+   date = "2016-06-26"
+   description = "Angler Exploit Kit FLASH"
+   hash0 = "9f809272e59ee9ecd71093035b31eec6"
+   sample_filetype = "unknown"
+   yaragenerator = "https://github.com/Xen0ph0n/YaraGenerator"
+   tag = "attack.initial"
+   weight = 6
+strings:
+   $string0 = "0k%2{u"
+   $string1 = "\\Pb@(R"
+   $string2 = "ys)dVI"
+   $string3 = "tk4_y["
+   $string4 = "LM2Grx"
+   $string5 = "n}s5fb"
+   $string6 = "jT Nx<hKO"
+   $string7 = "5xL>>}"
+   $string8 = "S%,1{b"
+   $string9 = "C'3g7j"
+   $string10 = "}gfoh]"
+   $string11 = ",KFVQb"
+   $string12 = "LA;{Dx"
+condition:
+   12 of them
+}
+
+rule angler_flash_uncompressed : EK
+{
+meta:
+   author = "Josh Berry"
+   date = "2016-06-26"
+   description = "Angler Exploit Kit FLASH"
+   hash0 = "2543855d992b2f9a576f974c2630d851"
+   sample_filetype = "unknown"
+   yaragenerator = "https://github.com/Xen0ph0n/YaraGenerator"
+   tag = "attack.initial"
+   weight = 6
+strings:
+   $string0 = "DisplayObjectContainer"
+   $string1 = "Xtime2"
+   $string2 = "(HMRTQ"
+   $string3 = "flash.events:EventDispatcher$flash.display:DisplayObjectContainer"
+   $string4 = "_e_-___-__"
+   $string5 = "ZviJbf"
+   $string6 = "random-"
+   $string7 = "_e_-_-_-_"
+   $string8 = "_e_------"
+   $string9 = "817677162"
+   $string10 = "_e_-__-"
+   $string11 = "-[vNnZZ"
+   $string12 = "5:unpad: Invalid padding value. expected ["
+   $string13 = "writeByte/"
+   $string14 = "enumerateFonts"
+   $string15 = "_e_---___"
+   $string16 = "_e_-_-"
+   $string17 = "f(fOJ4"
+condition:
+   17 of them
+}
+
+rule SWF_file_cve20184878 {
+	meta:
+		description = "Detects FLASH CVE-2018-4878"
+		vuln_type = "Remote Code Execution"
+		vuln_impact = "Use-after-free"
+		affected_versions = "Adobe Flash 28.0.0.137 and earlier versions"
+		mitigation0 = "Implement Protected View for Office documents"
+		mitigation1 = "Disable Adobe Flash"
+		weaponization = "Embedded in Microsoft Office first payloads"
+		actor = "Purported North Korean actors"
+		reference = "hxxps://www[.]krcert[.]or[.kr/data/secNoticeView.do?bulletin_writing_sequence=26998"
+		report = "https://www.flashpoint-intel.com/blog/targeted-attacks-south-korean-entities/"
+		author = "Vitali Kremez, Flashpoint"
+		version = "1.1"
+		tag = "attack.initial"
+		weight = 6
+	strings:
+		// EMBEDDED FLASH OBJECT BIN HEADER
+		$header = "rdf:RDF" wide ascii
+		// OBJECT APPLICATION TYPE TITLE
+		$title = "Adobe Flex" wide ascii
+		// PDB PATH 
+		$pdb = "F:\\work\\flash\\obfuscation\\loadswf\\src" wide ascii
+		// LOADER STRINGS
+		$s0 = "URLRequest" wide ascii
+		$s1 = "URLLoader" wide ascii
+		$s2 = "loadswf" wide ascii
+		$s3 = "myUrlReqest" wide ascii
+		$magic = {46 57 53} //FWS
+		$str0 = "shockwave-flash" nocase wide ascii
+	condition:
+		((FileType matches /CL_TYPE_SWF/ or ($magic in (0..1024) and any of ($str*))) and FileParentType matches /->/ and not FileParentType matches /->CL_TYPE_SWF/) and all of ($header*) and all of ($title*) and 3 of ($s*) or all of ($pdb*) and all of ($header*) and 1 of ($s*)	
+}
+
 rule SWF_file {
 	meta:
 		author = "Lionel PRAT"

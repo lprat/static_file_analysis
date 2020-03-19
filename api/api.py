@@ -61,14 +61,14 @@ def run_sfa_file(file):
             file.save(temp_file_name)
             new_env = dict(os.environ)
             #python analysis.py -c /opt/static_file_analysis/clamav-devel/clamscan/clamscan -f /tmp/file_to_analyz.pdf -y yara_rules1/ -a yara_rules2/ -j /tmp/log.json -p pattern.db -v
-            args = ['/usr/bin/python', '/opt/static_file_analysis/analysis.py', '-c', '/opt/static_file_analysis/clamav-devel/clamscan/clamscan' , '-f', temp_file_name, '-y', '/opt/static_file_analysis/yara_rules1/', '-a', '/opt/static_file_analysis/yara_rules2/', '-m', '/opt/static_file_analysis/coef.conf', '-J', '-b', '/opt/static_file_analysis/password.pwdb', '-j', tmpdir+'/resultfinal.json', '-g', '-s', tmpdir+'/graphfinal.png', '-v', '-i', '/usr/bin/tesseract', '-l', 'fra', '-p', '/opt/static_file_analysis/pattern.db', '-d', tmpdir]
+            args = ['/usr/bin/python3', '/opt/static_file_analysis/analysis.py', '-c', '/opt/static_file_analysis/clamav-devel/clamscan/clamscan' , '-f', temp_file_name, '-y', '/opt/static_file_analysis/yara_rules1/', '-a', '/opt/static_file_analysis/yara_rules2/', '-m', '/opt/static_file_analysis/coef.conf', '-J', '-b', '/opt/static_file_analysis/password.pwdb', '-j', tmpdir+'/resultfinal.json', '-g', '-s', tmpdir+'/graphfinal.png', '-v', '-i', '/usr/bin/tesseract', '-l', 'fra', '-p', '/opt/static_file_analysis/pattern.db', '-O','-d', tmpdir]
             proc = subprocess.Popen(args, env=new_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd='/opt/static_file_analysis/')
             output, serr = proc.communicate()
             score = proc.returncode
             with open(tmpdir+"/trace-sout.debug", "w") as text_file:
-                text_file.write(output)
+                text_file.write(output.decode('utf-8', errors='ignore'))
             with open(tmpdir+"/trace-serr.debug", "w") as text_file:
-                text_file.write(serr)
+                text_file.write(serr.decode('utf-8', errors='ignore'))
             #remove file
             os.remove(temp_file_name)
             data = {}
@@ -89,7 +89,7 @@ def run_sfa_file(file):
                     try:
                         data = json.load(f)
                     except:
-                        print "Erreur lors du chargement de data.json!!!"
+                        print("Erreur lors du chargement de data.json!!!")
             for root, directories, filenames in os.walk(tmpdir):
                 for filenamex in filenames:
                     md5_file = md5(os.path.join(root, filenamex))
@@ -111,12 +111,12 @@ def run_sfa_file(file):
                 try:
                     f.write(json.dumps(data))
                 except Exception as e:
-                    print "Error write data:"+str(e)
+                    print("Error write data:"+str(e))
                     if os.path.isfile("/tmp/data.json.old"):
                         shutil.move('data.json.old','data.json')
             os.remove('/tmp/lock_data_json')
         except Exception as e:
-            print "Error:"+str(e)
+            print("Error:"+str(e))
             return make_response(jsonify( { 'error': 'Bad file upload' } ), 400)
     retjson['risk_score']=score
     return retjson
@@ -127,14 +127,14 @@ def run_sfa_url(url):
     retjson={}
     try:
         new_env = dict(os.environ)
-        args = ['/usr/bin/python', '/opt/static_file_analysis/analysis.py', '-c', '/opt/static_file_analysis/clamav-devel/clamscan/clamscan' , '-u', url, '-y', '/opt/static_file_analysis/yara_rules1/', '-a', '/opt/static_file_analysis/yara_rules2/', '-m', '/opt/static_file_analysis/coef.conf', '-J', '-b', '/opt/static_file_analysis/password.pwdb', '-j', tmpdir+'/resultfinal.json', '-g', '-s', tmpdir+'/graphfinal.png', '-v', '-i', '/usr/bin/tesseract', '-l', 'fra', '-p', '/opt/static_file_analysis/pattern.db', '-d', tmpdir]
+        args = ['/usr/bin/python3', '/opt/static_file_analysis/analysis.py', '-c', '/opt/static_file_analysis/clamav-devel/clamscan/clamscan' , '-u', url, '-y', '/opt/static_file_analysis/yara_rules1/', '-a', '/opt/static_file_analysis/yara_rules2/', '-m', '/opt/static_file_analysis/coef.conf', '-J', '-b', '/opt/static_file_analysis/password.pwdb', '-j', tmpdir+'/resultfinal.json', '-g', '-s', tmpdir+'/graphfinal.png', '-v', '-i', '/usr/bin/tesseract', '-l', 'fra', '-p', '/opt/static_file_analysis/pattern.db', '-O', '-d', tmpdir]
         proc = subprocess.Popen(args, env=new_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd='/opt/static_file_analysis/')
         output, serr = proc.communicate()
         score = proc.returncode
         with open(tmpdir+"/trace-sout.debug", "w") as text_file:
-            text_file.write(output)
+            text_file.write(output.decode('utf-8', errors='ignore'))
         with open(tmpdir+"/trace-serr.debug", "w") as text_file:
-            text_file.write(serr)
+            text_file.write(serr.decode('utf-8', errors='ignore'))
         data = {}
         stop=True
         cnt=0
@@ -153,7 +153,7 @@ def run_sfa_url(url):
                 try:
                     data = json.load(f)
                 except:
-                    print "Erreur lors du chargement de data.json!!!"
+                    print("Erreur lors du chargement de data.json!!!")
         for root, directories, filenames in os.walk(tmpdir):
             for filenamex in filenames:
                 md5_file = md5(os.path.join(root, filenamex))
@@ -175,12 +175,12 @@ def run_sfa_url(url):
             try:
                 f.write(json.dumps(data))
             except Exception as e:
-                print "Error write data:"+str(e)
+                print("Error write data:"+str(e))
                 if os.path.isfile("/tmp/data.json.old"):
                     shutil.move('data.json.old','data.json')
         os.remove('/tmp/lock_data_json')
     except Exception as e:
-        print "Error:"+str(e)
+        print("Error:"+str(e))
         return make_response(jsonify( { 'error': 'Bad file upload' } ), 400)
     #print "Test1:"+str(retjson)
     retjson['risk_score']=score
@@ -205,7 +205,7 @@ def upload_file(filename=''):
                 try:
                     data = json.load(f)
                 except:
-                    print "Erreur lors du chargement de data.json!!!"
+                    print("Erreur lors du chargement de data.json!!!")
             #sys.exit()
         if filename in data:
             if os.path.isfile(data[filename]):
@@ -216,9 +216,9 @@ def upload_file(filename=''):
             abort(400)
         elif not bool(re.search(r'^http[s]*://', request.json['url'])): #TODO: add best regexp to verify valid url
             abort(400)
-        print "Send url to sfa:"+str(request.json['url'])
+        print("Send url to sfa:"+str(request.json['url']))
         retjson = run_sfa_url(request.json['url'])
-        print "retour:"+str(retjson)
+        print("retour:"+str(retjson))
         return jsonify( retjson )
     elif 'file' not in request.files:
         abort(400)

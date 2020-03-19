@@ -25,7 +25,7 @@ This tool written in python langage makes the link between clam and yara. It can
 - Extract IOC on yara rules match
 - Extract text from image by OCR
 - Decompile JAR & CLASS java with procyon
-- Check VirusTotal
+- Check VirusTotal & INTEZER & Hybrid Analysis & APPANY.RUN & OTX & XFORCE & MISP
 - Create PNG graph for fast analysis
 - Output result tree json in a file
 
@@ -36,6 +36,7 @@ My docker contener contains Static analysis tools and others tools for deep anal
   - Flash: ffdec
   - Office document & rtf: oletools (https://github.com/decalage2/oletools)
   - pdf: peepdf (https://github.com/jesparza/peepdf)
+  - sdb: python-sdb (https://github.com/williballenthin/python-sdb)
   
 - Decompiler
   - Java: procyon
@@ -48,8 +49,12 @@ My docker contener contains Static analysis tools and others tools for deep anal
 - Emulator/sandbox
   - Vbscript: vmonkey (https://github.com/decalage2/ViperMonkey)
   - javascript: box-js (https://github.com/CapacitorSet/box-js)
-  - elf: mbox (https://github.com/tsgates/mbox)
-  - PE: wine (http://www.hexacorn.com/blog/2016/12/14/malware-analysis-using-wine/ => WINEDEBUG=+all wine malware.exe)
+  - elf: 
+    - mbox (https://github.com/tsgates/mbox)
+    - zelos (https://github.com/zeropointdynamics/zelos)
+  - PE/Shellcode:
+    - Cmulator (https://github.com/Coldzer0/Cmulator)
+    - wine (http://www.hexacorn.com/blog/2016/12/14/malware-analysis-using-wine/ => WINEDEBUG=+all wine malware.exe)
   
 - Debugger/DBI
   - bash: "bash -x script.sh"
@@ -60,16 +65,25 @@ My docker contener contains Static analysis tools and others tools for deep anal
   
 - Others
   - web analyse: thug (https://github.com/buffer/thug)
+  - shellcode extract: scanr (https://github.com/1Project/Scanr)
+  - IDX parser: Java_IDX_Parser (https://github.com/Rurik/Java_IDX_Parser)
+  - Beautifie js: js-beautify (https://github.com/beautify-web/js-beautify)
   - String Solver: floss (https://github.com/fireeye/flare-floss)
   - firemware analysis: binwalk (https://github.com/ReFirmLabs/binwalk)
+  - Samples redteam: atomic-red-team (https://github.com/redcanaryco/atomic-red-team)
+  - reverse engineering framework: ghidra (https://github.com/NationalSecurityAgency/ghidra)
   
 You can use other tools not include in my docker contener:
-- reverse engineering framework: radare2 (https://hub.docker.com/r/radare/radare2/dockerfile - https://github.com/radare/radare2)
+- reverse engineering framework: 
+  - radare2 (https://hub.docker.com/r/radare/radare2/dockerfile https://github.com/radare/radare2)
+  - IHM Radare2 cutter (https://cutter.re/)
 - decompiler dotnet: ilspy (https://github.com/bannsec/ilspy_docker)
 - decompiler based on LLVM: retdec (https://github.com/avast-tl/retdec) - retdec-fileinfo identify "Original language"
+- sandbox powershell: PSDecode (https://github.com/R3MRUM/PSDecode) - you can use in powershell docker (https://hub.docker.com/_/microsoft-powershell)
 - sandbox ruby: safe_ruby (https://github.com/ukutaht/safe_ruby)
 - sandbox python: pysandbox (https://github.com/vstinner/pysandbox)
-- API call trace: drltrace (https://github.com/mxmssh/drltrace) use
+- sandbox generic: cuckoo (https://github.com/cuckoosandbox/cuckoo)
+- API call trace: drltrace (https://github.com/mxmssh/drltrace)
 - DBI: pin (https://software.intel.com/en-us/articles/pin-a-dynamic-binary-instrumentation-tool)
 - Reverse Android: androidre (https://github.com/cryptax/androidre)
 - Reverse: radare2 (https://rada.re/r/)
@@ -77,7 +91,7 @@ You can use other tools not include in my docker contener:
 ## Usage
 ~~~
 Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com
-Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] [-b password.pwdb] [-i /usr/bin/tesseract] [-l fra] [-V API_KEY_VT] [-J] -f/-u path_filename/URL -y yara_rules_path1/ -a yara_rules_path2/
+Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p pattern.db] [-s /tmp/graph.png] [-j /tmp/result.json] [-m coef_path] [-g] [-v] [-b password.pwdb] [-i /usr/bin/tesseract] [-l fra] [-V API_KEY_VT] [-J] [-O] -f/-u path_filename/URL -y yara_rules_path1/ -a yara_rules_path2/
 
 	 -h/--help : for help to use
 
@@ -110,6 +124,14 @@ Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p 
 	 -g/--graph : generate graphe of analyz
 
 	 -s/--save_graph= : path filename where save graph (PNG)
+	 
+	 -O/--osint : active OSINT (hash, filename, domaine, url)
+		OSINT hybridanalisys env key: HYBRID_KEY
+		OTX env key: OTX_KEY
+		XFORCE env key: XFORCE_KEY & env pass: XFORCE_PASS
+		VirusTotal env key: VT_KEY
+		MISP env key: MISP_KEY & MISP env host: MISP_HOST
+		INTEZER env key: INTEZER_KEY
 
 	 -r/--remove= : remove tempory files
 
@@ -117,9 +139,9 @@ Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p 
 
 	 -v/--verbose= : verbose mode
 
-	 example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -i /usr/bin/tesseract -l fra -g
+	 example: analysis.py -c ./clamav-devel/clamscan/clamscan -f /home/analyz/strange/invoice.rtf -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -i /usr/bin/tesseract -l fra -g -O
 
-	 example: analysis.py -c ./clamav-devel/clamscan/clamscan -u www.exploitkit.top/id?000 -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -i /usr/bin/tesseract -l fra -g
+	 example: analysis.py -c ./clamav-devel/clamscan/clamscan -u www.exploitkit.top/id?000 -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -i /usr/bin/tesseract -l fra -g -O
 
 lionel@local:~/static_analysis$ python analysis.py -c clamav-devel/clamscan/clamscan -g -f tests/pdf/jaff.pdf -y yara_rules/  -j /tmp/log.json -p pattern.db
 Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com
@@ -1366,7 +1388,7 @@ Phase one finish!
 ## Requirements
 
 - clamav
-- python: yara, pydot, hashlib, zlib, json, pyparsing, thug [use docker]
+- python3: see requirements.txt [use docker]
 - For Image OCR: tesseract-ocr-all (deb)
 - For decompil java: procyon-decompiler (deb)
 
@@ -1384,7 +1406,7 @@ git clone https://github.com/lprat/static_file_analysis
 cd static_file_analysis/docker
 mkdir /tmp/samples && cp file_to_analyz.pdf /tmp/samples
 docker-compose run sfa
-$python analysis.py -c /opt/static_file_analysis/clamav-devel/clamscan/clamscan -g -f /tmp/file_to_analyz.pdf -y yara_rules/  -j /tmp/log.json -p pattern.db -v &> /tmp/
+$python analysis.py -c /opt/static_file_analysis/clamav-devel/clamscan/clamscan -g -f /tmp/file_to_analyz.pdf -y yara_rules/  -j /tmp/log.json -p pattern.db -v -O &> /tmp/
 log
 ~~~
 

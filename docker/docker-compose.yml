@@ -18,6 +18,20 @@ services:
         environment:
             - DISPLAY=$DISPLAY
             - API_KEY=myapikey
+            #VirusTotal API KEY
+            #- API_VT=XXXX
+            #Xforce API
+            #- XFORCE_PASS=XXXX
+            #- XFORCE_KEY=XXXX
+            #MISP API
+            #- MISP_KEY=XXXX
+            #- MISP_HOST=localhost
+            #OTX API
+            #- OTX_KEY=XXXX
+            #HYBRID API
+            #- HYBRID_KEY=XXXX
+            #INTEZER
+            #- INTEZER_KEY=XXXX
             - TIMEOUT=120
             - WORKER=10
             - UPDATE_PROXY=${http_proxy}
@@ -32,6 +46,9 @@ services:
         volumes:
             - /tmp/samples:/opt/static_file_analysis/samples
             - /tmp/.X11-unix:/tmp/.X11-unix
+            #for Cmulator
+            - /dll:/dll/
+            - ./config.json:/opt/Cmulator/config.json
             #- ./docker-entrypoint.sh:/docker-entrypoint.sh
         #Comment command if you run API service!! 
         command: /bin/bash

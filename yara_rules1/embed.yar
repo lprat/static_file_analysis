@@ -1,6 +1,7 @@
 //TODO: complete list  
 //     .application$|.chm$|.appref-ms$|.cmdline$|.jnlp$|.exe$|.gadget$|.dll$|.lnk$|.pif$|.com$|.sfx$|.bat$|.cmd$|.scr$|.sys$|.hta$|.cpl$|.msc$|.inf$|.scf$|.reg$|.jar$|.vb\.*$|.js\.*$|.ws\.+$|.ps\w+$|.ms\w+$|.jar$|.url$
 //     .rtf$|\.ppt\.*$|.xls\.*$|.doc\.*$|.pdf$|.zip$|.rar$|.tmp$|.py\.*$|.dotm$|.xltm$|.xlam$|.potm$|.ppam$|.ppsm$|.sldm$
+//     .appx$|\.appxbundle$|\.appinstaller$|\.app$|\.cat$|\.webpnp$|\.wcx$|\.desklink$|\.glk$|\.mad$|\.maf$|\.mag$|\.mam$|\.mapimail$|\.maq$|\.mar$|\.mas$|\.mat$|\.mau$|\.mav$|\.maw$|\.mydocs$|\.search-ms$|\.searchconnector-ms$|\.website$|\.zfsendtotarget
 
 rule dangerous_embed_file{
 	meta:

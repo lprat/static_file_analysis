@@ -158,3 +158,21 @@ rule INF_autorund {
 	condition:
 	    check_ini_bool and any of ($div*) and any of ($part*)
 }
+
+rule INF_sct {
+	meta:
+		description = "Windows INF with URI & scrobj"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 7
+		tag = "attack.persistence,attack.t1085,attack.t1191"
+		reference = "https://bohops.com/2018/02/26/leveraging-inf-sct-fetch-execute-techniques-for-bypass-evasion-persistence/"
+	strings:
+	    $risk0 = "scrobj" nocase wide ascii
+	    $risk1 = ".sct" nocase wide ascii
+	    $uri0 = "://" nocase wide ascii
+	    $uri1 = "\\\\" nocase wide ascii
+	condition:
+	    check_ini_bool and any of ($risk*) and any of ($uri*)
+}
+
