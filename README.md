@@ -4,6 +4,7 @@
 This tool written in python langage makes the link between clam and yara. It can help you to score suspect file, can build visual tree graph for fast display embeded files (parent type, type, suspect or dangerous content), and can compute indicator of compromission. It uses clamav in order to extract embeded files and make json tree, then it sends all embbeded files to yara with context (in externs variables) in order to check rules. If a rules matched, it gives score of this rule. The max rule score is added to top of tree, you can add globale score that use all score found for make coefficient score. Extra feature, the tool can extract specific pattern (URL, HOST, IP, ...).
 
 ## Features
+- Easy to use: [docker pull lprat/sfa](https://hub.docker.com/r/lprat/sfa)
 - Clamscan extracts embedded files and makes json report
 - Clamscan check password on zip encrypted (ref: https://blog.didierstevens.com/2017/02/15/quickpost-clamav-and-zip-file-decryption/)
 - Extract file from URL with THUG (https://thug-honeyclient.readthedocs.io/en/latest/intro.html) and analysis files extracted
