@@ -2,7 +2,7 @@
 FROM debian:buster
 MAINTAINER Lionel PRAT <lionel.prat9@gmail.com>
 
-RUN apt-get update && apt-get install --no-install-recommends -y libcurl4 libcurl4-gnutls-dev curl hexedit build-essential git python3-pip python-pip libjson-c-dev libxml2-dev libssl-dev libbz2-dev python-dev python-virtualenv xdot openssl vim zlib1g-dbg zlib1g zlib1g-dev cron devscripts libtesseract-dev tesseract-ocr-all procyon-decompiler python3-setuptools python-setuptools libboost-python-dev libboost-all-dev libxslt-dev libtool graphviz-dev automake libffi-dev graphviz libfuzzy-dev libjpeg-dev pkg-config autoconf python-setuptools clang python-backports.functools-lru-cache nano python-m2crypto python-lzma strace ltrace wget bsdmainutils unzip procps python3 python3-venv python3-dev build-essential libboost-dev libboost-system-dev libboost-python-dev mtd-utils gzip bzip2 tar arj lhasa p7zip p7zip-full cabextract squashfs-tools sleuthkit lzop srecord sudo
+RUN apt-get update && apt-get install --no-install-recommends -y libcurl4 libcurl4-gnutls-dev curl hexedit build-essential git python3-pip python-pip libjson-c-dev libxml2-dev libssl-dev libbz2-dev python-dev python-virtualenv xdot openssl vim zlib1g-dbg zlib1g zlib1g-dev cron devscripts libtesseract-dev tesseract-ocr-all procyon-decompiler python3-setuptools python-setuptools libboost-python-dev libboost-all-dev libxslt-dev libtool graphviz-dev automake libffi-dev graphviz libfuzzy-dev libjpeg-dev pkg-config autoconf python-setuptools clang python-backports.functools-lru-cache nano python-m2crypto python-lzma strace ltrace wget bsdmainutils unzip procps python3 python3-venv python3-dev build-essential libboost-dev libboost-system-dev libboost-python-dev mtd-utils gzip bzip2 tar arj lhasa p7zip p7zip-full cabextract squashfs-tools sleuthkit lzop srecord sudo libpcap-dev
 RUN curl -sL https://deb.nodesource.com/setup_11.x | bash -
 RUN apt-get install --no-install-recommends -y nodejs
 RUN rm -rf /var/lib/apt/lists/*
@@ -56,7 +56,7 @@ RUN pip3 install zelos
 
 #install scanr
 RUN pip3 install capstone unicorn
-RUN pip install capstone unicorn
+RUN pip install capstone unicorn pypcap dpkt
 RUN cd /opt && git clone https://github.com/1Project/Scanr
 
 #install IDX

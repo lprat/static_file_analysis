@@ -1,4 +1,9 @@
 Changelog
+- version 1.01
+ - Add:
+  - otf signature
+ - fix
+  - DockerFile scanr require
 - version 1.0
  - Add:
   - Osint: xforce, otx, misp, vt, hybrid, intezer, app.anyrun (see in docker-compose -> env)
