@@ -1,4 +1,8 @@
 Changelog
+- version 1.02
+ - Fix
+   - error clamav reach limit
+   - error otf sig
 - version 1.01
  - Add:
   - otf signature

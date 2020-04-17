@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # (c) 2017-2020, Lionel PRAT <lionel.prat9@gmail.com>
-# Version 1.0
+# Version 1.02
 # Analysis by clamav extraction and yara rules
 # All rights reserved.
 import logging
@@ -919,15 +919,21 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
     if proc.returncode:
         print("Error: clamscan could not process the file.\n")
         shutil.rmtree(directory_tmp)
-        sys.exit(-1)
+        md5_file = md5(filename_path)
+        size_file = os.path.getsize(filename_path)
+        ret_error={ "ExtractInfo": [], "FileMD5": str(md5_file), "FileSize": size_file, "FileType": "CLAMAV ERROR could not process the file", "GlobalIOC": {}, "GlobalRiskScore": 10, "GlobalRiskScoreCoef": 1, "GlobalTags": "CLAMAV ERROR could not process the file", "RiskScore": 10, "RootFileType": "CLAMAV ERROR could not process the file", "TempDirExtract": str(directory_tmp), "Yara": []}
+        return ret_error
     #run command OK
     #LibClamAV debug: cli_updatelimits: scansize exceeded (initial: 104857600, consumed: 0, needed: 873684452)
     #LibClamAV debug: cli_updatelimits: filesize exceeded (allowed: 26214400, needed: 873684452)
-    if re.search("cli_updatelimits: filesize exceeded", serr):
-        print(serr)
+    #if re.search("cli_updatelimits: filesize exceeded", serr):
+    if 'filesize exceeded' in serr or 'scansize exceeded' in serr or 'CL_EMAXSIZE Exceeded' in serr or 'recursion limit exceeded' in serr or 'recursion limit,' in serr or 'it would exceed max scansize.' in serr or 'Stopping after cli_scanraw reached' in serr or 'Files limit reached' in serr:
         print("Error: clamscan could not process the file because file size is exceeded size allowed.\n")
         shutil.rmtree(directory_tmp)
-        sys.exit(-1)
+        md5_file = md5(filename_path)
+        size_file = os.path.getsize(filename_path)
+        ret_error={ "ExtractInfo": [], "FileMD5": str(md5_file), "FileSize": size_file, "FileType": "CLAMAV ERROR Exceed Max limit", "GlobalIOC": {}, "GlobalRiskScore": 10, "GlobalRiskScoreCoef": 1, "GlobalTags": "CLAMAV ERROR Exceed Max limit", "RiskScore": 10, "RootFileType": "CLAMAV ERROR Exceed Max limit", "TempDirExtract": str(directory_tmp), "Yara": []}
+        return ret_error
     else:
         #find json file -- > json written to: tmp5//clamav-07c46ccfca138bfce61564c552931476.tmp
         root_type = "UNKNOWN" 

@@ -1,6 +1,6 @@
 //ref: https://github.com/file/file/blob/0d1e8d97eae10cf51dc6c991fae6a310dea858ad/magic/Magdir/fonts
 
-rule Otf_file {
+rule Otf_file_size {
 	meta:
 		description = "OpenType font data with size suspect (.otf)"
 		author = "Lionel PRAT"
@@ -24,4 +24,4 @@ rule Otf_file {
 	condition:
 	    $lnkmagic at 0 or FileType matches /CL_TYPE_Microsoft_Windows_Shortcut_File/ or PathFile matches /.*\.otf$/i or CDBNAME matches /.*\.otf$/i
 }
-filesize > 200KB
+
