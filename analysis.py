@@ -847,7 +847,7 @@ def scan_json(filename, cl_parent, cdbname, cl_type, patterndb, var_dynamic, ext
         if api_misp and detect_yara_score > osint_scoremin:
             try:
                 misp = pymisp.PyMISP(host_misp, api_misp, True, 'json')
-                response = misp.search(controller='attributes', type_attribute='md5', value=md5_file)
+                response = misp.search(controller='attributes', type_attribute='md5', value=md5_file, to_ids='1')
                 if response and 'Attribute' in response and response['Attribute']:
                     found_in_misp=len(response['Attribute']) #number of found entry in misp
                     for misp_resp in response['Attribute']:
@@ -1382,7 +1382,7 @@ def clamscan(clamav_path, directory_tmp, filename_path, yara_RC, yara_RC2, patte
             if api_misp and detect_yara_score > osint_scoremin:
                 try:
                     misp = pymisp.PyMISP(host_misp, api_misp, True, 'json')
-                    response = misp.search(controller='attributes', type_attribute='md5', value=md5_file)
+                    response = misp.search(controller='attributes', type_attribute='md5', value=md5_file, to_ids='1')
                     if response and 'Attribute' in response and response['Attribute']:
                         found_in_misp=len(response['Attribute']) #number of found entry in misp
                         for misp_resp in response['Attribute']:
