@@ -1471,19 +1471,19 @@ I added this tool in CRITS services. I created pull request in CRITS service but
 Run docker compose or docker run for launch api
 (docker lprat\sfa on cloud)
 ~~~
-docker-compose -f ./docker-compose_api.yml run sfa
+docker-compose -f ./docker-compose_api.yml up -d
 or
 docker run -ti -e "API_KEY=myapikey" -p 8000:8000 docker_sfa
 ~~~
 
-With your favorite browser go to http://$IP:8000/
+With your favorite browser go to https://$IP:8000/
 
 ## Use API REST
 
 Run docker compose or docker run for launch api
 (docker lprat\sfa on cloud)
 ~~~
-docker-compose -f ./docker-compose_api.yml run sfa
+docker-compose -f ./docker-compose_api.yml up -d
 or
 docker run -ti -e "API_KEY=myapikey" -p 8000:8000 docker_sfa
 ~~~
@@ -1492,16 +1492,16 @@ Request on port 8000:
 
 ~~~
 Check File:
-curl -k  -F 'file=@/home/lionel/malwares/calc.xll' -H "x-api-key: mykeyapi" http://127.0.0.1:8000/api/sfa_check_file
+curl -k  -F 'file=@/home/lionel/malwares/calc.xll' -H "x-api-key: mykeyapi" https://127.0.0.1:8000/api/sfa_check_file
 Check URL:
-curl -k --header "Content-Type: application/json" --request POST --data '{"url":"http://www.google.fr"}' -H "x-api-key: mykeyapi" http://127.0.0.1:8000/api/sfa_check_url
+curl -k --header "Content-Type: application/json" --request POST --data '{"url":"http://www.google.fr"}' -H "x-api-key: mykeyapi" https://127.0.0.1:8000/api/sfa_check_url
 
 Return JSON:
 {"graph.png":"/download/700c4644ec40bfdada4502ffd5cb1411","result.json":"/download/9b9c453dc45b665c596b0f58c1c272b1","risk_score":4,"trace-serr.debug":"/download/d41d8cd98f00b204e9800998ecf8427e","trace-sout.debug":"/download/ef59eb8e65035a1064c1c32565bc0e74","ef59eb8e65035a1064c1c32565bc0000":"/download/ef59eb8e65035a1064c1c32565bc000"}
 "ef59eb8e65035a1064c1c32565bc0000": for download embed file md5
 
 Download file embed/json result/graph/...
-curl -k -X 'POST' -H "x-api-key: mykeyapi" http://127.0.0.1:8000/download/ef59eb8e65035a1064c1c32565bc0000
+curl -k -X 'POST' -H "x-api-key: mykeyapi" https://127.0.0.1:8000/download/ef59eb8e65035a1064c1c32565bc0000
 ~~~
 
 ## Use reverse proxy for API or IHM web
@@ -1522,7 +1522,6 @@ server {
 #      Use login/password auth
 #      auth_basic "Authentification";
 #      auth_basic_user_file /etc/nginx/.passwdweb;
-      proxy_redirect              http:// https://;
       proxy_pass_request_headers on;
       proxy_set_header Host $host;
       proxy_set_header X-Forwarded-Host $host;
@@ -1531,7 +1530,7 @@ server {
       proxy_set_header X-Forwarded-Proto $scheme;
       proxy_set_header X-Real-IP $remote_addr;
 #     Docker IP
-      proxy_pass http://172.17.0.1:8000;
+      proxy_pass https://172.17.0.1:8000;
     }
 }
 ~~~
