@@ -5,6 +5,7 @@ This tool written in python langage makes the link between clam and yara. It can
 
 ## Features
 - Easy to use: [docker pull lprat/sfa](https://hub.docker.com/r/lprat/sfa)
+- Web ihm integrated in API
 - Clamscan extracts embedded files and makes json report
 - Clamscan check password on zip encrypted (ref: https://blog.didierstevens.com/2017/02/15/quickpost-clamav-and-zip-file-decryption/)
 - Extract file from URL with THUG (https://thug-honeyclient.readthedocs.io/en/latest/intro.html) and analysis files extracted
@@ -1465,6 +1466,18 @@ I added this tool in CRITS services. I created pull request in CRITS service but
 
 [My Github account of modified CRITS services](https://github.com/lprat/crits_services/tree/extract_embedded_service)
 
+## Use IHM WEB
+
+Run docker compose or docker run for launch api
+(docker lprat\sfa on cloud)
+~~~
+docker-compose -f ./docker-compose_api.yml run sfa
+or
+docker run -ti -e "API_KEY=myapikey" -p 8000:8000 docker_sfa
+~~~
+
+With your favorite browser go to http://$IP:8000/
+
 ## Use API REST
 
 Run docker compose or docker run for launch api
@@ -1479,18 +1492,49 @@ Request on port 8000:
 
 ~~~
 Check File:
-curl -k  -F 'file=@/home/lionel/malwares/calc.xll' -H "x-api-key: mykeyapi" https://127.0.0.1:8000/api/sfa_check_file
+curl -k  -F 'file=@/home/lionel/malwares/calc.xll' -H "x-api-key: mykeyapi" http://127.0.0.1:8000/api/sfa_check_file
 Check URL:
-curl -k --header "Content-Type: application/json" --request POST --data '{"url":"http://www.google.fr"}' -H "x-api-key: mykeyapi" https://127.0.0.1:8000/api/sfa_check_url
+curl -k --header "Content-Type: application/json" --request POST --data '{"url":"http://www.google.fr"}' -H "x-api-key: mykeyapi" http://127.0.0.1:8000/api/sfa_check_url
 
 Return JSON:
 {"graph.png":"/download/700c4644ec40bfdada4502ffd5cb1411","result.json":"/download/9b9c453dc45b665c596b0f58c1c272b1","risk_score":4,"trace-serr.debug":"/download/d41d8cd98f00b204e9800998ecf8427e","trace-sout.debug":"/download/ef59eb8e65035a1064c1c32565bc0e74","ef59eb8e65035a1064c1c32565bc0000":"/download/ef59eb8e65035a1064c1c32565bc000"}
 "ef59eb8e65035a1064c1c32565bc0000": for download embed file md5
 
 Download file embed/json result/graph/...
-curl -k -X 'POST' -H "x-api-key: mykeyapi" https://127.0.0.1:8000/download/ef59eb8e65035a1064c1c32565bc0000
+curl -k -X 'POST' -H "x-api-key: mykeyapi" http://127.0.0.1:8000/download/ef59eb8e65035a1064c1c32565bc0000
 ~~~
 
+## Use reverse proxy for API or IHM web
+
+Config exemple for nginx:
+~~~
+server {
+    listen $IP:443 ssl;
+    server_name sfa.$yourdomain;
+    location / {
+#      Use certificate auth
+#      if ($ssl_client_verify != SUCCESS) {
+#        return 403;
+#      }
+#      if ($ssl_client_s_dn_cn = "NAME-On-Cert") {
+#        return 403;
+#      }
+#      Use login/password auth
+#      auth_basic "Authentification";
+#      auth_basic_user_file /etc/nginx/.passwdweb;
+      proxy_redirect              http:// https://;
+      proxy_pass_request_headers on;
+      proxy_set_header Host $host;
+      proxy_set_header X-Forwarded-Host $host;
+      proxy_set_header X-Forwarded-Server $host;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header X-Real-IP $remote_addr;
+#     Docker IP
+      proxy_pass http://172.17.0.1:8000;
+    }
+}
+~~~
 ## Trick for pdf analysis
 $pdftk infector1.pdf output infector1_uncompress.pdf uncompress
 

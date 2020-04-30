@@ -1,0 +1,10 @@
+{
+  "system": {
+    "win32": "/dll/dll",
+    "win64": "/dll/dll64",
+    "Apiset": "./Apiset.json"
+  },
+  "JS": {
+  	"main": "./API.js"
+  }
+}

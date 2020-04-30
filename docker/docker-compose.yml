@@ -44,10 +44,11 @@ services:
         ports:
             - "8000:8000"
         volumes:
+            #- ../api:/opt/static_file_analysis/api
             - /tmp/samples:/opt/static_file_analysis/samples
             - /tmp/.X11-unix:/tmp/.X11-unix
             #for Cmulator
-            - /dll:/dll/
+            - ./dll:/dll/
             - ./config.json:/opt/Cmulator/config.json
             #- ./docker-entrypoint.sh:/docker-entrypoint.sh
         #Comment command if you run API service!! 

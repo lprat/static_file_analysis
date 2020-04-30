@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Service CheckBL API (ANS/ACSS)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="/js/html5shiv.js"></script>
+      <script src="/js/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+  <!--Navbar-->
+	<nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+	
+	<!-- Navbar brand -->
+	<a class="navbar-brand" href="/">Static File Analysis [SFA]</a>
+	
+	<!-- Collapse button -->
+	<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#basicExampleNav"
+		aria-controls="basicExampleNav" aria-expanded="false" aria-label="Toggle navigation">
+		<span class="navbar-toggler-icon"></span>
+	</button>
+	
+	<!-- Collapsible content -->
+	<div class="collapse navbar-collapse" id="basicExampleNav">
+	
+		<!-- Links -->
+		<ul class="navbar-nav mr-auto">
+		  <li class="nav-item dropdown">
+			<a class="nav-link dropdown-toggle" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Analyze</a>
+			<div class="dropdown-menu dropdown-primary" aria-labelledby="navbarDropdownMenuLink">
+			<a class="dropdown-item" href="/#anfile">file</a>
+			<a class="dropdown-item" href="/#anurl">url</a>
+			</div>
+		  </li>
+		  <li class="nav-item">
+             <a class="nav-link" href="https://github.com/lprat/static_file_analysis">Code source</a>
+          </li>
+		</ul>
+	</div>
+	<!-- Collapsible content -->
+	
+	</nav>
+	<!--/.Navbar-->
+    <div style="float:none; margin: 10% 33%">
+      <div class="card-group">
+        <div class="card border-info mb-3">
+        <div class="card-header">SFA (Static File Analysis).</div>
+        <div class="card-body text-info">
+          <div class="card-text">
+          <p>Analysis malicious files in deep with clamscan and yara rules.</p>
+          <p>Features:</p>
+          <ul>
+            <li>Clamscan extracts embedded files and makes json report.</li>
+            <li>Clamscan check password on zip encrypted.</li>
+            <li>Extract file from URL with THUG.</li>
+            <li>Analyse json report and make json trees to consolidate informations.</li>
+            <li>Extract patterns (pattern.db) with the ability to use the yara rules.</li>
+            <li>Scan embedded files and root file with yara rules: 2 levels</li>
+            <li>Compute risk score .</li>
+            <li>Extract IOC on yara rules match.</li>
+            <li>Extract text from image by OCR.</li>
+            <li>Decompile JAR & CLASS java with procyon.</li>
+            <li>Check VirusTotal & INTEZER & Hybrid Analysis & APPANY.RUN & OTX & XFORCE & MISP</li>
+            <li>Create PNG graph for fast analysis.</li>
+            <li>Output result tree json in a file.</li>
+          </ul>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="anfile" style="float:none; margin: 10% 33%">
+      <div class="card-group">
+        <div class="card border-info mb-3">
+          <div class="card-heading">Analyze File</div>
+          <div class="card-body text-info">
+            <div class="card-text">
+              <form action="/api/sfa_check_file" method="post" enctype="multipart/form-data" id="form" class="form-horizontal" role="form">
+                <div class="form-group">
+                  <label for="file">File to analyze</label>
+                  <input type="file" name="file" id="file" aria-describedby="Hfile">
+                  <small id="Hfile" class="form-text text-muted">File to analyze.</small>
+                </div>
+                <div class="form-group">
+                  <label for="apikey">API KEY</label>
+                  <input type="password" class="form-control" name="x-api-key" id="x-api-key" aria-describedby="hapikey" placeholder="XXXXX"></textarea>
+                  <small id="hapikey" class="form-text text-muted">Use API KEY for authentification.</small>
+                </div>
+                <input type="hidden" id="hid" name="hid" value="True">
+                <button type="submit" class="btn btn-primary">Submit</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="anurl" style="float:none; margin: 10% 33%">
+      <div class="card-group">
+        <div class="card border-info mb-3">
+          <div class="card-heading">Analyze URL</div>
+          <div class="card-body text-info">
+            <div class="card-text">
+              <form action="/api/sfa_check_url" method="post" id="form" class="form-horizontal" role="form">
+                <div class="form-group">
+                  <label for="url">URL to analyze</label>
+                  <input type="text" name="url" id="url" aria-describedby="Hfile" placeholder="http://vil.bad">
+                  <small id="Hfile" class="form-text text-muted">URL to analyze.</small>
+                </div>
+                <div class="form-group">
+                  <label for="apikey">API KEY</label>
+                  <input type="password" class="form-control" name="x-api-key" id="x-api-key" aria-describedby="hapikey" placeholder="XXXXX"></textarea>
+                  <small id="hapikey" class="form-text text-muted">Use API KEY for authentification.</small>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+        
+  </body>
+</html>
+
+
