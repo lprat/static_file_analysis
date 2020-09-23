@@ -165,14 +165,39 @@ rule JS_activeX {
 	meta:
 		description = "Script call ActiveX Object"
 		author = "Lionel PRAT"
-        version = "0.2"
+        	version = "0.2"
 		weight = 5
-	    tag = "attack.defense_evasion"
+	    	tag = "attack.defense_evasion"
 	strings:
 		$activ0 = "ActiveXObject" nocase
 		$activ1 = "ActiveX" nocase
 	condition:
 	    check_js_bool and any of ($activ*)
+}
+
+rule JS_Wscript {
+	meta:
+		description = "Script call Wscript Object"
+		author = "Lionel PRAT"
+                version = "0.2"
+		weight = 4
+	        tag = "attack.defense_evasion"
+	strings:
+		$s1 = "Wscript" nocase
+	condition:
+	    check_js_bool and $s1
+}
+
+rule UserAgent_JS {
+    meta:
+        author = "Lionel PRAT"
+        description = "Suspect use string user-agent in JS"
+        version = "0.1"
+        weight = 4
+    strings:
+        $s1 = "User-Agent" nocase
+    condition:
+        check_js_bool and $s1
 }
 
 rule UserAgent_JS {
