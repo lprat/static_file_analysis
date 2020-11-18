@@ -57,7 +57,9 @@ My docker contener contains Static analysis tools and others tools for deep anal
   - PE/Shellcode:
     - Cmulator (https://github.com/Coldzer0/Cmulator)
     - wine (http://www.hexacorn.com/blog/2016/12/14/malware-analysis-using-wine/ => WINEDEBUG=+all wine malware.exe)
-  - Php: https://sandbox.onlinephpfunctions.com/
+  - Php: 
+    - https://sandbox.onlinephpfunctions.com/
+    - https://github.com/bediger4000/reverse-php-malware
   
 - Debugger/DBI
   - bash: "bash -x script.sh"
