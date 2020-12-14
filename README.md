@@ -1542,8 +1542,9 @@ server {
 In Sigma_rules, you can find rule format SIGMA for detect files to analyse.
 
 ## Greetz
-
-Stéphane L. for contributing!
+  - clamav community
+  - yara community
+  - Stéphane L.
 
 ## Contact
 
