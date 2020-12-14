@@ -1537,8 +1537,6 @@ server {
     }
 }
 ~~~
-## Trick for pdf analysis
-$pdftk infector1.pdf output infector1_uncompress.pdf uncompress
 
 ## Extra
 In Sigma_rules, you can find rule format SIGMA for detect files to analyse.
