@@ -7,7 +7,7 @@ RUN curl -sL https://deb.nodesource.com/setup_11.x | bash -
 RUN apt-get install --no-install-recommends -y nodejs
 RUN rm -rf /var/lib/apt/lists/*
 RUN cd /opt/ && git clone https://github.com/lprat/static_file_analysis
-RUN cd /opt/static_file_analysis && git clone https://github.com/Cisco-Talos/clamav
+RUN cd /opt/static_file_analysis && git clone https://github.com/Cisco-Talos/clamav clamav-devel
 RUN cd /opt/static_file_analysis/clamav-devel && CC=gcc CXX=c++ CFLAGS="-g -O2 -fdebug-prefix-map=/opt/static_file_analysis/clamav-devel=. -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2" CPPFLAGS="-Wdate-time -D_FORTIFY_SOURCE=2" CXXFLAGS="-g -O2 -fdebug-prefix-map=/opt/static_file_analysis/clamav-devel=. -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2" FCFLAGS="-g -O2 -fdebug-prefix-map=/opt/static_file_analysis/clamav-devel=. -fstack-protector-strong -D_FORTIFY_SOURCE=2" FFLAGS="-g -O2 -fdebug-prefix-map=/opt/static_file_analysis/clamav-devel=. -fstack-protector-strong -D_FORTIFY_SOURCE=2" GCJFLAGS="-g -O2 -fdebug-prefix-map=/opt/static_file_analysis/clamav-devel=. -fstack-protector-strong" LDFLAGS="-Wl,-z,relro -Wl,-z,now" OBJCFLAGS="-g -O2 -fdebug-prefix-map=/opt/static_file_analysis/clamav-devel=. -fstack-protector-strong -Wformat -Werror=format-security" OBJCXXFLAGS="-g -O2 -fdebug-prefix-map=/opt/static_file_analysis/clamav-devel=. -fstack-protector-strong -Wformat -Werror=format-security" ./configure --enable-static --with-libjson && make
 
 #bug to install hashlib
