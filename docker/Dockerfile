@@ -22,7 +22,7 @@ WORKDIR /opt/
 #install pygrah & pyv8 for thug (compile with clang because gcc >6 make error segmentation fault
 #RUN easy_install -U setuptools pygraphviz==1.3.1
 ENV CXX clang++
-RUN python /usr/lib/python2.7/dist-packages/easy_install.py -U setuptools pygraphviz==1.3.1
+RUN python /usr/lib/python2.7/dist-packages/easy_install.py -U setuptools==44.1.1 pygraphviz==1.3.1
 #ref: https://github.com/ibmdb/node-ibm_db/issues/276
 #RUN git clone https://github.com/buffer/pyv8.git
 #COPY v8.patch /tmp
