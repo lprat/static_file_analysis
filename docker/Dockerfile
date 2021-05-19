@@ -7,7 +7,7 @@ RUN curl -sL https://deb.nodesource.com/setup_11.x | bash -
 RUN apt-get install --no-install-recommends -y nodejs
 RUN rm -rf /var/lib/apt/lists/*
 RUN cd /opt/ && git clone https://github.com/lprat/static_file_analysis
-RUN cd /opt/static_file_analysis && git clone https://github.com/vrtadmin/clamav-devel
+RUN cd /opt/static_file_analysis && git clone https://github.com/Cisco-Talos/clamav
 RUN cd /opt/static_file_analysis/clamav-devel && CC=gcc CXX=c++ CFLAGS="-g -O2 -fdebug-prefix-map=/opt/static_file_analysis/clamav-devel=. -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2" CPPFLAGS="-Wdate-time -D_FORTIFY_SOURCE=2" CXXFLAGS="-g -O2 -fdebug-prefix-map=/opt/static_file_analysis/clamav-devel=. -fstack-protector-strong -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2" FCFLAGS="-g -O2 -fdebug-prefix-map=/opt/static_file_analysis/clamav-devel=. -fstack-protector-strong -D_FORTIFY_SOURCE=2" FFLAGS="-g -O2 -fdebug-prefix-map=/opt/static_file_analysis/clamav-devel=. -fstack-protector-strong -D_FORTIFY_SOURCE=2" GCJFLAGS="-g -O2 -fdebug-prefix-map=/opt/static_file_analysis/clamav-devel=. -fstack-protector-strong" LDFLAGS="-Wl,-z,relro -Wl,-z,now" OBJCFLAGS="-g -O2 -fdebug-prefix-map=/opt/static_file_analysis/clamav-devel=. -fstack-protector-strong -Wformat -Werror=format-security" OBJCXXFLAGS="-g -O2 -fdebug-prefix-map=/opt/static_file_analysis/clamav-devel=. -fstack-protector-strong -Wformat -Werror=format-security" ./configure --enable-static --with-libjson && make
 
 #bug to install hashlib
@@ -63,7 +63,7 @@ RUN cd /opt && git clone https://github.com/1Project/Scanr
 RUN cd /opt && git clone https://github.com/Rurik/Java_IDX_Parser
 
 #install ghidra 
-RUN cd /opt && wget https://ghidra-sre.org/ghidra_9.1.2_PUBLIC_20200212.zip -O ghidra.zip && unzip ghidra.zip && rm ghidra.zip
+RUN cd /opt && wget https://ghidra-sre.org/ghidra_9.2.3_PUBLIC_20210325.zip -O ghidra.zip && unzip ghidra.zip && rm ghidra.zip
 ##PLUGINS
 ##FLIRT
 RUN mkdir -p /opt/FLIRT && cd /opt/FLIRT && git clone https://github.com/push0ebp/sig-database && git clone https://github.com/cloudwindby/IDA-PRO-SIG && git clone https://github.com/Maktm/FLIRTDB
@@ -117,7 +117,7 @@ RUN wget https://github.com/crypto2011/IDR/releases/download/27_01_2019/Idr.exe 
 ##idr error message: cannot initialize diasm
 
 #install ffdec - https://github.com/jindrapetrik/jpexs-decompiler/releases -- installed by apt
-RUN wget https://github.com/jindrapetrik/jpexs-decompiler/releases/download/version11.3.0/ffdec_11.3.0.deb -O /tmp/ffdec_11.3.0.deb && dpkg -i /tmp/ffdec_11.3.0.deb && rm /tmp/ffdec_11.3.0.deb
+RUN wget https://github.com/jindrapetrik/jpexs-decompiler/releases/download/nightly1933/ffdec_14.4.0_nightly1933.deb -O /tmp/ffdec_14.4.0.deb && dpkg -i /tmp/ffdec_14.4.0.deb && rm /tmp/ffdec_14.4.0.deb
 
 #add script to update git
 ADD git_update.sh /opt/git_update.sh
