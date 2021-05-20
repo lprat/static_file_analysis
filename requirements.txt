@@ -2,7 +2,7 @@ pydot
 pyparsing
 virustotal-api
 thug
-yara-python==3.11.0
+yara-python
 OTXv2
 pymisp
 cfscrape
