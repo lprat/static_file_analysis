@@ -51,6 +51,7 @@ RUN cd /opt/static_file_analysis && pip3 install -r requirements.txt
 #RUN cp -R /usr/local/lib/python2.7/dist-packages/etc/thug /etc/thug && mkdir /etc/thug/plugins/ && mkdir /etc/thug/hooks/
 
 #install vmonkey
+RUN pip3 install --upgrade pip
 RUN pip3 install -U https://github.com/decalage2/ViperMonkey/archive/master.zip
 
 #install cmulator
