@@ -148,7 +148,7 @@ Usage: analysis.py [-c /usr/local/bin/clamscan] [-d /tmp/extract_emmbedded] [-p 
 
 	 example: analysis.py -c ./clamav-devel/clamscan/clamscan -u www.exploitkit.top/id?000 -y /home/analyz/yara_rules1/ -a /home/analyz/yara_rules2/ -b /home/analyz/password.pwdb -i /usr/bin/tesseract -l fra -g -O
 
-lionel@local:~/static_analysis$ python analysis.py -c clamav-devel/clamscan/clamscan -g -f tests/pdf/jaff.pdf -y yara_rules/  -j /tmp/log.json -p pattern.db
+lionel@local:~/static_analysis$ python3 analysis.py -c clamav-devel/clamscan/clamscan -y yara_rules1/ -a yara_rules2/ -j /tmp/log.json -p pattern.db -g -f tests/pdf/jaff.pdf
 Static analysis by clamav and yara rules -- Contact: lionel.prat9@gmail.com
 Create directory temp for emmbedded file: /tmp/tmpUee2rj
 
