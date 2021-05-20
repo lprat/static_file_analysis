@@ -1411,8 +1411,7 @@ git clone https://github.com/lprat/static_file_analysis
 cd static_file_analysis/docker
 mkdir /tmp/samples && cp file_to_analyz.pdf /tmp/samples
 docker-compose run sfa
-$python analysis.py -c /opt/static_file_analysis/clamav-devel/clamscan/clamscan -g -f /tmp/file_to_analyz.pdf -y yara_rules/  -j /tmp/log.json -p pattern.db -v -O &> /tmp/
-log
+$python analysis.py -c ./clamav-devel/clamscan/clamscan -f samples/file_to_analyz.pdf -y yara_rules1/ -a yara_rules2/ -b password.pwdb -i /usr/bin/tesseract -l fra -g -O -v &> /tmp/log
 ~~~
 
 ### Docker install API REST
