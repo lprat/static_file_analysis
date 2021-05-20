@@ -38,9 +38,10 @@ RUN cd /opt && git clone https://github.com/buffer/libemu.git && \
   cd .. && \
   rm -rf libemu
 RUN ldconfig
-RUN cd /opt && git clone https://github.com/area1/stpyv8
-RUN cd /opt/stpyv8 && python setup.py v8
-RUN cd /opt/stpyv8 && python3 setup.py stpyv8 && python3 setup.py install
+#RUN cd /opt && git clone https://github.com/area1/stpyv8
+RUN cd /opt && wget https://github.com/area1/stpyv8/archive/refs/tags/v8.9.255.20.tar.gz && tar -zxf v8.9.255.20.tar.gz
+RUN cd /opt/stpyv8-8.9.255.20 && python setup.py v8
+RUN cd /opt/stpyv8-8.9.255.20 && python3 setup.py stpyv8 && python3 setup.py install
 
 #install hashlib pydot yara flask
 #RUN pip install -U wheel && pip install setuptools --upgrade
