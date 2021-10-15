@@ -51,12 +51,14 @@ My docker contener contains Static analysis tools and others tools for deep anal
 - Emulator/sandbox
   - Vbscript: vmonkey (https://github.com/decalage2/ViperMonkey)
   - javascript: box-js (https://github.com/CapacitorSet/box-js)
+  - capacity PE/ELF/shellcode: https://github.com/mandiant/capa
   - elf: 
     - mbox (https://github.com/tsgates/mbox)
     - zelos (https://github.com/zeropointdynamics/zelos)
   - PE/Shellcode:
     - Cmulator (https://github.com/Coldzer0/Cmulator)
     - wine (http://www.hexacorn.com/blog/2016/12/14/malware-analysis-using-wine/ => WINEDEBUG=+all wine malware.exe)
+    - Speakeasy: (https://github.com/mandiant/speakeasy)
   - Php: 
     - https://sandbox.onlinephpfunctions.com/
     - https://github.com/bediger4000/reverse-php-malware
