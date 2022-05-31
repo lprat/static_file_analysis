@@ -1212,3 +1212,18 @@ rule cmdnt_evil {
 	condition:
 	    check_command_bool and any of ($evil*)
 }
+
+rule command_Msdt {
+	meta:
+		description = "Contains Msdt command call"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 7
+		reference = "MITRE ATTACK"
+		ids = "win_exec"
+	    tag = "attack.execution,attack.tT1170,attack.defense_evasion"
+	strings:
+		$cmd = "msdt" nocase ascii wide
+	condition:
+	    check_command_bool and $cmd
+}
