@@ -364,3 +364,18 @@ rule OFFICE_file {
 	condition:
 	    (uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileType matches /CL_TYPE_MSOLE|CL_TYPE_OLE|CL_TYPE_OOXML|CL_TYPE_MSWORD|CL_TYPE_MSXL/) and (not CDBNAME matches /\.zip$|\.jar$/)
 }
+
+rule Suspect_MSDT_OFFICE {
+	meta:
+		description = "Office with scheme MS-MSDT (exploit for run command)"
+		author = "Lionel PRAT"
+        version = "0.1"
+		weight = 8
+		reference = "https://msrc-blog.microsoft.com/2022/05/30/guidance-for-cve-2022-30190-microsoft-support-diagnostic-tool-vulnerability/"
+		check_level2 = "check_command_bool,check_clsid_bool,check_registry_bool"
+		tag = "attack.initial_access,attack.t1189,attack.t1192,attack.t1193,attack.t1194,attack.t1223,attack.execution"
+	strings:
+		$msdt = "ms-msdt" nocase
+	condition:
+	    ( uint32be(0) == 0xd0cf11e0 or uint32be(0) == 0x504b0304 or FileParentType matches /->CL_TYPE_ZIP$|->CL_TYPE_MSOLE|->CL_TYPE_OLE|->CL_TYPE_OOXML|->CL_TYPE_MHTML|->CL_TYPE_MSWORD|->CL_TYPE_MSXL/) and $msdt
+}
