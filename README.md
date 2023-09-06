@@ -50,7 +50,9 @@ My docker contener contains Static analysis tools and others tools for deep anal
   
 - Emulator/sandbox
   - Vbscript: vmonkey (https://github.com/decalage2/ViperMonkey)
-  - javascript: box-js (https://github.com/CapacitorSet/box-js)
+  - javascript:
+    - box-js (https://github.com/CapacitorSet/box-js)
+    - JsJaws (https://github.com/CybercentreCanada/assemblyline-service-jsjaws)
   - capacity PE/ELF/shellcode: https://github.com/mandiant/capa
   - elf: 
     - mbox (https://github.com/tsgates/mbox)
@@ -87,6 +89,8 @@ You can use other tools not include in my docker contener:
 - decompiler dotnet: ilspy (https://github.com/bannsec/ilspy_docker)
 - decompiler based on LLVM: retdec (https://github.com/avast-tl/retdec) - retdec-fileinfo identify "Original language"
 - sandbox powershell: PSDecode (https://github.com/R3MRUM/PSDecode) - you can use in powershell docker (https://hub.docker.com/_/microsoft-powershell)
+- powershell capacities: https://github.com/pan-unit42/public_tools/tree/master/powershellprofiler
+- java capacities: https://github.com/CybercentreCanada/assemblyline-service-espresso
 - sandbox ruby: safe_ruby (https://github.com/ukutaht/safe_ruby)
 - sandbox python: pysandbox (https://github.com/vstinner/pysandbox)
 - sandbox generic: cuckoo (https://github.com/cuckoosandbox/cuckoo)
